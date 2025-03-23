@@ -70,32 +70,35 @@ namespace RTXLauncher
 
 		}
 
+		static bool CheckDirectory(string path, ref string outpath)
+		{
+			var execPath = Path.GetDirectoryName(System.AppContext.BaseDirectory);//Assembly.GetExecutingAssembly().Location);
+
+			var segs = path.Split("/");
+			segs = segs.Prepend(execPath).ToArray();
+			var testpath = Path.Combine(segs);
+			if (File.Exists(testpath))
+			{
+				outpath = testpath;
+				return true;
+			}
+			return false;
+		}
+
 		// FindGameDirectory implementation remains the same
 		static string FindGameExecutable()
 		{
 			var execPath = Path.GetDirectoryName(System.AppContext.BaseDirectory);//Assembly.GetExecutingAssembly().Location);
 
-			var patcherlauncher = Path.Combine(execPath, "patcherlauncher.exe");
-			if (File.Exists(patcherlauncher))
-			{
-				return patcherlauncher;
-			}
+			var dir = Path.Combine(execPath, "hl2.exe");
 
-			var currentPath = Path.Combine(execPath, "bin", "win64");
-			if (currentPath != null)
-			{
-				for (int i = 0; i < 3; i++)
-				{
-					var testPath = Path.Combine(currentPath, "gmod.exe");
-					if (File.Exists(testPath))
-					{
-						return testPath;
-					}
-					// try up one directory
-					currentPath = Path.GetDirectoryName(currentPath);
-				}
-			}
-			return Path.Combine(execPath, "hl2.exe");
+			if (CheckDirectory("patcherlauncher.exe", ref dir)) return dir;
+			if (CheckDirectory("bin/win64/gmod.exe", ref dir)) return dir;
+			if (CheckDirectory("bin/gmod.exe", ref dir)) return dir;
+			if (CheckDirectory("gmod.exe", ref dir)) return dir;
+			if (CheckDirectory("hl2.exe", ref dir)) return dir;
+
+			return dir;
 		}
 	}
 }
