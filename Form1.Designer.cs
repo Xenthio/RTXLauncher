@@ -42,6 +42,12 @@
 			label1 = new Label();
 			checkBox1 = new CheckBox();
 			WidthHeightComboBox = new ComboBox();
+			QuickInstallGroup = new GroupBox();
+			label17 = new Label();
+			label16 = new Label();
+			label14 = new Label();
+			OneClickEasyInstallButton = new Button();
+			label13 = new Label();
 			groupBox2 = new GroupBox();
 			checkBox6 = new CheckBox();
 			checkBox2 = new CheckBox();
@@ -98,18 +104,13 @@
 			button2 = new Button();
 			progressBar1 = new ProgressBar();
 			button1 = new Button();
-			OneClickEasyInstallButton = new Button();
-			label13 = new Label();
-			QuickInstallGroup = new GroupBox();
-			label14 = new Label();
-			label16 = new Label();
-			label17 = new Label();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
 			groupBox1.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)CustomWidthBox).BeginInit();
 			((System.ComponentModel.ISupportInitialize)CustomHeightBox).BeginInit();
+			QuickInstallGroup.SuspendLayout();
 			groupBox2.SuspendLayout();
 			MountingPage.SuspendLayout();
 			groupBox6.SuspendLayout();
@@ -131,7 +132,6 @@
 			AboutPage.SuspendLayout();
 			groupBox8.SuspendLayout();
 			groupBox7.SuspendLayout();
-			QuickInstallGroup.SuspendLayout();
 			SuspendLayout();
 			// 
 			// settingsDataBindingSource
@@ -280,6 +280,78 @@
 			WidthHeightComboBox.Text = "1920x1080";
 			WidthHeightComboBox.SelectedIndexChanged += WidthHeightComboBox_SelectedIndexChanged;
 			WidthHeightComboBox.TextChanged += WidthHeightComboBox_TextUpdate;
+			// 
+			// QuickInstallGroup
+			// 
+			QuickInstallGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			QuickInstallGroup.Controls.Add(label17);
+			QuickInstallGroup.Controls.Add(label16);
+			QuickInstallGroup.Controls.Add(label14);
+			QuickInstallGroup.Controls.Add(OneClickEasyInstallButton);
+			QuickInstallGroup.Controls.Add(label13);
+			QuickInstallGroup.Location = new Point(6, 236);
+			QuickInstallGroup.Name = "QuickInstallGroup";
+			QuickInstallGroup.Size = new Size(332, 113);
+			QuickInstallGroup.TabIndex = 7;
+			QuickInstallGroup.TabStop = false;
+			QuickInstallGroup.Text = "Quick Installer";
+			QuickInstallGroup.Visible = false;
+			QuickInstallGroup.Enter += groupBox2_Enter;
+			// 
+			// label17
+			// 
+			label17.AutoSize = true;
+			label17.FlatStyle = FlatStyle.System;
+			label17.Location = new Point(6, 64);
+			label17.Name = "label17";
+			label17.Size = new Size(297, 15);
+			label17.TabIndex = 14;
+			label17.Text = "You can head to the install tab if that's more your thing";
+			// 
+			// label16
+			// 
+			label16.AutoSize = true;
+			label16.FlatStyle = FlatStyle.System;
+			label16.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+			label16.Location = new Point(6, 49);
+			label16.Name = "label16";
+			label16.Size = new Size(81, 15);
+			label16.TabIndex = 14;
+			label16.Text = "It's that easy!";
+			// 
+			// label14
+			// 
+			label14.AutoSize = true;
+			label14.FlatStyle = FlatStyle.System;
+			label14.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+			label14.Location = new Point(6, 34);
+			label14.Name = "label14";
+			label14.Size = new Size(299, 15);
+			label14.TabIndex = 13;
+			label14.Text = "You can make one by clicking that button just below!";
+			// 
+			// OneClickEasyInstallButton
+			// 
+			OneClickEasyInstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+			OneClickEasyInstallButton.FlatStyle = FlatStyle.System;
+			OneClickEasyInstallButton.Location = new Point(6, 84);
+			OneClickEasyInstallButton.Name = "OneClickEasyInstallButton";
+			OneClickEasyInstallButton.Size = new Size(320, 23);
+			OneClickEasyInstallButton.TabIndex = 11;
+			OneClickEasyInstallButton.Text = "Run Quick Install";
+			OneClickEasyInstallButton.UseVisualStyleBackColor = true;
+			OneClickEasyInstallButton.Click += OneClickEasyInstallButton_Click;
+			// 
+			// label13
+			// 
+			label13.AutoSize = true;
+			label13.FlatStyle = FlatStyle.System;
+			label13.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+			label13.Location = new Point(6, 19);
+			label13.Name = "label13";
+			label13.Size = new Size(261, 15);
+			label13.TabIndex = 12;
+			label13.Text = "Hey! There's no Garry's Mod RTX Install here! ";
 			// 
 			// groupBox2
 			// 
@@ -572,7 +644,7 @@
 			groupBox12.Size = new Size(320, 83);
 			groupBox12.TabIndex = 15;
 			groupBox12.TabStop = false;
-			groupBox12.Text = "Nvidia RTX Remix";
+			groupBox12.Text = "NVIDIA RTX Remix";
 			// 
 			// label9
 			// 
@@ -958,78 +1030,6 @@
 			button1.Text = "Check for Updates";
 			button1.UseVisualStyleBackColor = true;
 			// 
-			// OneClickEasyInstallButton
-			// 
-			OneClickEasyInstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-			OneClickEasyInstallButton.FlatStyle = FlatStyle.System;
-			OneClickEasyInstallButton.Location = new Point(6, 84);
-			OneClickEasyInstallButton.Name = "OneClickEasyInstallButton";
-			OneClickEasyInstallButton.Size = new Size(320, 23);
-			OneClickEasyInstallButton.TabIndex = 11;
-			OneClickEasyInstallButton.Text = "Run Quick Install";
-			OneClickEasyInstallButton.UseVisualStyleBackColor = true;
-			OneClickEasyInstallButton.Click += OneClickEasyInstallButton_Click;
-			// 
-			// label13
-			// 
-			label13.AutoSize = true;
-			label13.FlatStyle = FlatStyle.System;
-			label13.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-			label13.Location = new Point(6, 19);
-			label13.Name = "label13";
-			label13.Size = new Size(261, 15);
-			label13.TabIndex = 12;
-			label13.Text = "Hey! There's no Garry's Mod RTX Install here! ";
-			// 
-			// QuickInstallGroup
-			// 
-			QuickInstallGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-			QuickInstallGroup.Controls.Add(label17);
-			QuickInstallGroup.Controls.Add(label16);
-			QuickInstallGroup.Controls.Add(label14);
-			QuickInstallGroup.Controls.Add(OneClickEasyInstallButton);
-			QuickInstallGroup.Controls.Add(label13);
-			QuickInstallGroup.Location = new Point(6, 236);
-			QuickInstallGroup.Name = "QuickInstallGroup";
-			QuickInstallGroup.Size = new Size(332, 113);
-			QuickInstallGroup.TabIndex = 7;
-			QuickInstallGroup.TabStop = false;
-			QuickInstallGroup.Text = "Quick Installer";
-			QuickInstallGroup.Visible = false;
-			QuickInstallGroup.Enter += groupBox2_Enter;
-			// 
-			// label14
-			// 
-			label14.AutoSize = true;
-			label14.FlatStyle = FlatStyle.System;
-			label14.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-			label14.Location = new Point(6, 34);
-			label14.Name = "label14";
-			label14.Size = new Size(299, 15);
-			label14.TabIndex = 13;
-			label14.Text = "You can make one by clicking that button just below!";
-			// 
-			// label16
-			// 
-			label16.AutoSize = true;
-			label16.FlatStyle = FlatStyle.System;
-			label16.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-			label16.Location = new Point(6, 49);
-			label16.Name = "label16";
-			label16.Size = new Size(81, 15);
-			label16.TabIndex = 14;
-			label16.Text = "It's that easy!";
-			// 
-			// label17
-			// 
-			label17.AutoSize = true;
-			label17.FlatStyle = FlatStyle.System;
-			label17.Location = new Point(6, 64);
-			label17.Name = "label17";
-			label17.Size = new Size(297, 15);
-			label17.TabIndex = 14;
-			label17.Text = "You can head to the install tab if that's more your thing";
-			// 
 			// Form1
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
@@ -1050,6 +1050,8 @@
 			groupBox1.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)CustomWidthBox).EndInit();
 			((System.ComponentModel.ISupportInitialize)CustomHeightBox).EndInit();
+			QuickInstallGroup.ResumeLayout(false);
+			QuickInstallGroup.PerformLayout();
 			groupBox2.ResumeLayout(false);
 			groupBox2.PerformLayout();
 			MountingPage.ResumeLayout(false);
@@ -1082,8 +1084,6 @@
 			groupBox8.ResumeLayout(false);
 			groupBox8.PerformLayout();
 			groupBox7.ResumeLayout(false);
-			QuickInstallGroup.ResumeLayout(false);
-			QuickInstallGroup.PerformLayout();
 			ResumeLayout(false);
 		}
 
