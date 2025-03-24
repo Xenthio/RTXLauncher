@@ -7,6 +7,9 @@
     <Compile Update="Controls\GameMountCheckbox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="Controls\LogReflectionControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Update="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

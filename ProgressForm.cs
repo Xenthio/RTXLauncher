@@ -1,7 +1,10 @@
-﻿namespace RTXLauncher
+﻿using RTXLauncher.Controls;
+
+namespace RTXLauncher
 {
 	public partial class ProgressForm : Form
 	{
+		private LogReflectionControl reflectionControl;
 		public ProgressForm()
 		{
 			InitializeComponent();
@@ -21,6 +24,23 @@
 					}
 				}
 			};
+			//CreateReflection()
+		}
+
+		private void CreateReflection()
+		{
+			// Create and set up the reflection control
+			reflectionControl = new LogReflectionControl();
+			reflectionControl.Location = new Point(logTextBox.Left, logTextBox.Bottom + 1);
+			reflectionControl.Size = new Size(logTextBox.Width, logTextBox.Height);
+			reflectionControl.Anchor = logTextBox.Anchor; // Match the anchoring
+			reflectionControl.SourceTextBox = logTextBox;
+
+			// Add the reflection control to the form
+			this.Controls.Add(reflectionControl);
+
+			// Make sure the reflection control is behind everything else
+			reflectionControl.SendToBack();
 		}
 
 		// Method to update the progress bar and log
@@ -40,17 +60,34 @@
 			{
 				statusLabel.Text = "Installation Complete!";
 				closeButton.Visible = true;
+				closeButton.Focus();
 				//statusLabel.ForeColor = Color.Green;
 			}
 
 			// Add message to log
 			logTextBox.AppendText($"{message}\n");
 			logTextBox.ScrollToCaret();
+			if (reflectionControl != null) reflectionControl.UpdateReflection(true);
 		}
+		protected override void OnResize(EventArgs e)
+		{
+			base.OnResize(e);
 
+			// Make sure the reflection control is still in the right position
+			if (reflectionControl != null && logTextBox != null)
+			{
+				reflectionControl.Location = new Point(logTextBox.Left, logTextBox.Bottom + 1);
+				reflectionControl.Size = new Size(logTextBox.Width, logTextBox.Height);
+				reflectionControl.UpdateReflection(true);
+			}
+		}
 		private void closeButton_Click(object sender, EventArgs e)
 		{
 			this.Close();
+		}
+
+		private void DisposeTimers(bool disposing)
+		{
 		}
 	}
 }

@@ -17,6 +17,7 @@
 			{
 				components.Dispose();
 			}
+			DisposeTimers(disposing);
 			base.Dispose(disposing);
 		}
 
@@ -40,7 +41,7 @@
 			progressBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			progressBar.Location = new Point(12, 32);
 			progressBar.Name = "progressBar";
-			progressBar.Size = new Size(560, 23);
+			progressBar.Size = new Size(510, 23);
 			progressBar.TabIndex = 0;
 			// 
 			// statusLabel
@@ -61,14 +62,14 @@
 			logTextBox.Location = new Point(12, 61);
 			logTextBox.Name = "logTextBox";
 			logTextBox.ReadOnly = true;
-			logTextBox.Size = new Size(560, 359);
+			logTextBox.Size = new Size(510, 328);
 			logTextBox.TabIndex = 2;
 			logTextBox.Text = "";
 			// 
 			// closeButton
 			// 
-			closeButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-			closeButton.Location = new Point(497, 426);
+			closeButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			closeButton.Location = new Point(447, 5);
 			closeButton.Name = "closeButton";
 			closeButton.Size = new Size(75, 23);
 			closeButton.TabIndex = 3;
@@ -81,7 +82,7 @@
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
 			AutoScaleMode = AutoScaleMode.Font;
-			ClientSize = new Size(584, 461);
+			ClientSize = new Size(534, 401);
 			Controls.Add(closeButton);
 			Controls.Add(logTextBox);
 			Controls.Add(statusLabel);
