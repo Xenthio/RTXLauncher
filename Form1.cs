@@ -9,7 +9,7 @@ namespace RTXLauncher
 		public Form1()
 		{
 			InitializeComponent();
-			InitInstallPage();
+			RefreshInstallInfo();
 		}
 
 		protected override void OnClosing(CancelEventArgs e)
@@ -143,6 +143,14 @@ namespace RTXLauncher
 		private void VanillaInstallPath_Click(object sender, EventArgs e)
 		{
 
+		}
+
+		private void tabControl1_Selected(object sender, TabControlEventArgs e)
+		{
+			if (e.TabPage?.Name == "InstallPage")
+			{
+				InitInstallPage();
+			}
 		}
 	}
 }

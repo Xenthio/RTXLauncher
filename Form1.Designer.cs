@@ -176,6 +176,7 @@
 			tabControl1.SelectedIndex = 0;
 			tabControl1.Size = new Size(352, 420);
 			tabControl1.TabIndex = 10;
+			tabControl1.Selected += tabControl1_Selected;
 			// 
 			// SettingsPage
 			// 
@@ -676,7 +677,7 @@
 			remixReleaseComboBox.Name = "remixReleaseComboBox";
 			remixReleaseComboBox.Size = new Size(139, 23);
 			remixReleaseComboBox.TabIndex = 2;
-			remixReleaseComboBox.Text = "Error";
+			remixReleaseComboBox.Text = "...";
 			// 
 			// remixSourceComboBox
 			// 
@@ -747,7 +748,7 @@
 			patchesSourceComboBox.Name = "patchesSourceComboBox";
 			patchesSourceComboBox.Size = new Size(139, 23);
 			patchesSourceComboBox.TabIndex = 2;
-			patchesSourceComboBox.Text = "Xenthio/gmod-rtx-fixes-2 (Any)";
+			patchesSourceComboBox.Text = "BlueAmulet/SourceRTXTweaks";
 			// 
 			// groupBox9
 			// 
@@ -795,7 +796,7 @@
 			packageVersionComboBox.Name = "packageVersionComboBox";
 			packageVersionComboBox.Size = new Size(139, 23);
 			packageVersionComboBox.TabIndex = 2;
-			packageVersionComboBox.Text = "Error";
+			packageVersionComboBox.Text = "...";
 			// 
 			// packageSourceComboBox
 			// 

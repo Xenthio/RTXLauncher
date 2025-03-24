@@ -15,6 +15,8 @@
 			// Disable the button to prevent multiple installation attempts
 			OneClickEasyInstallButton.Enabled = false;
 
+			await RefreshPackageInfo();
+
 			await PerformEasyInstallAsync();
 
 			// Re-enable the button

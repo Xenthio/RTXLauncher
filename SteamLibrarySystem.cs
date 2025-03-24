@@ -57,13 +57,13 @@ namespace RTXLauncher
 			{
 				try
 				{
-					System.Diagnostics.Debug.WriteLine($"Found libraryfolders.vdf: {libraryFoldersPath}");
+					//System.Diagnostics.Debug.WriteLine($"Found libraryfolders.vdf: {libraryFoldersPath}");
 					var libraryFolders = File.ReadAllLines(libraryFoldersPath);
 					foreach (var line in libraryFolders)
 					{
 						if (line.Contains("\"path\""))
 						{
-							System.Diagnostics.Debug.WriteLine($"Found line in libraryfolders.vdf: {line}");
+							//System.Diagnostics.Debug.WriteLine($"Found line in libraryfolders.vdf: {line}");
 							var cleanline = line.Replace("\"path\"", "");
 							// Extract path between quotes
 							var startQuote = cleanline.IndexOf('"');
@@ -82,7 +82,7 @@ namespace RTXLauncher
 								// Don't add duplicate paths
 								if (Directory.Exists(path) && !list.Contains(path))
 								{
-									System.Diagnostics.Debug.WriteLine($"Found path in libraryfolders.vdf: {path}");
+									//System.Diagnostics.Debug.WriteLine($"Found path in libraryfolders.vdf: {path}");
 									list.Add(path);
 								}
 							}

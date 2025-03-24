@@ -58,31 +58,42 @@ bin/win64/tbbmalloc.dll
 bin/win64/usd_ms.dll
 ";
 
+		private bool _hasInit = false;
+
 		private void InitInstallPage()
 		{
+			if (_hasInit)
+				return;
+			_hasInit = true;
+
 			RefreshInstallInfo();
-			this.Load += async (s, e) =>
-			{
-				// Initialize remix source combo box
-				PopulateRemixSourceComboBox();
-				remixSourceComboBox.SelectedIndexChanged += RemixSourceComboBox_SelectedIndexChanged;
+			//this.Load += async (s, e) =>
+			//{
+			RefreshPackageInfo();
+			//};
+		}
 
-				// Initial population of remix releases
-				await PopulateRemixReleasesComboBoxAsync();
+		private async Task RefreshPackageInfo()
+		{
+			// Initialize remix source combo box
+			PopulateRemixSourceComboBox();
+			remixSourceComboBox.SelectedIndexChanged += RemixSourceComboBox_SelectedIndexChanged;
 
-				// Initialize package source combo box
-				PopulatePackageSourceComboBox();
-				packageSourceComboBox.SelectedIndexChanged += PackageSourceComboBox_SelectedIndexChanged;
-				InstallFixesPackageButton.Click += InstallFixesPackageButton_ClickAsync;
+			// Initial population of remix releases
+			await PopulateRemixReleasesComboBoxAsync();
 
-				// Initially populate the version combo box based on the default source
-				await PopulateFixesVersionComboBoxAsync();
+			// Initialize package source combo box
+			PopulatePackageSourceComboBox();
+			packageSourceComboBox.SelectedIndexChanged += PackageSourceComboBox_SelectedIndexChanged;
+			InstallFixesPackageButton.Click += InstallFixesPackageButton_ClickAsync;
 
-				// Initialize patch sources combo box
-				PopulatePatchSourceComboBox();
-				patchesSourceComboBox.SelectedIndexChanged += PatchesSourceComboBox_SelectedIndexChanged;
-				ApplyPatchesButton.Click += ApplyPatchesButton_ClickAsync;
-			};
+			// Initially populate the version combo box based on the default source
+			await PopulateFixesVersionComboBoxAsync();
+
+			// Initialize patch sources combo box
+			PopulatePatchSourceComboBox();
+			patchesSourceComboBox.SelectedIndexChanged += PatchesSourceComboBox_SelectedIndexChanged;
+			ApplyPatchesButton.Click += ApplyPatchesButton_ClickAsync;
 		}
 
 		private async void CreateInstallButton_ClickAsync(object sender, EventArgs e)
