@@ -36,7 +36,7 @@ namespace RTXLauncher
 
 			launchOptions += $" -dxlevel {settings.DXLevel}";
 
-			launchOptions += $" +mat_disable_d3d9ex 1";
+			launchOptions += $" +mat_disable_d3d9ex 1 -nod3d9ex";
 
 			launchOptions += $" -windowed -noborder";
 

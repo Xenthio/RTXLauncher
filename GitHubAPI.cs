@@ -97,8 +97,8 @@ namespace RTXLauncher
 			"RTXLauncher",
 			"GitHubCache");
 
-		// Cache releases for 2 minutes by default
-		private static readonly TimeSpan DefaultCacheExpiration = TimeSpan.FromMinutes(2);
+		// Cache releases for 8 minutes by default
+		private static readonly TimeSpan DefaultCacheExpiration = TimeSpan.FromMinutes(8);
 
 		// Cache for Personal Access Token (if provided)
 		private static string _personalAccessToken = null;
