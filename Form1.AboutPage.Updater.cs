@@ -617,20 +617,36 @@ namespace RTXLauncher
 					string assetToDownload = null;
 					GitHubAsset selectedAsset = null;
 
-					// Look for .zip files first
-					var zipAsset = _latestRelease.Assets.FirstOrDefault(a =>
-						a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+					// Look for .exe files first (since you're uploading an exe as an asset)
+					var exeAsset = _latestRelease.Assets.FirstOrDefault(a =>
+						a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
 						a.Name.Contains("RTXLauncher", StringComparison.OrdinalIgnoreCase));
 
-					if (zipAsset != null)
+					if (exeAsset != null)
 					{
-						selectedAsset = zipAsset;
-						assetToDownload = zipAsset.BrowserDownloadUrl;
+						selectedAsset = exeAsset;
+						assetToDownload = exeAsset.BrowserDownloadUrl;
+						progressForm.UpdateProgress($"Found executable asset: {exeAsset.Name}", 5);
 					}
 					else
 					{
-						// If no zip found, use the zipball URL
-						assetToDownload = _latestRelease.ZipballUrl;
+						// Fall back to .zip files if no exe
+						var zipAsset = _latestRelease.Assets.FirstOrDefault(a =>
+							a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+							a.Name.Contains("RTXLauncher", StringComparison.OrdinalIgnoreCase));
+
+						if (zipAsset != null)
+						{
+							selectedAsset = zipAsset;
+							assetToDownload = zipAsset.BrowserDownloadUrl;
+							progressForm.UpdateProgress($"Found zip asset: {zipAsset.Name}", 5);
+						}
+						else
+						{
+							// If no exe or zip found, use the zipball URL as last resort
+							assetToDownload = _latestRelease.ZipballUrl;
+							progressForm.UpdateProgress("Using default GitHub archive", 5);
+						}
 					}
 
 					if (string.IsNullOrEmpty(assetToDownload))
@@ -642,25 +658,51 @@ namespace RTXLauncher
 					}
 
 					// Prepare download paths
-					string zipPath = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{_latestRelease.TagName.Replace(".", "_")}.zip");
-					string extractPath = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{_latestRelease.TagName.Replace(".", "_")}");
+					string downloadFolder = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{_latestRelease.TagName.Replace(".", "_")}");
+					string extractPath = downloadFolder;
+
+					// File extension depends on what we're downloading
+					bool isExe = selectedAsset != null && selectedAsset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+					string downloadPath;
+
+					if (isExe)
+					{
+						downloadPath = Path.Combine(_updateTempPath, selectedAsset.Name);
+					}
+					else
+					{
+						downloadPath = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{_latestRelease.TagName.Replace(".", "_")}.zip");
+					}
 
 					// Clean up any existing files
-					if (File.Exists(zipPath))
-						File.Delete(zipPath);
-					if (Directory.Exists(extractPath))
-						Directory.Delete(extractPath, true);
+					try
+					{
+						if (File.Exists(downloadPath))
+							File.Delete(downloadPath);
 
-					Directory.CreateDirectory(extractPath);
+						if (Directory.Exists(extractPath))
+							Directory.Delete(extractPath, true);
+
+						Directory.CreateDirectory(extractPath);
+						progressForm.UpdateProgress("Cleaned up previous update files", 10);
+					}
+					catch (Exception ex)
+					{
+						progressForm.UpdateProgress($"Warning: Cleanup failed: {ex.Message}", 10);
+						// Continue anyway - we'll try to overwrite existing files
+					}
 
 					// Calculate total size for progress calculation
 					long totalSize = selectedAsset?.Size ?? 0;
 					if (totalSize == 0) totalSize = 1000000; // Default size estimate if unknown
 
 					// Download the update file with progress reporting
+					progressForm.UpdateProgress($"Downloading from: {assetToDownload}", 15);
+
 					using (HttpClient client = new HttpClient())
 					{
 						client.DefaultRequestHeaders.Add("User-Agent", "RTXLauncherUpdater");
+						client.Timeout = TimeSpan.FromMinutes(5); // Set a longer timeout
 
 						using (var response = await client.GetAsync(assetToDownload, HttpCompletionOption.ResponseHeadersRead))
 						{
@@ -670,9 +712,9 @@ namespace RTXLauncher
 							if (response.Content.Headers.ContentLength.HasValue)
 								totalSize = response.Content.Headers.ContentLength.Value;
 
-							progressForm.UpdateProgress("Downloading update...", 0);
+							progressForm.UpdateProgress($"Downloading {totalSize / 1024} KB...", 20);
 
-							using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+							using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
 							using (var downloadStream = await response.Content.ReadAsStreamAsync())
 							{
 								byte[] buffer = new byte[8192];
@@ -685,53 +727,111 @@ namespace RTXLauncher
 
 									totalBytesRead += bytesRead;
 									int progressPercentage = (int)((totalBytesRead * 100) / totalSize);
+									int overallProgress = 20 + (int)(progressPercentage * 0.3); // 20% to 50% overall progress
 
-									progressForm.UpdateProgress($"Downloading update... {progressPercentage}%", progressPercentage);
+									progressForm.UpdateProgress($"Downloading... {progressPercentage}%", overallProgress);
 								}
 							}
 						}
 					}
 
-					// Extract the update
-					progressForm.UpdateProgress("Extracting update...", 50);
-					ZipFile.ExtractToDirectory(zipPath, extractPath);
+					// Handle the downloaded file
+					string sourceDir;
 
-					// Find the extracted directory (GitHub zipballs have a folder inside with the repo name)
-					string baseExtractPath = extractPath;
-					var directories = Directory.GetDirectories(extractPath);
-					if (directories.Length > 0)
+					if (isExe)
 					{
-						baseExtractPath = directories[0];
+						progressForm.UpdateProgress("Downloaded executable directly, no extraction needed", 55);
+						// For direct exe downloads, just copy it to the extraction folder
+						sourceDir = extractPath;
+						File.Copy(downloadPath, Path.Combine(extractPath, Path.GetFileName(downloadPath)), true);
+					}
+					else
+					{
+						// For zip files, extract them
+						progressForm.UpdateProgress("Extracting update...", 55);
+
+						try
+						{
+							ZipFile.ExtractToDirectory(downloadPath, extractPath);
+							progressForm.UpdateProgress("Extraction completed", 65);
+						}
+						catch (Exception ex)
+						{
+							progressForm.UpdateProgress($"Extraction error: {ex.Message}", 55);
+							throw new Exception($"Failed to extract update: {ex.Message}", ex);
+						}
+
+						// Find the extracted directory (GitHub zipballs have a folder inside with the repo name)
+						sourceDir = extractPath;
+						var directories = Directory.GetDirectories(extractPath);
+						if (directories.Length > 0)
+						{
+							sourceDir = directories[0];
+							progressForm.UpdateProgress($"Found extracted directory: {Path.GetFileName(sourceDir)}", 70);
+						}
 					}
 
 					// Create the updater batch script
-					progressForm.UpdateProgress("Preparing update installer...", 90);
-					string currentExePath = Assembly.GetExecutingAssembly().Location;
-					string currentDirectory = Path.GetDirectoryName(currentExePath);
-
-					// Create a batch file that waits for the current process to exit,
-					// copies the new files, and then restarts the application
-					string updaterBatchPath = Path.Combine(_updateTempPath, "RTXLauncherUpdater.bat");
-					await CreateUpdaterBatchFile(updaterBatchPath, baseExtractPath, currentDirectory, currentExePath);
-
-					progressForm.UpdateProgress("Installation prepared. Restarting launcher...", 100);
-
-					// Run the batch file and exit the application
-					Process.Start(new ProcessStartInfo
+					progressForm.UpdateProgress("Preparing update installer...", 80);
+					// Use AppContext.BaseDirectory for more reliable path resolution
+					string currentExePath = Process.GetCurrentProcess().MainModule?.FileName;
+					if (string.IsNullOrEmpty(currentExePath))
 					{
-						FileName = updaterBatchPath,
-						CreateNoWindow = true,
-						WindowStyle = ProcessWindowStyle.Hidden
-					});
+						// Fallback if MainModule.FileName fails
+						currentExePath = Path.Combine(AppContext.BaseDirectory, AppDomain.CurrentDomain.FriendlyName);
+					}
 
-					// Exit the application to let the updater do its work
-					Application.Exit();
+					string currentDirectory = AppContext.BaseDirectory;
+
+					// Additional safety checks
+					if (string.IsNullOrEmpty(currentDirectory))
+					{
+						currentDirectory = Path.GetDirectoryName(currentExePath);
+						if (string.IsNullOrEmpty(currentDirectory))
+						{
+							throw new Exception("Could not determine application directory");
+						}
+					}
+
+					// Validate paths before proceeding
+					if (string.IsNullOrEmpty(sourceDir))
+					{
+						throw new Exception("Source directory is empty or invalid");
+					}
+
+					if (string.IsNullOrEmpty(currentExePath))
+					{
+						throw new Exception("Could not determine current executable path");
+					}
+
+					if (string.IsNullOrEmpty(currentDirectory))
+					{
+						throw new Exception("Could not determine current directory");
+					}
+
+					// Log debug information
+					Debug.WriteLine($"Current executable: {currentExePath}");
+					Debug.WriteLine($"Current directory: {currentDirectory}");
+					Debug.WriteLine($"Source directory: {sourceDir}");
+					Debug.WriteLine($"Update temp path: {_updateTempPath}");
+
+					// Create updater batch file
+					string updaterBatchPath = Path.Combine(_updateTempPath, "RTXLauncherUpdater.bat");
+					await CreateUpdaterBatchFile(updaterBatchPath, sourceDir, currentDirectory, currentExePath);
+
+					// Launch the updater
+					LaunchUpdaterAndExit(updaterBatchPath);
 				}
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show($"Error installing update: {ex.Message}",
-					"Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				string message = $"Error installing update: {ex.Message}";
+				if (ex.InnerException != null)
+				{
+					message += $"\n\nDetails: {ex.InnerException.Message}";
+				}
+
+				MessageBox.Show(message, "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
 				ReleaseNotesRichTextBox.Text = $"Update installation failed: {ex.Message}\r\n\r\n" +
 					"Please try again later or download the latest version manually from GitHub.";
@@ -740,37 +840,186 @@ namespace RTXLauncher
 				InstallLauncherUpdateButton.Enabled = _updateAvailable;
 			}
 		}
+		private void LaunchUpdaterAndExit(string updaterBatchPath)
+		{
+			try
+			{
+				// Create process info
+				ProcessStartInfo psi = new ProcessStartInfo
+				{
+					FileName = "cmd.exe",
+					Arguments = $"/C \"{updaterBatchPath}\"",
+					UseShellExecute = true,
+					CreateNoWindow = false,
+					WorkingDirectory = Path.GetDirectoryName(updaterBatchPath) ?? string.Empty
+				};
+
+				// Start the process
+				Process.Start(psi);
+
+				// Force immediate exit of the application
+				Environment.Exit(0);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Failed to start updater: {ex.Message}", "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
 
 		private async Task CreateUpdaterBatchFile(string batchFilePath, string sourceDir, string targetDir, string exePath)
 		{
-			// Script will:
-			// 1. Wait for the launcher process to exit
-			// 2. Copy all new files
-			// 3. Restart the launcher
+			// Validate all path inputs to prevent null reference exceptions
+			if (string.IsNullOrEmpty(batchFilePath))
+				throw new ArgumentNullException(nameof(batchFilePath), "Batch file path cannot be null or empty");
 
+			if (string.IsNullOrEmpty(sourceDir))
+				throw new ArgumentNullException(nameof(sourceDir), "Source directory path cannot be null or empty");
+
+			if (string.IsNullOrEmpty(targetDir))
+				throw new ArgumentNullException(nameof(targetDir), "Target directory path cannot be null or empty");
+
+			if (string.IsNullOrEmpty(exePath))
+				throw new ArgumentNullException(nameof(exePath), "Executable path cannot be null or empty");
+
+			// First ensure any existing batch file is deleted
+			try
+			{
+				if (File.Exists(batchFilePath))
+				{
+					File.Delete(batchFilePath);
+				}
+			}
+			catch
+			{
+				// Generate a unique filename instead if delete fails
+				string batchDir = Path.GetDirectoryName(batchFilePath);
+				if (string.IsNullOrEmpty(batchDir))
+					batchDir = Path.GetTempPath(); // Fallback to temp directory
+
+				batchFilePath = Path.Combine(batchDir, $"RTXLauncherUpdater_{Guid.NewGuid():N}.bat");
+			}
+
+			// Get file name of the executable
 			string exeName = Path.GetFileName(exePath);
+			if (string.IsNullOrEmpty(exeName))
+				exeName = "RTXLauncher.exe"; // Default fallback name
 
-			string batchScript =
-				"@echo off\r\n" +
-				"echo Updating RTX Launcher...\r\n" +
-				"\r\n" +
-				":: Wait for original process to exit\r\n" +
-				$"timeout /t 2 /nobreak > nul\r\n" +
-				"\r\n" +
-				":: Copy files\r\n" +
-				$"xcopy \"{sourceDir}\\*\" \"{targetDir}\\\" /Y /E /I /Q\r\n" +
-				"\r\n" +
-				":: Launch the application\r\n" +
-				$"start \"\" \"{targetDir}\\{exeName}\"\r\n" +
-				"\r\n" +
-				":: Clean up the temporary files\r\n" +
-				$"timeout /t 2 /nobreak > nul\r\n" +
-				$"rmdir \"{Path.GetDirectoryName(sourceDir)}\" /S /Q\r\n" +
-				"\r\n" +
-				":: Delete this batch file\r\n" +
-				$"del \"%~f0\"\r\n";
+			// Create full path to target executable
+			string fullTargetExePath = Path.Combine(targetDir, exeName);
 
-			await File.WriteAllTextAsync(batchFilePath, batchScript);
+			// Check if the executable exists in source directory
+			string sourceExePath = Path.Combine(sourceDir, exeName);
+			bool exeExistsInSource = File.Exists(sourceExePath);
+
+			// Log debugging information
+			Debug.WriteLine($"Batch file path: {batchFilePath}");
+			Debug.WriteLine($"Source dir: {sourceDir}");
+			Debug.WriteLine($"Target dir: {targetDir}");
+			Debug.WriteLine($"Exe path: {exePath}");
+			Debug.WriteLine($"Exe name: {exeName}");
+			Debug.WriteLine($"Full target exe: {fullTargetExePath}");
+			Debug.WriteLine($"Source exe exists: {exeExistsInSource}");
+
+			// Properly escape paths with quotes to handle spaces
+			string batchScript = @$"
+@echo off
+setlocal enabledelayedexpansion
+
+echo RTX Launcher Updater
+echo ==================
+
+:: Print debug info
+echo Source Directory: ""{sourceDir}""
+echo Target Directory: ""{targetDir}""
+echo Executable: ""{exeName}""
+
+echo Waiting for application to close...
+
+:: Wait a moment for process to exit completely
+timeout /t 3 /nobreak > nul
+
+echo Preparing update...
+
+:: Create target directory if it doesn't exist
+if not exist ""{targetDir}"" mkdir ""{targetDir}""
+
+:: Check if source executable exists
+if not exist ""{sourceExePath}"" (
+    echo WARNING: Source executable not found!
+    dir ""{sourceDir}""
+)
+
+:: Use direct copy for the executable
+echo Copying executable...
+copy ""{sourceExePath}"" ""{fullTargetExePath}"" /Y
+if !ERRORLEVEL! neq 0 (
+    echo Failed to copy executable: !ERRORLEVEL!
+)
+
+:: Then copy all other files
+echo Copying remaining files...
+xcopy ""{sourceDir}\*.*"" ""{targetDir}\"" /E /Y /I /Q
+if !ERRORLEVEL! neq 0 (
+    echo Warning: Some files may not have copied correctly
+)
+
+:: Check if the executable exists in the target directory
+if exist ""{fullTargetExePath}"" (
+    echo Executable successfully copied
+) else (
+    echo ERROR: Executable not found in target directory!
+    dir ""{targetDir}""
+)
+
+:: Start the application
+echo Starting updated application...
+cd /d ""{targetDir}""
+start """" ""{fullTargetExePath}""
+
+:: Clean up temporary files
+echo Cleaning up...
+timeout /t 2 /nobreak > nul
+rmdir /S /Q ""{Path.GetDirectoryName(sourceDir)}""
+
+:: Self-delete with a short delay
+timeout /t 2 /nobreak > nul
+";
+
+#if (DEBUG)
+			// In debug mode, pause at the end
+			batchScript += "echo Update complete.\npause\n";
+#else
+    // In release mode, self-delete
+    batchScript += @"
+:: Self-delete this batch file
+(goto) 2>nul & del ""%~f0""
+";
+#endif
+
+			try
+			{
+				// Create directory if it doesn't exist
+				string batchDir = Path.GetDirectoryName(batchFilePath);
+				if (!string.IsNullOrEmpty(batchDir) && !Directory.Exists(batchDir))
+				{
+					Directory.CreateDirectory(batchDir);
+				}
+
+				// Write the batch file with ASCII encoding
+				File.WriteAllText(batchFilePath, batchScript, System.Text.Encoding.ASCII);
+
+				// Verify the file was created successfully
+				if (!File.Exists(batchFilePath))
+				{
+					throw new Exception("Failed to create updater batch file!");
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error creating batch file: {ex.Message}", ex);
+			}
+
+			await Task.CompletedTask;
 		}
 
 		private int CompareVersions(string version1, string version2)
