@@ -34,8 +34,15 @@
 			var remixModPath = Path.Combine(installPath, "rtx-remix", "mods", remixModFolder);
 			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
 
+			// create the mount folder
+			if (!Directory.Exists(Path.Combine(gmodPath, "rtx-remix", "mods")))
+			{
+				Directory.CreateDirectory(Path.Combine(gmodPath, "rtx-remix", "mods"));
+			}
+
 			// link the remix mod
 			// check if it already exists
+
 			if (!Directory.Exists(remixModMountPath))
 			{
 				CreateSymbolicLink(remixModMountPath, remixModPath);
