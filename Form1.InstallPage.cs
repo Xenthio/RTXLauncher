@@ -4,6 +4,12 @@ namespace RTXLauncher
 {
 	partial class Form1
 	{
+		private Dictionary<string, (string Owner, string Repo)> _remixSources = new Dictionary<string, (string, string)>
+		{
+			{ "(OFFICIAL) NVIDIAGameWorks/rtx-remix", ("NVIDIAGameWorks", "rtx-remix") },
+			{ "sambow23/dxvk-remix-gmod", ("sambow23", "dxvk-remix-gmod") },
+		};
+
 		private Dictionary<string, (string Owner, string Repo, string InstallType)> _packageSources = new Dictionary<string, (string, string, string)>
 		{
 			{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("Xenthio", "gmod-rtx-fixes-2", "Any") },
@@ -57,6 +63,11 @@ bin/win64/usd_ms.dll
 			RefreshInstallInfo();
 			this.Load += async (s, e) =>
 			{
+				// Initialize remix source combo box
+				PopulateRemixSourceComboBox();
+				remixSourceComboBox.SelectedIndexChanged += RemixSourceComboBox_SelectedIndexChanged;
+
+				// Initial population of remix releases
 				await PopulateRemixReleasesComboBoxAsync();
 
 				// Initialize package source combo box
@@ -114,6 +125,37 @@ bin/win64/usd_ms.dll
 				UpdateInstallButton.Enabled = true;
 			}
 		}
+		private async void RemixSourceComboBox_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (remixSourceComboBox.SelectedItem == null)
+				return;
+
+			// Update the releases based on selected repository
+			await PopulateRemixReleasesComboBoxAsync();
+		}
+
+		private void PopulateRemixSourceComboBox()
+		{
+			remixSourceComboBox.Items.Clear();
+			foreach (var source in _remixSources.Keys)
+			{
+				remixSourceComboBox.Items.Add(source);
+			}
+
+			// Select the default NVIDIA source
+			string defaultSource = "(OFFICIAL) NVIDIAGameWorks/rtx-remix";
+			int defaultIndex = remixSourceComboBox.Items.IndexOf(defaultSource);
+
+			if (defaultIndex >= 0)
+			{
+				remixSourceComboBox.SelectedIndex = defaultIndex;
+			}
+			else if (remixSourceComboBox.Items.Count > 0)
+			{
+				// Fallback if the default source is not found
+				remixSourceComboBox.SelectedIndex = 0;
+			}
+		}
 
 		private async Task PopulateRemixReleasesComboBoxAsync()
 		{
@@ -125,8 +167,16 @@ bin/win64/usd_ms.dll
 
 			try
 			{
-				// Fetch releases
-				List<GitHubRelease> releases = await GitHubAPI.FetchReleasesAsync("NVIDIAGameWorks", "rtx-remix");
+				// Get selected source
+				string selectedSource = remixSourceComboBox.SelectedItem?.ToString();
+				if (selectedSource == null || !_remixSources.TryGetValue(selectedSource, out var sourceInfo))
+				{
+					// Use default if nothing selected
+					sourceInfo = ("NVIDIAGameWorks", "rtx-remix");
+				}
+
+				// Fetch releases from the selected repository
+				List<GitHubRelease> releases = await GitHubAPI.FetchReleasesAsync(sourceInfo.Owner, sourceInfo.Repo);
 
 				// Clear the ComboBox
 				remixReleaseComboBox.Items.Clear();
@@ -161,6 +211,57 @@ bin/win64/usd_ms.dll
 			remixReleaseComboBox.Enabled = true;
 		}
 
+		private async void InstallRTXRemixButton_Click(object sender, EventArgs e)
+		{
+			if (!(remixReleaseComboBox.SelectedItem is GitHubRelease selectedRelease))
+			{
+				MessageBox.Show("Please select a release to install.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			// Disable the button during installation
+			InstallRTXRemixButton.Enabled = false;
+
+			// Create and show the progress form
+			var progressForm = new ProgressForm();
+			progressForm.Show();
+			progressForm.UpdateProgress("Preparing RTX Remix installation...", 0);
+
+			try
+			{
+				// Get the selected source
+				string selectedSource = remixSourceComboBox.SelectedItem?.ToString();
+				if (string.IsNullOrEmpty(selectedSource) || !_remixSources.TryGetValue(selectedSource, out var sourceInfo))
+				{
+					// Use default if nothing selected
+					sourceInfo = ("NVIDIAGameWorks", "rtx-remix");
+				}
+
+				// Use the static class method to install RTX Remix
+				await RTXRemix.Install(
+					selectedRelease,
+					sourceInfo.Owner,
+					sourceInfo.Repo,
+					GarrysModInstallSystem.GetInstallType(GarrysModInstallSystem.GetThisInstallFolder()),
+					Application.StartupPath,
+					progressForm.UpdateProgress
+				);
+
+				progressForm.UpdateProgress("RTX Remix installed successfully! You can close this window.", 100);
+				MessageBox.Show("RTX Remix has been installed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+			catch (Exception ex)
+			{
+				progressForm.UpdateProgress($"Error: {ex.Message}", 100);
+				MessageBox.Show($"Error installing RTX Remix: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+			finally
+			{
+				// Re-enable the button
+				InstallRTXRemixButton.Enabled = true;
+			}
+		}
+
 		private void RefreshInstallInfo()
 		{
 			// Refresh the install info
@@ -171,7 +272,6 @@ bin/win64/usd_ms.dll
 			VanillaInstallPath.Text = vanillapath;
 
 			if (vanillatype == "unknown") VanillaInstallType.Text = "Not installed / not found";
-
 
 			var thispath = GarrysModInstallSystem.GetThisInstallFolder();
 			var thistype = GarrysModInstallSystem.GetInstallType(thispath);
@@ -189,6 +289,9 @@ bin/win64/usd_ms.dll
 				CreateInstallButton.Enabled = false;
 				UpdateInstallButton.Enabled = true;
 			}
+
+			// Update visibility of the QuickInstallGroup
+			UpdateQuickInstallGroupVisibility();
 		}
 
 		private void PopulatePackageSourceComboBox()

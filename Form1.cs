@@ -144,37 +144,5 @@ namespace RTXLauncher
 		{
 
 		}
-
-		private async void InstallRTXRemixButton_Click(object sender, EventArgs e)
-		{
-			if (!(remixReleaseComboBox.SelectedItem is GitHubRelease selectedRelease))
-			{
-				MessageBox.Show("Please select a release to install.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				return;
-			}
-
-			// Create and show the progress form
-			using (var progressForm = new ProgressForm())
-			{
-				progressForm.Show();
-
-				try
-				{
-					// Use the static class method to install RTX Remix
-					await RTXRemix.Install(
-						selectedRelease,
-						GarrysModInstallSystem.GetInstallType(GarrysModInstallSystem.GetThisInstallFolder()),
-						Application.StartupPath,
-						progressForm.UpdateProgress
-					);
-
-					MessageBox.Show("RTX Remix has been installed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show($"Error installing RTX Remix: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-				}
-			}
-		}
 	}
 }

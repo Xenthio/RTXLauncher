@@ -125,7 +125,7 @@
 		// we create a blank RTXGMOD/garrysmod/addons folder.
 		// We symlink VanillaGMOD/garrysmod/saves entirely to the new install folder.
 		// We symlink VanillaGMOD/garrysmod/settings entirely to the new install folder.
-		public static async Task<bool> CreateRTXInstallAsync()
+		public static async Task<bool> CreateRTXInstallAsync(bool createform = true)
 		{
 			bool success = false;
 			string resultMessage = "";
@@ -138,13 +138,17 @@
 				return false;
 			}
 
-			// Create and show the progress form
-			var progressForm = new ProgressForm();
-			// Subscribe to progress updates
-			OnProgressUpdate += progressForm.UpdateProgress;
+			ProgressForm progressForm = null;
+			if (createform)
+			{
+				// Create and show the progress form
+				progressForm = new ProgressForm();
+				// Subscribe to progress updates
+				OnProgressUpdate += progressForm.UpdateProgress;
 
-			// Show the form
-			progressForm.Show();
+				// Show the form
+				progressForm.Show();
+			}
 
 			// Run the installation in a background task
 			await Task.Run(() =>
@@ -165,8 +169,11 @@
 				}
 			});
 
-			// Unsubscribe from events
-			OnProgressUpdate -= progressForm.UpdateProgress;
+			if (createform)
+			{
+				// Unsubscribe from events
+				OnProgressUpdate -= progressForm.UpdateProgress;
+			}
 
 			// Trigger the completed event
 			OnInstallationCompleted?.Invoke(success, resultMessage);

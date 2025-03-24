@@ -65,7 +65,9 @@
 			groupBox13 = new GroupBox();
 			groupBox12 = new GroupBox();
 			label9 = new Label();
+			label11 = new Label();
 			remixReleaseComboBox = new ComboBox();
+			remixSourceComboBox = new ComboBox();
 			InstallRTXRemixButton = new Button();
 			groupBox11 = new GroupBox();
 			ApplyPatchesButton = new Button();
@@ -96,6 +98,12 @@
 			button2 = new Button();
 			progressBar1 = new ProgressBar();
 			button1 = new Button();
+			OneClickEasyInstallButton = new Button();
+			label13 = new Label();
+			QuickInstallGroup = new GroupBox();
+			label14 = new Label();
+			label16 = new Label();
+			label17 = new Label();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -123,6 +131,7 @@
 			AboutPage.SuspendLayout();
 			groupBox8.SuspendLayout();
 			groupBox7.SuspendLayout();
+			QuickInstallGroup.SuspendLayout();
 			SuspendLayout();
 			// 
 			// settingsDataBindingSource
@@ -172,6 +181,7 @@
 			// 
 			SettingsPage.BackColor = SystemColors.Window;
 			SettingsPage.Controls.Add(groupBox1);
+			SettingsPage.Controls.Add(QuickInstallGroup);
 			SettingsPage.Controls.Add(groupBox2);
 			SettingsPage.Location = new Point(4, 24);
 			SettingsPage.Name = "SettingsPage";
@@ -552,12 +562,14 @@
 			// 
 			groupBox12.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			groupBox12.Controls.Add(label9);
+			groupBox12.Controls.Add(label11);
 			groupBox12.Controls.Add(remixReleaseComboBox);
+			groupBox12.Controls.Add(remixSourceComboBox);
 			groupBox12.Controls.Add(InstallRTXRemixButton);
 			groupBox12.FlatStyle = FlatStyle.System;
 			groupBox12.Location = new Point(6, 81);
 			groupBox12.Name = "groupBox12";
-			groupBox12.Size = new Size(320, 46);
+			groupBox12.Size = new Size(320, 83);
 			groupBox12.TabIndex = 15;
 			groupBox12.TabStop = false;
 			groupBox12.Text = "Nvidia RTX Remix";
@@ -566,11 +578,21 @@
 			// 
 			label9.AutoSize = true;
 			label9.FlatStyle = FlatStyle.System;
-			label9.Location = new Point(6, 19);
+			label9.Location = new Point(6, 54);
 			label9.Name = "label9";
 			label9.Size = new Size(45, 15);
 			label9.TabIndex = 4;
 			label9.Text = "Version";
+			// 
+			// label11
+			// 
+			label11.AutoSize = true;
+			label11.FlatStyle = FlatStyle.System;
+			label11.Location = new Point(6, 25);
+			label11.Name = "label11";
+			label11.Size = new Size(43, 15);
+			label11.TabIndex = 4;
+			label11.Text = "Source";
 			// 
 			// remixReleaseComboBox
 			// 
@@ -578,17 +600,29 @@
 			remixReleaseComboBox.FlatStyle = FlatStyle.System;
 			remixReleaseComboBox.FormattingEnabled = true;
 			remixReleaseComboBox.Items.AddRange(new object[] { "Error" });
-			remixReleaseComboBox.Location = new Point(63, 16);
+			remixReleaseComboBox.Location = new Point(63, 51);
 			remixReleaseComboBox.Name = "remixReleaseComboBox";
 			remixReleaseComboBox.Size = new Size(139, 23);
 			remixReleaseComboBox.TabIndex = 2;
 			remixReleaseComboBox.Text = "Error";
 			// 
+			// remixSourceComboBox
+			// 
+			remixSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			remixSourceComboBox.FlatStyle = FlatStyle.System;
+			remixSourceComboBox.FormattingEnabled = true;
+			remixSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			remixSourceComboBox.Location = new Point(63, 22);
+			remixSourceComboBox.Name = "remixSourceComboBox";
+			remixSourceComboBox.Size = new Size(251, 23);
+			remixSourceComboBox.TabIndex = 2;
+			remixSourceComboBox.Text = "(OFFICIAL) NVIDIAGameWorks/rtx-remix";
+			// 
 			// InstallRTXRemixButton
 			// 
 			InstallRTXRemixButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			InstallRTXRemixButton.FlatStyle = FlatStyle.System;
-			InstallRTXRemixButton.Location = new Point(208, 15);
+			InstallRTXRemixButton.Location = new Point(208, 50);
 			InstallRTXRemixButton.Name = "InstallRTXRemixButton";
 			InstallRTXRemixButton.Size = new Size(106, 23);
 			InstallRTXRemixButton.TabIndex = 13;
@@ -603,7 +637,7 @@
 			groupBox11.Controls.Add(label8);
 			groupBox11.Controls.Add(patchesSourceComboBox);
 			groupBox11.FlatStyle = FlatStyle.System;
-			groupBox11.Location = new Point(6, 133);
+			groupBox11.Location = new Point(6, 170);
 			groupBox11.Name = "groupBox11";
 			groupBox11.Size = new Size(320, 53);
 			groupBox11.TabIndex = 15;
@@ -652,7 +686,7 @@
 			groupBox9.Controls.Add(packageSourceComboBox);
 			groupBox9.Controls.Add(InstallFixesPackageButton);
 			groupBox9.FlatStyle = FlatStyle.System;
-			groupBox9.Location = new Point(6, 192);
+			groupBox9.Location = new Point(6, 229);
 			groupBox9.Name = "groupBox9";
 			groupBox9.Size = new Size(320, 83);
 			groupBox9.TabIndex = 15;
@@ -924,6 +958,78 @@
 			button1.Text = "Check for Updates";
 			button1.UseVisualStyleBackColor = true;
 			// 
+			// OneClickEasyInstallButton
+			// 
+			OneClickEasyInstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+			OneClickEasyInstallButton.FlatStyle = FlatStyle.System;
+			OneClickEasyInstallButton.Location = new Point(6, 84);
+			OneClickEasyInstallButton.Name = "OneClickEasyInstallButton";
+			OneClickEasyInstallButton.Size = new Size(320, 23);
+			OneClickEasyInstallButton.TabIndex = 11;
+			OneClickEasyInstallButton.Text = "Run Quick Install";
+			OneClickEasyInstallButton.UseVisualStyleBackColor = true;
+			OneClickEasyInstallButton.Click += OneClickEasyInstallButton_Click;
+			// 
+			// label13
+			// 
+			label13.AutoSize = true;
+			label13.FlatStyle = FlatStyle.System;
+			label13.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+			label13.Location = new Point(6, 19);
+			label13.Name = "label13";
+			label13.Size = new Size(261, 15);
+			label13.TabIndex = 12;
+			label13.Text = "Hey! There's no Garry's Mod RTX Install here! ";
+			// 
+			// QuickInstallGroup
+			// 
+			QuickInstallGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			QuickInstallGroup.Controls.Add(label17);
+			QuickInstallGroup.Controls.Add(label16);
+			QuickInstallGroup.Controls.Add(label14);
+			QuickInstallGroup.Controls.Add(OneClickEasyInstallButton);
+			QuickInstallGroup.Controls.Add(label13);
+			QuickInstallGroup.Location = new Point(6, 236);
+			QuickInstallGroup.Name = "QuickInstallGroup";
+			QuickInstallGroup.Size = new Size(332, 113);
+			QuickInstallGroup.TabIndex = 7;
+			QuickInstallGroup.TabStop = false;
+			QuickInstallGroup.Text = "Quick Installer";
+			QuickInstallGroup.Visible = false;
+			QuickInstallGroup.Enter += groupBox2_Enter;
+			// 
+			// label14
+			// 
+			label14.AutoSize = true;
+			label14.FlatStyle = FlatStyle.System;
+			label14.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+			label14.Location = new Point(6, 34);
+			label14.Name = "label14";
+			label14.Size = new Size(299, 15);
+			label14.TabIndex = 13;
+			label14.Text = "You can make one by clicking that button just below!";
+			// 
+			// label16
+			// 
+			label16.AutoSize = true;
+			label16.FlatStyle = FlatStyle.System;
+			label16.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+			label16.Location = new Point(6, 49);
+			label16.Name = "label16";
+			label16.Size = new Size(81, 15);
+			label16.TabIndex = 14;
+			label16.Text = "It's that easy!";
+			// 
+			// label17
+			// 
+			label17.AutoSize = true;
+			label17.FlatStyle = FlatStyle.System;
+			label17.Location = new Point(6, 64);
+			label17.Name = "label17";
+			label17.Size = new Size(297, 15);
+			label17.TabIndex = 14;
+			label17.Text = "You can head to the install tab if that's more your thing";
+			// 
 			// Form1
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
@@ -976,6 +1082,8 @@
 			groupBox8.ResumeLayout(false);
 			groupBox8.PerformLayout();
 			groupBox7.ResumeLayout(false);
+			QuickInstallGroup.ResumeLayout(false);
+			QuickInstallGroup.PerformLayout();
 			ResumeLayout(false);
 		}
 
@@ -1046,5 +1154,13 @@
 		private ComboBox packageVersionComboBox;
 		private Label label8;
 		private ComboBox patchesSourceComboBox;
+		private Label label11;
+		private ComboBox remixSourceComboBox;
+		private Button OneClickEasyInstallButton;
+		private GroupBox QuickInstallGroup;
+		private Label label14;
+		private Label label13;
+		private Label label17;
+		private Label label16;
 	}
 }

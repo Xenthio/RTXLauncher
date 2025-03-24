@@ -8,12 +8,16 @@ namespace RTXLauncher
 		/// Installs RTX Remix from GitHub release
 		/// </summary>
 		/// <param name="selectedRelease">The GitHub release to install</param>
-		/// <param name="installToMainFolder">The gmod type this is</param>
+		/// <param name="owner">The GitHub repository owner</param>
+		/// <param name="repo">The GitHub repository name</param>
+		/// <param name="installType">The Garry's Mod installation type</param>
 		/// <param name="basePath">The base application path</param>
 		/// <param name="progressCallback">Callback for reporting progress</param>
 		/// <returns>A task representing the installation operation</returns>
 		public static async Task Install(
 			GitHubRelease selectedRelease,
+			string owner,
+			string repo,
 			string installType,
 			string basePath,
 			Action<string, int> progressCallback)
@@ -21,37 +25,15 @@ namespace RTXLauncher
 			if (selectedRelease == null)
 				throw new ArgumentNullException(nameof(selectedRelease), "No release selected");
 
-			progressCallback?.Invoke("Starting RTX Remix installation...", 0);
+			progressCallback?.Invoke($"Starting RTX Remix installation from {owner}/{repo}...", 0);
 
 			try
 			{
-				// Determine which asset to download based on the selected release
-				// Find the release zip (prioritize release build, then debugoptimized, then debug)
-				GitHubAsset assetToDownload = null;
+				// Store repository info for debugging/logging
+				progressCallback?.Invoke($"Repository: {owner}/{repo}, Release: {selectedRelease.Name}", 5);
 
-				// Check file naming pattern based on version
-				if (selectedRelease.Assets.Any(a => a.Name.Contains("-release.zip") && !a.Name.Contains("-symbols")))
-				{
-					// Newer release format (1.0.0+)
-					assetToDownload = selectedRelease.Assets.FirstOrDefault(a =>
-						a.Name.Contains("-release.zip") && !a.Name.Contains("-symbols"));
-				}
-				else if (selectedRelease.Assets.Any(a => a.Name.Contains("-debugoptimized.zip") && !a.Name.Contains("-symbols")))
-				{
-					assetToDownload = selectedRelease.Assets.FirstOrDefault(a =>
-						a.Name.Contains("-debugoptimized.zip") && !a.Name.Contains("-symbols"));
-				}
-				else if (selectedRelease.Assets.Any(a => a.Name.Contains("-debug.zip") && !a.Name.Contains("-symbols")))
-				{
-					assetToDownload = selectedRelease.Assets.FirstOrDefault(a =>
-						a.Name.Contains("-debug.zip") && !a.Name.Contains("-symbols"));
-				}
-				else
-				{
-					// Older release format (before 1.0.0)
-					assetToDownload = selectedRelease.Assets.FirstOrDefault(a =>
-						a.Name.EndsWith(".zip") && !a.Name.Contains("-symbols"));
-				}
+				// Find the most appropriate asset to download using prioritized search
+				GitHubAsset assetToDownload = FindBestReleaseAsset(selectedRelease);
 
 				if (assetToDownload == null)
 				{
@@ -81,7 +63,7 @@ namespace RTXLauncher
 							percentComplete);
 					});
 
-				progressCallback?.Invoke("Download complete. Extracting files...", 60);
+				progressCallback?.Invoke("Download complete. Analyzing package...", 60);
 
 				// Determine the destination path based on installation type
 				string destPath = installType == "gmod_main"
@@ -92,46 +74,8 @@ namespace RTXLauncher
 				if (!Directory.Exists(destPath))
 					Directory.CreateDirectory(destPath);
 
-				// Extract files
-				if (installType == "gmod_main")
-				{
-					// For gmod_main, extract the whole zip to bin folder
-					progressCallback?.Invoke("Extracting to bin folder...", 70);
-					await ExtractZipWithProgress(zipPath, destPath,
-						(current, total) =>
-						{
-							int progressPercent = 70 + (int)((float)current / total * 25);
-							progressCallback?.Invoke($"Extracting: {current} / {total}", progressPercent);
-						});
-				}
-				else
-				{
-					// For gmod_x86-64, find and extract .trex folder contents to bin/win64
-					progressCallback?.Invoke("Extracting .trex folder to bin/win64...", 70);
-					string extractTempDir = Path.Combine(tempDir, "extracted");
-					Directory.CreateDirectory(extractTempDir);
-
-					// Extract the full zip first
-					ZipFile.ExtractToDirectory(zipPath, extractTempDir);
-
-					// Now find the .trex folder
-					string[] trexFolders = Directory.GetDirectories(extractTempDir, "*.trex", SearchOption.AllDirectories);
-					if (trexFolders.Length == 0)
-					{
-						throw new Exception("Could not find .trex folder in the extracted files.");
-					}
-
-					string trexFolder = trexFolders[0]; // Take the first .trex folder
-					progressCallback?.Invoke($"Found .trex folder: {Path.GetFileName(trexFolder)}", 80);
-
-					// Copy all contents from .trex folder to bin/win64
-					await CopyDirectoryWithProgress(trexFolder, destPath, true,
-						(current, total) =>
-						{
-							int progress = 80 + (int)((float)current / total * 15);
-							progressCallback?.Invoke($"Copying files: {current} / {total}", progress);
-						});
-				}
+				// Extract and install files based on what we find in the zip
+				await InstallRTXRemixPackage(zipPath, tempDir, destPath, installType, progressCallback);
 
 				// Clean up
 				progressCallback?.Invoke("Cleaning up temporary files...", 95);
@@ -143,6 +87,135 @@ namespace RTXLauncher
 			{
 				progressCallback?.Invoke($"Error: {ex.Message}", 100);
 				throw; // Re-throw to let the caller handle it
+			}
+		}
+
+		/// <summary>
+		/// Finds the best release asset to download based on standardized priorities
+		/// </summary>
+		private static GitHubAsset FindBestReleaseAsset(GitHubRelease release)
+		{
+			// Prioritized list of asset naming patterns to look for
+			string[] assetPatterns = new[]
+			{
+            // Official naming patterns (newer format)
+            "-release.zip",
+			"-debugoptimized.zip",
+			"-debug.zip",
+            
+            // Community versions or older formats might just be .zip files
+            ".zip"
+		};
+
+			// Try each pattern in order until we find a matching asset
+			foreach (var pattern in assetPatterns)
+			{
+				// Skip any assets with "symbols" in the name
+				var matchingAssets = release.Assets
+					.Where(a => a.Name.Contains(pattern) && !a.Name.Contains("-symbols"))
+					.ToList();
+
+				if (matchingAssets.Count > 0)
+					return matchingAssets[0];
+			}
+
+			// If no match found with our patterns, just return any zip file
+			return release.Assets.FirstOrDefault(a => a.Name.EndsWith(".zip") && !a.Name.Contains("-symbols"));
+		}
+
+		/// <summary>
+		/// Installs RTX Remix package by examining its content and adapting accordingly
+		/// </summary>
+		private static async Task InstallRTXRemixPackage(
+			string zipPath,
+			string tempDir,
+			string destPath,
+			string installType,
+			Action<string, int> progressCallback)
+		{
+			// Create a temporary extraction directory
+			string extractTempDir = Path.Combine(tempDir, "extracted");
+			Directory.CreateDirectory(extractTempDir);
+
+			// First, examine the zip contents without extracting fully
+			progressCallback?.Invoke("Analyzing package contents...", 65);
+			bool containsTrexFolder = false;
+			bool containsD3D9Dll = false;
+
+			using (var zip = ZipFile.OpenRead(zipPath))
+			{
+				// Check for .trex folder
+				containsTrexFolder = zip.Entries.Any(e =>
+					e.FullName.Contains(".trex/") || e.FullName.Contains(".trex\\"));
+
+				// Check for d3d9.dll
+				containsD3D9Dll = zip.Entries.Any(e =>
+					Path.GetFileName(e.FullName).Equals("d3d9.dll", StringComparison.OrdinalIgnoreCase));
+			}
+
+			if (installType == "gmod_main")
+			{
+				// For gmod_main (32-bit) installation, we usually extract everything directly
+				progressCallback?.Invoke("Installing to 32-bit Garry's Mod (bin folder)...", 70);
+				await ExtractZipWithProgress(zipPath, destPath,
+					(current, total) =>
+					{
+						int progressPercent = 70 + (int)((float)current / total * 25);
+						progressCallback?.Invoke($"Extracting: {current} / {total}", progressPercent);
+					});
+			}
+			else if (containsTrexFolder)
+			{
+				// For gmod_x86-64 with .trex folder, extract selectively
+				progressCallback?.Invoke("Found .trex folder, extracting to win64...", 70);
+
+				// Extract the full zip first
+				ZipFile.ExtractToDirectory(zipPath, extractTempDir);
+
+				// Find the .trex folder
+				string[] trexFolders = Directory.GetDirectories(extractTempDir, "*.trex", SearchOption.AllDirectories);
+
+				if (trexFolders.Length > 0)
+				{
+					string trexFolder = trexFolders[0];
+					progressCallback?.Invoke($"Found .trex folder: {Path.GetFileName(trexFolder)}", 80);
+
+					// Copy all contents from .trex folder to destination
+					await CopyDirectoryWithProgress(trexFolder, destPath, true,
+						(current, total) =>
+						{
+							int progress = 80 + (int)((float)current / total * 15);
+							progressCallback?.Invoke($"Copying files: {current} / {total}", progress);
+						});
+				}
+				else
+				{
+					throw new Exception("Unexpected error: .trex folder not found after extraction");
+				}
+			}
+			else if (containsD3D9Dll)
+			{
+				// For packages with d3d9.dll but no .trex folder
+				progressCallback?.Invoke("Found d3d9.dll, extracting to destination...", 70);
+
+				// Extract everything to the destination
+				await ExtractZipWithProgress(zipPath, destPath,
+					(current, total) =>
+					{
+						int progressPercent = 70 + (int)((float)current / total * 25);
+						progressCallback?.Invoke($"Extracting: {current} / {total}", progressPercent);
+					});
+			}
+			else
+			{
+				// Fallback: extract everything and hope for the best
+				progressCallback?.Invoke("No specific structure detected, extracting all files...", 70);
+				await ExtractZipWithProgress(zipPath, destPath,
+					(current, total) =>
+					{
+						int progressPercent = 70 + (int)((float)current / total * 25);
+						progressCallback?.Invoke($"Extracting: {current} / {total}", progressPercent);
+					});
 			}
 		}
 
