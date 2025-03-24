@@ -14,8 +14,8 @@ namespace RTXLauncher
 
 		public void InitMountBox()
 		{
-			Enabled = RTXLauncher.ContentMountingSystem.IsContentInstalled(GameFolder, InstallFolder, RemixModFolder);
-			Checked = RTXLauncher.ContentMountingSystem.IsContentMounted(GameFolder, InstallFolder, RemixModFolder);
+			Enabled = SteamLibrary.IsGameInstalled(GameFolder, InstallFolder, RemixModFolder);
+			Checked = ContentMountingSystem.IsGameMounted(GameFolder, InstallFolder, RemixModFolder);
 			//System.Diagnostics.Debug.WriteLine("GameMountCheckbox: " + GameFolder + " " + InstallFolder + " " + RemixModFolder + " " + Checked);
 			Click += GameMountCheckbox_Click;
 		}
@@ -24,11 +24,11 @@ namespace RTXLauncher
 		{
 			if (Checked)
 			{
-				RTXLauncher.ContentMountingSystem.MountContent(GameFolder, InstallFolder, RemixModFolder);
+				ContentMountingSystem.MountGame(GameFolder, InstallFolder, RemixModFolder);
 			}
 			else
 			{
-				RTXLauncher.ContentMountingSystem.UnMountContent(GameFolder, InstallFolder, RemixModFolder);
+				ContentMountingSystem.UnMountGame(GameFolder, InstallFolder, RemixModFolder);
 			}
 		}
 

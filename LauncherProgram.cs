@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Windows.Forms.VisualStyles;
 
 namespace RTXLauncher
 {
@@ -13,6 +14,12 @@ namespace RTXLauncher
 			// To customize application configuration such as set high DPI settings or default font,
 			// see https://aka.ms/applicationconfiguration.
 			ApplicationConfiguration.Initialize();
+			Application.EnableVisualStyles();
+			Application.VisualStyleState = VisualStyleState.ClientAndNonClientAreasEnabled;
+
+			// make everything look native
+			Application.SetCompatibleTextRenderingDefault(false);
+
 			Application.Run(new Form1());
 		}
 

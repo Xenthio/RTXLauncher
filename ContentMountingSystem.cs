@@ -2,74 +2,6 @@
 {
 	public static class ContentMountingSystem
 	{
-		/// <summary>
-		/// Get the game folder, should be like D:\SteamLibrary\steamapps\common\GarrysMod, should be where this exe is.
-		/// </summary>
-		/// <returns></returns>
-		private static string GetGmodInstallFolder()
-		{
-
-			return Path.GetDirectoryName(System.AppContext.BaseDirectory);//Assembly.GetExecutingAssembly().Location);
-		}
-		/// <summary>
-		/// Checks all steam library paths for the install folder, should be like D:\SteamLibrary\steamapps\common\(installFolder), returns null if not installed/found
-		/// </summary>
-		/// <returns></returns>
-		private static string GetInstallFolder(string installFolder)
-		{
-			// Get the steam library paths
-			var steamLibraryPaths = GetSteamLibraryPaths();
-			foreach (var path in steamLibraryPaths)
-			{
-				var installPath = Path.Combine(path, "steamapps", "common", installFolder);
-				if (Directory.Exists(installPath))
-				{
-					return installPath;
-				}
-			}
-			return null;
-		}
-		public static bool IsContentInstalled(string gameFolder, string installFolder, string remixModFolder)
-		{
-			// Check if the content is installed
-			return GetInstallFolder(installFolder) != null;
-		}
-		private static List<string> GetSteamLibraryPaths()
-		{
-			var list = new List<string>();
-			// Get the steam library paths from libraryfolders.vdf
-			/*
-				"libraryfolders"
-				{
-					"0"
-					{
-						"path"		"C:\\Program Files (x86)\\Steam"
-						...
-					}
-					"1"
-					{
-					   "path"		"E:\\SteamLibrary"
-						...
-					}
-				}
-			 */
-			var steamPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam");
-			var libraryFoldersPath = Path.Combine(steamPath, "steamapps", "libraryfolders.vdf");
-			if (File.Exists(libraryFoldersPath))
-			{
-				var libraryFolders = File.ReadAllLines(libraryFoldersPath);
-				foreach (var line in libraryFolders)
-				{
-					if (line.Contains("path"))
-					{
-						var path = line.Split('"')[3];
-						list.Add(path);
-					}
-				}
-			}
-			return list;
-		}
-
 		// Mounting and unmounting content
 		// the gameFolder is the folder name of the game, like "hl2rtx"
 		// the installFolder is the folder name of the game in the steamapps\common folder, like "Half-Life 2: RTX", use GetInstallFolder to get the full path
@@ -87,16 +19,16 @@
 
 		// However, for source side content, the folder itself shouldn't be linked, but the models, and maps folder should be linked instead, and for materials all folders inside should be linked except for the materials\vgui and materias\dev folders
 		// do this for the folder itself, aswell as all folders inside the custom folder
-		public static void MountContent(string gameFolder, string installFolder, string remixModFolder)
+		public static void MountGame(string gameFolder, string installFolder, string remixModFolder)
 		{
 			// Mount the content
-			var installPath = GetInstallFolder(installFolder);
+			var installPath = SteamLibrary.GetGameInstallFolder(installFolder);
 			if (installPath == null)
 			{
 				MessageBox.Show("Game not installed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return;
 			}
-			var gmodPath = GetGmodInstallFolder();
+			var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
 			var sourceContentPath = Path.Combine(installPath, gameFolder);
 			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
 			var remixModPath = Path.Combine(installPath, "rtx-remix", "mods", remixModFolder);
@@ -174,10 +106,10 @@
 		// the source side content: (garrysmodPath)\garrysmod\addons\mount-(gameFolder)
 		// the remix mod: (garrysmodPath)\GarrysMod\rtx-remix\mods\mount-(gameFolder)-(remixModFolder)
 		// all custom source side content folders: (garrysmodPath)\garrysmod\addons\mount-(gameFolder)-*
-		public static void UnMountContent(string gameFolder, string installFolder, string remixModFolder)
+		public static void UnMountGame(string gameFolder, string installFolder, string remixModFolder)
 		{
 			// Unmount the content
-			var gmodPath = GetGmodInstallFolder();
+			var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
 			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
 			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
 			// delete the remix mod
@@ -200,10 +132,10 @@
 				Directory.Delete(directory, true);
 			}
 		}
-		public static bool IsContentMounted(string gameFolder, string installFolder, string remixModFolder)
+		public static bool IsGameMounted(string gameFolder, string installFolder, string remixModFolder)
 		{
 			// Check if the content is mounted
-			var gmodPath = GetGmodInstallFolder();
+			var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
 			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
 			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
 			return Directory.Exists(sourceContentMountPath) && Directory.Exists(remixModMountPath);

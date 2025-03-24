@@ -61,6 +61,41 @@
 			checkBox4 = new CheckBox();
 			groupBox3 = new GroupBox();
 			textBox1 = new TextBox();
+			InstallPage = new TabPage();
+			groupBox13 = new GroupBox();
+			groupBox12 = new GroupBox();
+			label9 = new Label();
+			remixReleaseComboBox = new ComboBox();
+			InstallRTXRemixButton = new Button();
+			groupBox11 = new GroupBox();
+			ApplyPatchesButton = new Button();
+			groupBox9 = new GroupBox();
+			label6 = new Label();
+			label10 = new Label();
+			packageVersionComboBox = new ComboBox();
+			packageSourceComboBox = new ComboBox();
+			InstallFixesPackageButton = new Button();
+			UpdateInstallButton = new Button();
+			CreateInstallButton = new Button();
+			label12 = new Label();
+			ThisInstallPath = new Label();
+			ThisInstallType = new Label();
+			label15 = new Label();
+			groupBox10 = new GroupBox();
+			label7 = new Label();
+			VanillaInstallPath = new Label();
+			VanillaInstallType = new Label();
+			label5 = new Label();
+			AboutPage = new TabPage();
+			groupBox8 = new GroupBox();
+			linkLabel1 = new LinkLabel();
+			label4 = new Label();
+			groupBox7 = new GroupBox();
+			button2 = new Button();
+			progressBar1 = new ProgressBar();
+			button1 = new Button();
+			patchesSourceComboBox = new ComboBox();
+			label8 = new Label();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -79,6 +114,15 @@
 			((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
 			groupBox4.SuspendLayout();
 			groupBox3.SuspendLayout();
+			InstallPage.SuspendLayout();
+			groupBox13.SuspendLayout();
+			groupBox12.SuspendLayout();
+			groupBox11.SuspendLayout();
+			groupBox9.SuspendLayout();
+			groupBox10.SuspendLayout();
+			AboutPage.SuspendLayout();
+			groupBox8.SuspendLayout();
+			groupBox7.SuspendLayout();
 			SuspendLayout();
 			// 
 			// settingsDataBindingSource
@@ -90,7 +134,7 @@
 			LaunchGameButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			LaunchGameButton.DialogResult = DialogResult.OK;
 			LaunchGameButton.FlatStyle = FlatStyle.System;
-			LaunchGameButton.Location = new Point(140, 332);
+			LaunchGameButton.Location = new Point(180, 432);
 			LaunchGameButton.Name = "LaunchGameButton";
 			LaunchGameButton.Size = new Size(93, 23);
 			LaunchGameButton.TabIndex = 0;
@@ -102,7 +146,7 @@
 			// 
 			CloseButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			CloseButton.DialogResult = DialogResult.Cancel;
-			CloseButton.Location = new Point(239, 332);
+			CloseButton.Location = new Point(279, 432);
 			CloseButton.Name = "CloseButton";
 			CloseButton.Size = new Size(75, 23);
 			CloseButton.TabIndex = 1;
@@ -116,10 +160,12 @@
 			tabControl1.Controls.Add(SettingsPage);
 			tabControl1.Controls.Add(MountingPage);
 			tabControl1.Controls.Add(AdvancedPage);
+			tabControl1.Controls.Add(InstallPage);
+			tabControl1.Controls.Add(AboutPage);
 			tabControl1.Location = new Point(6, 6);
 			tabControl1.Name = "tabControl1";
 			tabControl1.SelectedIndex = 0;
-			tabControl1.Size = new Size(312, 320);
+			tabControl1.Size = new Size(352, 420);
 			tabControl1.TabIndex = 10;
 			// 
 			// SettingsPage
@@ -130,7 +176,7 @@
 			SettingsPage.Location = new Point(4, 24);
 			SettingsPage.Name = "SettingsPage";
 			SettingsPage.Padding = new Padding(3);
-			SettingsPage.Size = new Size(304, 292);
+			SettingsPage.Size = new Size(344, 392);
 			SettingsPage.TabIndex = 0;
 			SettingsPage.Text = "Settings";
 			// 
@@ -146,7 +192,7 @@
 			groupBox1.FlatStyle = FlatStyle.System;
 			groupBox1.Location = new Point(6, 6);
 			groupBox1.Name = "groupBox1";
-			groupBox1.Size = new Size(292, 123);
+			groupBox1.Size = new Size(332, 123);
 			groupBox1.TabIndex = 2;
 			groupBox1.TabStop = false;
 			groupBox1.Text = "Resolution";
@@ -219,7 +265,7 @@
 			WidthHeightComboBox.Items.AddRange(new object[] { "1920x1080", "2560x1440", "3440x1440", "3480x2160", "1600x900", "1366x768", "1280x720", "1920x1200" });
 			WidthHeightComboBox.Location = new Point(6, 22);
 			WidthHeightComboBox.Name = "WidthHeightComboBox";
-			WidthHeightComboBox.Size = new Size(280, 23);
+			WidthHeightComboBox.Size = new Size(320, 23);
 			WidthHeightComboBox.TabIndex = 3;
 			WidthHeightComboBox.Text = "1920x1080";
 			WidthHeightComboBox.SelectedIndexChanged += WidthHeightComboBox_SelectedIndexChanged;
@@ -232,7 +278,7 @@
 			groupBox2.Controls.Add(checkBox2);
 			groupBox2.Location = new Point(6, 135);
 			groupBox2.Name = "groupBox2";
-			groupBox2.Size = new Size(292, 95);
+			groupBox2.Size = new Size(332, 95);
 			groupBox2.TabIndex = 7;
 			groupBox2.TabStop = false;
 			groupBox2.Text = "Garry's Mod";
@@ -270,7 +316,7 @@
 			MountingPage.Controls.Add(groupBox6);
 			MountingPage.Location = new Point(4, 24);
 			MountingPage.Name = "MountingPage";
-			MountingPage.Size = new Size(304, 292);
+			MountingPage.Size = new Size(344, 392);
 			MountingPage.TabIndex = 2;
 			MountingPage.Text = "Content Mounting";
 			// 
@@ -284,7 +330,7 @@
 			groupBox6.FlatStyle = FlatStyle.System;
 			groupBox6.Location = new Point(6, 6);
 			groupBox6.Name = "groupBox6";
-			groupBox6.Size = new Size(292, 245);
+			groupBox6.Size = new Size(332, 245);
 			groupBox6.TabIndex = 1;
 			groupBox6.TabStop = false;
 			groupBox6.Text = "Mounted Remix Games";
@@ -358,12 +404,13 @@
 			AdvancedPage.Location = new Point(4, 24);
 			AdvancedPage.Name = "AdvancedPage";
 			AdvancedPage.Padding = new Padding(3);
-			AdvancedPage.Size = new Size(304, 292);
+			AdvancedPage.Size = new Size(344, 392);
 			AdvancedPage.TabIndex = 1;
 			AdvancedPage.Text = "Advanced";
 			// 
 			// groupBox5
 			// 
+			groupBox5.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			groupBox5.BackColor = SystemColors.Window;
 			groupBox5.Controls.Add(label3);
 			groupBox5.Controls.Add(numericUpDown1);
@@ -371,7 +418,7 @@
 			groupBox5.FlatStyle = FlatStyle.System;
 			groupBox5.Location = new Point(6, 88);
 			groupBox5.Name = "groupBox5";
-			groupBox5.Size = new Size(292, 81);
+			groupBox5.Size = new Size(332, 81);
 			groupBox5.TabIndex = 11;
 			groupBox5.TabStop = false;
 			groupBox5.Text = "Engine";
@@ -408,13 +455,14 @@
 			// 
 			// groupBox4
 			// 
+			groupBox4.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			groupBox4.BackColor = SystemColors.Window;
 			groupBox4.Controls.Add(checkBox5);
 			groupBox4.Controls.Add(checkBox4);
 			groupBox4.FlatStyle = FlatStyle.System;
 			groupBox4.Location = new Point(6, 6);
 			groupBox4.Name = "groupBox4";
-			groupBox4.Size = new Size(292, 76);
+			groupBox4.Size = new Size(332, 76);
 			groupBox4.TabIndex = 10;
 			groupBox4.TabStop = false;
 			groupBox4.Text = "Debug";
@@ -453,7 +501,7 @@
 			groupBox3.FlatStyle = FlatStyle.System;
 			groupBox3.Location = new Point(6, 175);
 			groupBox3.Name = "groupBox3";
-			groupBox3.Size = new Size(292, 78);
+			groupBox3.Size = new Size(332, 78);
 			groupBox3.TabIndex = 9;
 			groupBox3.TabStop = false;
 			groupBox3.Text = "Other Launch Options";
@@ -466,14 +514,421 @@
 			textBox1.Multiline = true;
 			textBox1.Name = "textBox1";
 			textBox1.PlaceholderText = "User-Specified Launch Options";
-			textBox1.Size = new Size(280, 46);
+			textBox1.Size = new Size(320, 46);
 			textBox1.TabIndex = 1;
+			// 
+			// InstallPage
+			// 
+			InstallPage.BackColor = SystemColors.Window;
+			InstallPage.Controls.Add(groupBox13);
+			InstallPage.Controls.Add(groupBox10);
+			InstallPage.Location = new Point(4, 24);
+			InstallPage.Name = "InstallPage";
+			InstallPage.Size = new Size(344, 392);
+			InstallPage.TabIndex = 4;
+			InstallPage.Text = "Install";
+			// 
+			// groupBox13
+			// 
+			groupBox13.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox13.Controls.Add(groupBox12);
+			groupBox13.Controls.Add(groupBox11);
+			groupBox13.Controls.Add(groupBox9);
+			groupBox13.Controls.Add(UpdateInstallButton);
+			groupBox13.Controls.Add(CreateInstallButton);
+			groupBox13.Controls.Add(label12);
+			groupBox13.Controls.Add(ThisInstallPath);
+			groupBox13.Controls.Add(ThisInstallType);
+			groupBox13.Controls.Add(label15);
+			groupBox13.FlatStyle = FlatStyle.System;
+			groupBox13.Location = new Point(6, 70);
+			groupBox13.Name = "groupBox13";
+			groupBox13.Size = new Size(332, 319);
+			groupBox13.TabIndex = 6;
+			groupBox13.TabStop = false;
+			groupBox13.Text = "This RTX Install";
+			// 
+			// groupBox12
+			// 
+			groupBox12.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox12.Controls.Add(label9);
+			groupBox12.Controls.Add(remixReleaseComboBox);
+			groupBox12.Controls.Add(InstallRTXRemixButton);
+			groupBox12.FlatStyle = FlatStyle.System;
+			groupBox12.Location = new Point(6, 81);
+			groupBox12.Name = "groupBox12";
+			groupBox12.Size = new Size(320, 46);
+			groupBox12.TabIndex = 15;
+			groupBox12.TabStop = false;
+			groupBox12.Text = "Nvidia RTX Remix";
+			// 
+			// label9
+			// 
+			label9.AutoSize = true;
+			label9.FlatStyle = FlatStyle.System;
+			label9.Location = new Point(6, 19);
+			label9.Name = "label9";
+			label9.Size = new Size(45, 15);
+			label9.TabIndex = 4;
+			label9.Text = "Version";
+			// 
+			// remixReleaseComboBox
+			// 
+			remixReleaseComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			remixReleaseComboBox.FlatStyle = FlatStyle.System;
+			remixReleaseComboBox.FormattingEnabled = true;
+			remixReleaseComboBox.Items.AddRange(new object[] { "Error" });
+			remixReleaseComboBox.Location = new Point(63, 16);
+			remixReleaseComboBox.Name = "remixReleaseComboBox";
+			remixReleaseComboBox.Size = new Size(139, 23);
+			remixReleaseComboBox.TabIndex = 2;
+			remixReleaseComboBox.Text = "Error";
+			// 
+			// InstallRTXRemixButton
+			// 
+			InstallRTXRemixButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			InstallRTXRemixButton.FlatStyle = FlatStyle.System;
+			InstallRTXRemixButton.Location = new Point(208, 15);
+			InstallRTXRemixButton.Name = "InstallRTXRemixButton";
+			InstallRTXRemixButton.Size = new Size(106, 23);
+			InstallRTXRemixButton.TabIndex = 13;
+			InstallRTXRemixButton.Text = "Install/Update";
+			InstallRTXRemixButton.UseVisualStyleBackColor = true;
+			InstallRTXRemixButton.Click += InstallRTXRemixButton_Click;
+			// 
+			// groupBox11
+			// 
+			groupBox11.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox11.Controls.Add(ApplyPatchesButton);
+			groupBox11.Controls.Add(label8);
+			groupBox11.Controls.Add(patchesSourceComboBox);
+			groupBox11.FlatStyle = FlatStyle.System;
+			groupBox11.Location = new Point(6, 133);
+			groupBox11.Name = "groupBox11";
+			groupBox11.Size = new Size(320, 53);
+			groupBox11.TabIndex = 15;
+			groupBox11.TabStop = false;
+			groupBox11.Text = "Binary Patches";
+			// 
+			// ApplyPatchesButton
+			// 
+			ApplyPatchesButton.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			ApplyPatchesButton.FlatStyle = FlatStyle.System;
+			ApplyPatchesButton.Location = new Point(208, 22);
+			ApplyPatchesButton.Name = "ApplyPatchesButton";
+			ApplyPatchesButton.Size = new Size(106, 23);
+			ApplyPatchesButton.TabIndex = 11;
+			ApplyPatchesButton.Text = "Apply Patches";
+			ApplyPatchesButton.UseVisualStyleBackColor = true;
+			// 
+			// groupBox9
+			// 
+			groupBox9.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox9.Controls.Add(label6);
+			groupBox9.Controls.Add(label10);
+			groupBox9.Controls.Add(packageVersionComboBox);
+			groupBox9.Controls.Add(packageSourceComboBox);
+			groupBox9.Controls.Add(InstallFixesPackageButton);
+			groupBox9.FlatStyle = FlatStyle.System;
+			groupBox9.Location = new Point(6, 192);
+			groupBox9.Name = "groupBox9";
+			groupBox9.Size = new Size(320, 83);
+			groupBox9.TabIndex = 15;
+			groupBox9.TabStop = false;
+			groupBox9.Text = "Fixes Package";
+			// 
+			// label6
+			// 
+			label6.AutoSize = true;
+			label6.FlatStyle = FlatStyle.System;
+			label6.Location = new Point(6, 54);
+			label6.Name = "label6";
+			label6.Size = new Size(45, 15);
+			label6.TabIndex = 4;
+			label6.Text = "Version";
+			// 
+			// label10
+			// 
+			label10.AutoSize = true;
+			label10.FlatStyle = FlatStyle.System;
+			label10.Location = new Point(6, 25);
+			label10.Name = "label10";
+			label10.Size = new Size(43, 15);
+			label10.TabIndex = 4;
+			label10.Text = "Source";
+			// 
+			// packageVersionComboBox
+			// 
+			packageVersionComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			packageVersionComboBox.FlatStyle = FlatStyle.System;
+			packageVersionComboBox.FormattingEnabled = true;
+			packageVersionComboBox.Items.AddRange(new object[] { "gmod_x86-64 Xenthio/gmod-rtx-fixes-2", "gmod_x86-64 sambow23/gmod-rtx-binary (fork)", "gmod_main skurtyyskirts/GmodRTX", "gmod_main Xenthio/GMRTXClassic" });
+			packageVersionComboBox.Location = new Point(63, 51);
+			packageVersionComboBox.Name = "packageVersionComboBox";
+			packageVersionComboBox.Size = new Size(139, 23);
+			packageVersionComboBox.TabIndex = 2;
+			packageVersionComboBox.Text = "Error";
+			// 
+			// packageSourceComboBox
+			// 
+			packageSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			packageSourceComboBox.FlatStyle = FlatStyle.System;
+			packageSourceComboBox.FormattingEnabled = true;
+			packageSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			packageSourceComboBox.Location = new Point(63, 22);
+			packageSourceComboBox.Name = "packageSourceComboBox";
+			packageSourceComboBox.Size = new Size(251, 23);
+			packageSourceComboBox.TabIndex = 2;
+			packageSourceComboBox.Text = "Xenthio/gmod-rtx-fixes-2 (Any)";
+			// 
+			// InstallFixesPackageButton
+			// 
+			InstallFixesPackageButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			InstallFixesPackageButton.FlatStyle = FlatStyle.System;
+			InstallFixesPackageButton.Location = new Point(208, 51);
+			InstallFixesPackageButton.Name = "InstallFixesPackageButton";
+			InstallFixesPackageButton.Size = new Size(106, 23);
+			InstallFixesPackageButton.TabIndex = 12;
+			InstallFixesPackageButton.Text = "Install/Update";
+			InstallFixesPackageButton.UseVisualStyleBackColor = true;
+			// 
+			// UpdateInstallButton
+			// 
+			UpdateInstallButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			UpdateInstallButton.FlatStyle = FlatStyle.System;
+			UpdateInstallButton.Location = new Point(93, 52);
+			UpdateInstallButton.Name = "UpdateInstallButton";
+			UpdateInstallButton.Size = new Size(91, 23);
+			UpdateInstallButton.TabIndex = 10;
+			UpdateInstallButton.Text = "Update Install";
+			UpdateInstallButton.UseVisualStyleBackColor = true;
+			UpdateInstallButton.Click += UpdateInstallButton_ClickAsync;
+			// 
+			// CreateInstallButton
+			// 
+			CreateInstallButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			CreateInstallButton.Enabled = false;
+			CreateInstallButton.FlatStyle = FlatStyle.System;
+			CreateInstallButton.Location = new Point(190, 52);
+			CreateInstallButton.Name = "CreateInstallButton";
+			CreateInstallButton.Size = new Size(136, 23);
+			CreateInstallButton.TabIndex = 8;
+			CreateInstallButton.Text = " Create RTX Install Here";
+			CreateInstallButton.UseVisualStyleBackColor = true;
+			CreateInstallButton.Click += CreateInstallButton_ClickAsync;
+			// 
+			// label12
+			// 
+			label12.AutoSize = true;
+			label12.FlatStyle = FlatStyle.System;
+			label12.Location = new Point(6, 34);
+			label12.Name = "label12";
+			label12.Size = new Size(65, 15);
+			label12.TabIndex = 4;
+			label12.Text = "Install Path";
+			// 
+			// ThisInstallPath
+			// 
+			ThisInstallPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			ThisInstallPath.FlatStyle = FlatStyle.System;
+			ThisInstallPath.Location = new Point(93, 34);
+			ThisInstallPath.Name = "ThisInstallPath";
+			ThisInstallPath.Size = new Size(233, 15);
+			ThisInstallPath.TabIndex = 3;
+			ThisInstallPath.Text = "Error/Unknown";
+			// 
+			// ThisInstallType
+			// 
+			ThisInstallType.AutoSize = true;
+			ThisInstallType.FlatStyle = FlatStyle.System;
+			ThisInstallType.Location = new Point(93, 19);
+			ThisInstallType.Name = "ThisInstallType";
+			ThisInstallType.Size = new Size(124, 15);
+			ThisInstallType.TabIndex = 3;
+			ThisInstallType.Text = "There is no install here";
+			// 
+			// label15
+			// 
+			label15.AutoSize = true;
+			label15.FlatStyle = FlatStyle.System;
+			label15.Location = new Point(6, 19);
+			label15.Name = "label15";
+			label15.Size = new Size(68, 15);
+			label15.TabIndex = 2;
+			label15.Text = "Install Type:";
+			// 
+			// groupBox10
+			// 
+			groupBox10.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox10.Controls.Add(label7);
+			groupBox10.Controls.Add(VanillaInstallPath);
+			groupBox10.Controls.Add(VanillaInstallType);
+			groupBox10.Controls.Add(label5);
+			groupBox10.FlatStyle = FlatStyle.System;
+			groupBox10.Location = new Point(6, 6);
+			groupBox10.Name = "groupBox10";
+			groupBox10.Size = new Size(332, 58);
+			groupBox10.TabIndex = 5;
+			groupBox10.TabStop = false;
+			groupBox10.Text = "Your Vanilla Garry's Mod Install";
+			// 
+			// label7
+			// 
+			label7.AutoSize = true;
+			label7.FlatStyle = FlatStyle.System;
+			label7.Location = new Point(6, 34);
+			label7.Name = "label7";
+			label7.Size = new Size(65, 15);
+			label7.TabIndex = 4;
+			label7.Text = "Install Path";
+			// 
+			// VanillaInstallPath
+			// 
+			VanillaInstallPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			VanillaInstallPath.FlatStyle = FlatStyle.System;
+			VanillaInstallPath.Location = new Point(93, 34);
+			VanillaInstallPath.Name = "VanillaInstallPath";
+			VanillaInstallPath.Size = new Size(233, 15);
+			VanillaInstallPath.TabIndex = 3;
+			VanillaInstallPath.Text = "N/A";
+			VanillaInstallPath.Click += VanillaInstallPath_Click;
+			// 
+			// VanillaInstallType
+			// 
+			VanillaInstallType.AutoSize = true;
+			VanillaInstallType.FlatStyle = FlatStyle.System;
+			VanillaInstallType.Location = new Point(93, 19);
+			VanillaInstallType.Name = "VanillaInstallType";
+			VanillaInstallType.Size = new Size(142, 15);
+			VanillaInstallType.TabIndex = 3;
+			VanillaInstallType.Text = "Not Installed / Not Found";
+			// 
+			// label5
+			// 
+			label5.AutoSize = true;
+			label5.FlatStyle = FlatStyle.System;
+			label5.Location = new Point(6, 19);
+			label5.Name = "label5";
+			label5.Size = new Size(68, 15);
+			label5.TabIndex = 2;
+			label5.Text = "Install Type:";
+			// 
+			// AboutPage
+			// 
+			AboutPage.BackColor = SystemColors.Window;
+			AboutPage.Controls.Add(groupBox8);
+			AboutPage.Controls.Add(groupBox7);
+			AboutPage.Location = new Point(4, 24);
+			AboutPage.Name = "AboutPage";
+			AboutPage.Size = new Size(344, 392);
+			AboutPage.TabIndex = 3;
+			AboutPage.Text = "About";
+			// 
+			// groupBox8
+			// 
+			groupBox8.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox8.Controls.Add(linkLabel1);
+			groupBox8.Controls.Add(label4);
+			groupBox8.FlatStyle = FlatStyle.System;
+			groupBox8.Location = new Point(6, 6);
+			groupBox8.Name = "groupBox8";
+			groupBox8.Size = new Size(332, 140);
+			groupBox8.TabIndex = 3;
+			groupBox8.TabStop = false;
+			groupBox8.Text = "About";
+			// 
+			// linkLabel1
+			// 
+			linkLabel1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+			linkLabel1.AutoSize = true;
+			linkLabel1.Location = new Point(6, 118);
+			linkLabel1.Name = "linkLabel1";
+			linkLabel1.Size = new Size(228, 15);
+			linkLabel1.TabIndex = 1;
+			linkLabel1.TabStop = true;
+			linkLabel1.Text = "https://github.com/Xenthio/RTXLauncher";
+			// 
+			// label4
+			// 
+			label4.AutoSize = true;
+			label4.FlatStyle = FlatStyle.System;
+			label4.Location = new Point(6, 19);
+			label4.Name = "label4";
+			label4.Size = new Size(271, 75);
+			label4.TabIndex = 0;
+			label4.Text = "The Garry's Mod RTX Launcher\r\n\r\nBased on the original by CR for the x64 rtx project.\r\nWritten by Xenthio and CR\r\n";
+			label4.Click += label4_Click;
+			// 
+			// groupBox7
+			// 
+			groupBox7.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox7.Controls.Add(button2);
+			groupBox7.Controls.Add(progressBar1);
+			groupBox7.Controls.Add(button1);
+			groupBox7.Location = new Point(6, 152);
+			groupBox7.Name = "groupBox7";
+			groupBox7.Size = new Size(332, 106);
+			groupBox7.TabIndex = 2;
+			groupBox7.TabStop = false;
+			groupBox7.Text = "Updates";
+			// 
+			// button2
+			// 
+			button2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+			button2.FlatStyle = FlatStyle.System;
+			button2.Location = new Point(118, 77);
+			button2.Name = "button2";
+			button2.Size = new Size(75, 23);
+			button2.TabIndex = 3;
+			button2.Text = "Install";
+			button2.UseVisualStyleBackColor = true;
+			// 
+			// progressBar1
+			// 
+			progressBar1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			progressBar1.Location = new Point(6, 22);
+			progressBar1.Name = "progressBar1";
+			progressBar1.Size = new Size(320, 23);
+			progressBar1.TabIndex = 2;
+			// 
+			// button1
+			// 
+			button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+			button1.FlatStyle = FlatStyle.System;
+			button1.Location = new Point(199, 77);
+			button1.Name = "button1";
+			button1.Size = new Size(127, 23);
+			button1.TabIndex = 1;
+			button1.Text = "Check for Updates";
+			button1.UseVisualStyleBackColor = true;
+			// 
+			// patchesSourceComboBox
+			// 
+			patchesSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			patchesSourceComboBox.FlatStyle = FlatStyle.System;
+			patchesSourceComboBox.FormattingEnabled = true;
+			patchesSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			patchesSourceComboBox.Location = new Point(63, 22);
+			patchesSourceComboBox.Name = "patchesSourceComboBox";
+			patchesSourceComboBox.Size = new Size(139, 23);
+			patchesSourceComboBox.TabIndex = 2;
+			patchesSourceComboBox.Text = "Xenthio/gmod-rtx-fixes-2 (Any)";
+			// 
+			// label8
+			// 
+			label8.AutoSize = true;
+			label8.FlatStyle = FlatStyle.System;
+			label8.Location = new Point(6, 25);
+			label8.Name = "label8";
+			label8.Size = new Size(43, 15);
+			label8.TabIndex = 4;
+			label8.Text = "Source";
 			// 
 			// Form1
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
 			AutoScaleMode = AutoScaleMode.Font;
-			ClientSize = new Size(324, 361);
+			ClientSize = new Size(364, 461);
 			Controls.Add(tabControl1);
 			Controls.Add(CloseButton);
 			Controls.Add(LaunchGameButton);
@@ -506,6 +961,21 @@
 			groupBox4.PerformLayout();
 			groupBox3.ResumeLayout(false);
 			groupBox3.PerformLayout();
+			InstallPage.ResumeLayout(false);
+			groupBox13.ResumeLayout(false);
+			groupBox13.PerformLayout();
+			groupBox12.ResumeLayout(false);
+			groupBox12.PerformLayout();
+			groupBox11.ResumeLayout(false);
+			groupBox11.PerformLayout();
+			groupBox9.ResumeLayout(false);
+			groupBox9.PerformLayout();
+			groupBox10.ResumeLayout(false);
+			groupBox10.PerformLayout();
+			AboutPage.ResumeLayout(false);
+			groupBox8.ResumeLayout(false);
+			groupBox8.PerformLayout();
+			groupBox7.ResumeLayout(false);
 			ResumeLayout(false);
 		}
 
@@ -541,5 +1011,40 @@
 		private GameMountCheckbox MountPortalPreludeRTXCheckBox;
 		private GameMountCheckbox MountPortalRTXCheckbox;
 		private GameMountCheckbox MountP2RTXCheckBox;
+		private TabPage AboutPage;
+		private Label label4;
+		private GroupBox groupBox7;
+		private Button button1;
+		private Button button2;
+		private ProgressBar progressBar1;
+		private GroupBox groupBox8;
+		private LinkLabel linkLabel1;
+		private TabPage InstallPage;
+		private GroupBox groupBox10;
+		private Label label7;
+		private Label VanillaInstallType;
+		private Label label5;
+		private Label VanillaInstallPath;
+		private Label label9;
+		private ComboBox remixReleaseComboBox;
+		private Label label10;
+		private ComboBox packageSourceComboBox;
+		private Button CreateInstallButton;
+		private GroupBox groupBox13;
+		private Label label12;
+		private Label ThisInstallPath;
+		private Label ThisInstallType;
+		private Label label15;
+		private Button InstallRTXRemixButton;
+		private Button InstallFixesPackageButton;
+		private Button ApplyPatchesButton;
+		private Button UpdateInstallButton;
+		private GroupBox groupBox9;
+		private GroupBox groupBox12;
+		private GroupBox groupBox11;
+		private Label label6;
+		private ComboBox packageVersionComboBox;
+		private Label label8;
+		private ComboBox patchesSourceComboBox;
 	}
 }
