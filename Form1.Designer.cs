@@ -101,9 +101,10 @@
 			linkLabel1 = new LinkLabel();
 			label4 = new Label();
 			groupBox7 = new GroupBox();
-			button2 = new Button();
+			ReleaseNotesRichTextBox = new RichTextBox();
+			InstallLauncherUpdateButton = new Button();
 			progressBar1 = new ProgressBar();
-			button1 = new Button();
+			CheckForLauncherUpdatesButton = new Button();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -990,27 +991,37 @@
 			// 
 			// groupBox7
 			// 
-			groupBox7.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-			groupBox7.Controls.Add(button2);
+			groupBox7.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox7.Controls.Add(ReleaseNotesRichTextBox);
+			groupBox7.Controls.Add(InstallLauncherUpdateButton);
 			groupBox7.Controls.Add(progressBar1);
-			groupBox7.Controls.Add(button1);
+			groupBox7.Controls.Add(CheckForLauncherUpdatesButton);
 			groupBox7.Location = new Point(6, 152);
 			groupBox7.Name = "groupBox7";
-			groupBox7.Size = new Size(332, 106);
+			groupBox7.Size = new Size(332, 237);
 			groupBox7.TabIndex = 2;
 			groupBox7.TabStop = false;
 			groupBox7.Text = "Updates";
 			// 
-			// button2
+			// ReleaseNotesRichTextBox
 			// 
-			button2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-			button2.FlatStyle = FlatStyle.System;
-			button2.Location = new Point(118, 77);
-			button2.Name = "button2";
-			button2.Size = new Size(75, 23);
-			button2.TabIndex = 3;
-			button2.Text = "Install";
-			button2.UseVisualStyleBackColor = true;
+			ReleaseNotesRichTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+			ReleaseNotesRichTextBox.Location = new Point(6, 51);
+			ReleaseNotesRichTextBox.Name = "ReleaseNotesRichTextBox";
+			ReleaseNotesRichTextBox.Size = new Size(320, 151);
+			ReleaseNotesRichTextBox.TabIndex = 4;
+			ReleaseNotesRichTextBox.Text = "";
+			// 
+			// InstallLauncherUpdateButton
+			// 
+			InstallLauncherUpdateButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+			InstallLauncherUpdateButton.FlatStyle = FlatStyle.System;
+			InstallLauncherUpdateButton.Location = new Point(118, 208);
+			InstallLauncherUpdateButton.Name = "InstallLauncherUpdateButton";
+			InstallLauncherUpdateButton.Size = new Size(75, 23);
+			InstallLauncherUpdateButton.TabIndex = 3;
+			InstallLauncherUpdateButton.Text = "Install";
+			InstallLauncherUpdateButton.UseVisualStyleBackColor = true;
 			// 
 			// progressBar1
 			// 
@@ -1020,16 +1031,16 @@
 			progressBar1.Size = new Size(320, 23);
 			progressBar1.TabIndex = 2;
 			// 
-			// button1
+			// CheckForLauncherUpdatesButton
 			// 
-			button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-			button1.FlatStyle = FlatStyle.System;
-			button1.Location = new Point(199, 77);
-			button1.Name = "button1";
-			button1.Size = new Size(127, 23);
-			button1.TabIndex = 1;
-			button1.Text = "Check for Updates";
-			button1.UseVisualStyleBackColor = true;
+			CheckForLauncherUpdatesButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+			CheckForLauncherUpdatesButton.FlatStyle = FlatStyle.System;
+			CheckForLauncherUpdatesButton.Location = new Point(199, 208);
+			CheckForLauncherUpdatesButton.Name = "CheckForLauncherUpdatesButton";
+			CheckForLauncherUpdatesButton.Size = new Size(127, 23);
+			CheckForLauncherUpdatesButton.TabIndex = 1;
+			CheckForLauncherUpdatesButton.Text = "Check for Updates";
+			CheckForLauncherUpdatesButton.UseVisualStyleBackColor = true;
 			// 
 			// Form1
 			// 
@@ -1123,8 +1134,8 @@
 		private TabPage AboutPage;
 		private Label label4;
 		private GroupBox groupBox7;
-		private Button button1;
-		private Button button2;
+		private Button CheckForLauncherUpdatesButton;
+		private Button InstallLauncherUpdateButton;
 		private ProgressBar progressBar1;
 		private GroupBox groupBox8;
 		private LinkLabel linkLabel1;
@@ -1163,5 +1174,6 @@
 		private Label label13;
 		private Label label17;
 		private Label label16;
+		private RichTextBox ReleaseNotesRichTextBox;
 	}
 }

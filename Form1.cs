@@ -10,6 +10,7 @@ namespace RTXLauncher
 		{
 			InitializeComponent();
 			RefreshInstallInfo();
+			InitialiseUpdater();
 		}
 
 		protected override void OnClosing(CancelEventArgs e)
