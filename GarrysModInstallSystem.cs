@@ -24,6 +24,8 @@
 		}
 		public static string GetInstallType(string path)
 		{
+			if (path == null) return "unknown";
+
 			if (Directory.Exists(Path.Combine(path, "garrysmod")))
 			{
 				if (File.Exists(Path.Combine(path, "bin", "win64", "gmod.exe"))) return "gmod_x86-64";
