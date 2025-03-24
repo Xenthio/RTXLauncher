@@ -54,7 +54,7 @@
 		// Log a message with progress update
 		private static void LogProgress(string message, int progress)
 		{
-			Console.WriteLine(message);
+			System.Diagnostics.Debug.WriteLine(message);
 			OnProgressUpdate?.Invoke(message, progress);
 		}
 

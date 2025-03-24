@@ -57,25 +57,32 @@ namespace RTXLauncher
 			{
 				try
 				{
+					System.Diagnostics.Debug.WriteLine($"Found libraryfolders.vdf: {libraryFoldersPath}");
 					var libraryFolders = File.ReadAllLines(libraryFoldersPath);
 					foreach (var line in libraryFolders)
 					{
 						if (line.Contains("\"path\""))
 						{
+							System.Diagnostics.Debug.WriteLine($"Found line in libraryfolders.vdf: {line}");
+							var cleanline = line.Replace("\"path\"", "");
 							// Extract path between quotes
-							var startQuote = line.IndexOf('"', line.IndexOf("path") + 4);
-							var endQuote = line.IndexOf('"', startQuote + 1);
+							var startQuote = cleanline.IndexOf('"');
+							var endQuote = cleanline.IndexOf('"', startQuote + 1);
 
 							if (startQuote >= 0 && endQuote > startQuote)
 							{
-								var path = line.Substring(startQuote + 1, endQuote - startQuote - 1);
+								var path = cleanline.Substring(startQuote + 1, endQuote - startQuote - 1);
 
 								// Convert forward slashes to backslashes if needed
 								path = path.Replace('/', '\\');
 
+
+								path = path.Replace("\\\\", "\\");
+
 								// Don't add duplicate paths
 								if (Directory.Exists(path) && !list.Contains(path))
 								{
+									System.Diagnostics.Debug.WriteLine($"Found path in libraryfolders.vdf: {path}");
 									list.Add(path);
 								}
 							}
@@ -84,7 +91,7 @@ namespace RTXLauncher
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine($"Error reading Steam library folders: {ex.Message}");
+					System.Diagnostics.Debug.WriteLine($"Error reading Steam library folders: {ex.Message}");
 				}
 			}
 
@@ -144,7 +151,7 @@ namespace RTXLauncher
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Error reading Steam registry: {ex.Message}");
+				System.Diagnostics.Debug.WriteLine($"Error reading Steam registry: {ex.Message}");
 			}
 
 			return null;

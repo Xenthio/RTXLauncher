@@ -18,7 +18,7 @@ namespace RTXLauncher
 		}
 		private static void DebugLog(string message, Action<string, int> progressCallback = null)
 		{
-			Console.WriteLine(message);
+			System.Diagnostics.Debug.WriteLine(message);
 			progressCallback?.Invoke(message, 10);
 		}
 		/// <summary>
@@ -248,7 +248,7 @@ namespace RTXLauncher
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Error parsing patch block '{blockText}': {ex.Message}");
+				System.Diagnostics.Debug.WriteLine($"Error parsing patch block '{blockText}': {ex.Message}");
 				progressCallback?.Invoke($"Error parsing patch block: {ex.Message}", 10);
 				return null;
 			}
@@ -361,7 +361,7 @@ namespace RTXLauncher
 						else
 						{
 							// Log the error but continue with a default value (0)
-							Console.WriteLine($"Warning: Could not parse '{trimmedPart}' as integer in tuple {tupleText}, using 0");
+							System.Diagnostics.Debug.WriteLine($"Warning: Could not parse '{trimmedPart}' as integer in tuple {tupleText}, using 0");
 							progressCallback?.Invoke($"Warning: Could not parse '{trimmedPart}' as integer, using 0", 10);
 							result.Add(0);
 						}
@@ -370,7 +370,7 @@ namespace RTXLauncher
 				catch (Exception ex)
 				{
 					// Log the error but continue
-					Console.WriteLine($"Error parsing part '{part}' in tuple {tupleText}: {ex.Message}");
+					System.Diagnostics.Debug.WriteLine($"Error parsing part '{part}' in tuple {tupleText}: {ex.Message}");
 					progressCallback?.Invoke($"Error parsing part '{part}': {ex.Message}", 10);
 				}
 			}
@@ -451,7 +451,7 @@ namespace RTXLauncher
 
 			// For debugging, print what we extracted
 			string extracted = extractedPatches.ToString();
-			Console.WriteLine($"Extracted patch dictionaries ({extracted.Length} chars)");
+			System.Diagnostics.Debug.WriteLine($"Extracted patch dictionaries ({extracted.Length} chars)");
 
 			// If we couldn't extract patches, throw an exception
 			if (extracted.Length == 0)
