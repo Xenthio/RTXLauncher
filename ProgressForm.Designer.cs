@@ -28,6 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ProgressForm));
 			progressBar = new ProgressBar();
 			statusLabel = new Label();
 			logTextBox = new RichTextBox();
@@ -85,6 +86,7 @@
 			Controls.Add(logTextBox);
 			Controls.Add(statusLabel);
 			Controls.Add(progressBar);
+			Icon = (Icon)resources.GetObject("$this.Icon");
 			MaximizeBox = false;
 			Name = "ProgressForm";
 			StartPosition = FormStartPosition.CenterScreen;

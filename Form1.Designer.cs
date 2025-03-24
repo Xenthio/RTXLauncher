@@ -69,6 +69,8 @@
 			InstallRTXRemixButton = new Button();
 			groupBox11 = new GroupBox();
 			ApplyPatchesButton = new Button();
+			label8 = new Label();
+			patchesSourceComboBox = new ComboBox();
 			groupBox9 = new GroupBox();
 			label6 = new Label();
 			label10 = new Label();
@@ -94,8 +96,6 @@
 			button2 = new Button();
 			progressBar1 = new ProgressBar();
 			button1 = new Button();
-			patchesSourceComboBox = new ComboBox();
-			label8 = new Label();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -612,7 +612,7 @@
 			// 
 			// ApplyPatchesButton
 			// 
-			ApplyPatchesButton.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			ApplyPatchesButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			ApplyPatchesButton.FlatStyle = FlatStyle.System;
 			ApplyPatchesButton.Location = new Point(208, 22);
 			ApplyPatchesButton.Name = "ApplyPatchesButton";
@@ -620,6 +620,28 @@
 			ApplyPatchesButton.TabIndex = 11;
 			ApplyPatchesButton.Text = "Apply Patches";
 			ApplyPatchesButton.UseVisualStyleBackColor = true;
+			// 
+			// label8
+			// 
+			label8.AutoSize = true;
+			label8.FlatStyle = FlatStyle.System;
+			label8.Location = new Point(6, 25);
+			label8.Name = "label8";
+			label8.Size = new Size(43, 15);
+			label8.TabIndex = 4;
+			label8.Text = "Source";
+			// 
+			// patchesSourceComboBox
+			// 
+			patchesSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			patchesSourceComboBox.FlatStyle = FlatStyle.System;
+			patchesSourceComboBox.FormattingEnabled = true;
+			patchesSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			patchesSourceComboBox.Location = new Point(63, 22);
+			patchesSourceComboBox.Name = "patchesSourceComboBox";
+			patchesSourceComboBox.Size = new Size(139, 23);
+			patchesSourceComboBox.TabIndex = 2;
+			patchesSourceComboBox.Text = "Xenthio/gmod-rtx-fixes-2 (Any)";
 			// 
 			// groupBox9
 			// 
@@ -901,28 +923,6 @@
 			button1.TabIndex = 1;
 			button1.Text = "Check for Updates";
 			button1.UseVisualStyleBackColor = true;
-			// 
-			// patchesSourceComboBox
-			// 
-			patchesSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			patchesSourceComboBox.FlatStyle = FlatStyle.System;
-			patchesSourceComboBox.FormattingEnabled = true;
-			patchesSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
-			patchesSourceComboBox.Location = new Point(63, 22);
-			patchesSourceComboBox.Name = "patchesSourceComboBox";
-			patchesSourceComboBox.Size = new Size(139, 23);
-			patchesSourceComboBox.TabIndex = 2;
-			patchesSourceComboBox.Text = "Xenthio/gmod-rtx-fixes-2 (Any)";
-			// 
-			// label8
-			// 
-			label8.AutoSize = true;
-			label8.FlatStyle = FlatStyle.System;
-			label8.Location = new Point(6, 25);
-			label8.Name = "label8";
-			label8.Size = new Size(43, 15);
-			label8.TabIndex = 4;
-			label8.Text = "Source";
 			// 
 			// Form1
 			// 

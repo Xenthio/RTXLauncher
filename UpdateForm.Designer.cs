@@ -28,6 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(UpdateForm));
 			infoLabel = new Label();
 			selectAllCheckBox = new CheckBox();
 			updateTreeView = new TreeView();
@@ -42,9 +43,9 @@
 			infoLabel.FlatStyle = FlatStyle.System;
 			infoLabel.Location = new Point(12, 9);
 			infoLabel.Name = "infoLabel";
-			infoLabel.Size = new Size(546, 15);
+			infoLabel.Size = new Size(525, 15);
 			infoLabel.TabIndex = 0;
-			infoLabel.Text = "The following files need to be updated. Select the files you want to update from the vanilla installation.";
+			infoLabel.Text = "The following files can be updated. Select the files you want to update from the vanilla installation.";
 			// 
 			// selectAllCheckBox
 			// 
@@ -63,7 +64,7 @@
 			updateTreeView.CheckBoxes = true;
 			updateTreeView.Location = new Point(12, 53);
 			updateTreeView.Name = "updateTreeView";
-			updateTreeView.Size = new Size(660, 287);
+			updateTreeView.Size = new Size(540, 367);
 			updateTreeView.TabIndex = 2;
 			updateTreeView.AfterCheck += UpdateTreeView_AfterCheck;
 			// 
@@ -72,7 +73,7 @@
 			updateButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			updateButton.DialogResult = DialogResult.OK;
 			updateButton.FlatStyle = FlatStyle.System;
-			updateButton.Location = new Point(516, 526);
+			updateButton.Location = new Point(396, 426);
 			updateButton.Name = "updateButton";
 			updateButton.Size = new Size(75, 23);
 			updateButton.TabIndex = 3;
@@ -84,7 +85,7 @@
 			cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			cancelButton.DialogResult = DialogResult.Cancel;
 			cancelButton.FlatStyle = FlatStyle.System;
-			cancelButton.Location = new Point(597, 526);
+			cancelButton.Location = new Point(477, 426);
 			cancelButton.Name = "cancelButton";
 			cancelButton.Size = new Size(75, 23);
 			cancelButton.TabIndex = 4;
@@ -93,9 +94,10 @@
 			// 
 			// checkBox2
 			// 
+			checkBox2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
 			checkBox2.AutoSize = true;
 			checkBox2.FlatStyle = FlatStyle.System;
-			checkBox2.Location = new Point(12, 526);
+			checkBox2.Location = new Point(12, 429);
 			checkBox2.Name = "checkBox2";
 			checkBox2.Size = new Size(196, 20);
 			checkBox2.TabIndex = 5;
@@ -108,7 +110,7 @@
 			AutoScaleDimensions = new SizeF(7F, 15F);
 			AutoScaleMode = AutoScaleMode.Font;
 			CancelButton = cancelButton;
-			ClientSize = new Size(684, 561);
+			ClientSize = new Size(564, 461);
 			Controls.Add(checkBox2);
 			Controls.Add(cancelButton);
 			Controls.Add(updateButton);
@@ -116,11 +118,13 @@
 			Controls.Add(selectAllCheckBox);
 			Controls.Add(infoLabel);
 			FormBorderStyle = FormBorderStyle.FixedDialog;
+			Icon = (Icon)resources.GetObject("$this.Icon");
 			MaximizeBox = false;
 			MinimizeBox = false;
 			Name = "UpdateForm";
+			ShowIcon = false;
 			StartPosition = FormStartPosition.CenterScreen;
-			Text = "Update RTX Installation";
+			Text = "Update From Vanilla Installation";
 			ResumeLayout(false);
 			PerformLayout();
 		}
