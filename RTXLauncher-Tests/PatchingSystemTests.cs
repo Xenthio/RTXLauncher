@@ -68,7 +68,17 @@ patches64 = {
 		{
 			// Arrange
 			string installPath = _tempDir;
-			string patchString = "patch data here"; // Replace with actual patch data
+			string patchString = @"
+patches32 = {
+'testing/test.txt': [
+   [('68656c6c6f', 0), '776f726c64'], # Pattern: hello, replacement: world
+]
+}
+patches64 = {
+'testing/test.txt': [
+   [('68656c6c6f', 0), '7468657265'], #Pattern: hello, replacement: there
+]
+}";
 
 			// tell GarrysModInstallSystem.GetInstallType to not return gmod_main
 			GarrysModInstallSystem.TestMode = true;
@@ -86,14 +96,16 @@ patches64 = {
 			// Arrange
 			string installPath = _tempDir;
 			string patchString = @"
-            {
-                ""bin/missing.dll"": [
-                    [
-                        [""68656c6c6f"", 0], // Pattern: hello
-                        ""776f726c64"" // Patch: world
-                    ]
-                ]
-            }";
+patches32 = {
+'testing/test.txt': [
+   [('68656c6c6f', 0), '776f726c64'], # Pattern: hello, replacement: world
+]
+}
+patches64 = {
+'testing/test.txt': [
+   [('68656c6c6f', 0), '7468657265'], #Pattern: hello, replacement: there
+]
+}";
 			bool progressCalled = false;
 
 			void ProgressCallback(string message, int progress)
