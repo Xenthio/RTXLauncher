@@ -16,38 +16,61 @@ jobs:
       with:
         fetch-depth: 0
 
-    # List directory contents for debugging
-    - name: List directory contents
-      run: dir /s /b *.sln *.csproj
-      shell: cmd
-
     # Install the .NET Core workload
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
-    # Get the commit hash
-    - name: Get commit hash
-      id: commit_hash
+    # Cache NuGet packages and .NET tools
+    - name: Cache
+      uses: actions/cache@v4.2.3
+      with:
+        # Cache NuGet packages and the .NET tools
+        path: |
+          ~/.nuget/packages
+          !~/.nuget/packages/unwanted
+          ~/.dotnet/tools
+        # The cache key depends on the hash of all project files and the dotnet version
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}-${{ hashFiles('**/packages.lock.json') }}
+        # Restore keys in case of a cache miss
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+        # Enable cross-platform cache sharing
+        enableCrossOsArchive: true
+        # Don't fail if cache is missing
+        fail-on-cache-miss: false
+        # Always save the cache, even on workflow failure
+        save-always: true
+
+    # Get the commit hash and create a proper version
+    - name: Create version
+      id: version
       run: |
-        echo "HASH=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+        $commitHash = git rev-parse --short HEAD
+        # Generate a version that conforms to SemVer format (1.0.0+[hash])
+        $version = "1.0.0+$commitHash"
+        $fileVersion = "1.0.0.$([int]::Parse($commitHash.Substring(0, 4), [System.Globalization.NumberStyles]::HexNumber))"
+        
+        echo "HASH=$commitHash" >> $env:GITHUB_OUTPUT
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "FILE_VERSION=$fileVersion" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    # Restore dependencies using the correct solution file path found in the listing
+    # Restore dependencies
     - name: Restore dependencies
       run: |
-        $solutionFile = Get-ChildItem -Path . -Filter *.sln -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
-        echo "Using solution file: $solutionFile"
-        dotnet restore "$solutionFile"
+        $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        echo "Using project file: $projectFile"
+        dotnet restore "$projectFile"
       shell: pwsh
 
-    # Publish the application with commit hash as version
+    # Publish the application with proper version
     - name: Publish
       run: |
         $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
         echo "Using project file: $projectFile"
-        dotnet publish "$projectFile" -p:PublishProfile=FolderProfile -p:Version=${{ steps.commit_hash.outputs.HASH }} -p:AssemblyVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }} -p:FileVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }}
+        dotnet publish "$projectFile" -p:PublishProfile=FolderProfile -p:InformationalVersion="${{ steps.version.outputs.VERSION }}" -p:AssemblyVersion="1.0.0.0" -p:FileVersion="${{ steps.version.outputs.FILE_VERSION }}"
       shell: pwsh
 
     # Find the published exe
@@ -68,6 +91,6 @@ jobs:
     - name: Upload EXE artifact
       uses: actions/upload-artifact@v4
       with:
-        name: RTXLauncher-${{ steps.commit_hash.outputs.HASH }}
+        name: RTXLauncher-${{ steps.version.outputs.HASH }}
         path: ${{ steps.find_exe.outputs.EXE_PATH }}
         retention-days: 30
