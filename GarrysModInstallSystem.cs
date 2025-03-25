@@ -10,6 +10,9 @@
 		public delegate void ProgressUpdateHandler(string message, int progress);
 		public static event ProgressUpdateHandler OnProgressUpdate;
 
+		public static bool TestMode = false;
+		public static string TestModeReturn = "gmod_main";
+
 		/// <summary>
 		/// Get the game folder, should be like D:\SteamLibrary\steamapps\common\GarrysMod, should be where this exe is.
 		/// </summary>
@@ -24,6 +27,7 @@
 		}
 		public static string GetInstallType(string path)
 		{
+			if (TestMode) return TestModeReturn;
 			if (path == null) return "unknown";
 
 			if (Directory.Exists(Path.Combine(path, "garrysmod")))

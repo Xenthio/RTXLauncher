@@ -15,6 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="RTXLauncher-Tests\**" />
+    <EmbeddedResource Remove="RTXLauncher-Tests\**" />
+    <None Remove="RTXLauncher-Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Icon.ico" />
   </ItemGroup>
 

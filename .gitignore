@@ -46,3 +46,4 @@ notes.md
 .vs
 bin/Debug
 obj
+/RTXLauncher-Tests/bin
