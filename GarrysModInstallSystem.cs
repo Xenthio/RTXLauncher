@@ -11,7 +11,7 @@
 		public static event ProgressUpdateHandler OnProgressUpdate;
 
 		public static bool TestMode = false;
-		public static string TestModeReturn = "gmod_main";
+		public static string TestModeReturn = "unknown_type";
 
 		/// <summary>
 		/// Get the game folder, should be like D:\SteamLibrary\steamapps\common\GarrysMod, should be where this exe is.
