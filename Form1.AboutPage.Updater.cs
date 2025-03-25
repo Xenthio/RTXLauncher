@@ -1,12 +1,12 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace RTXLauncher
 {
 	public partial class Form1
-	{// Current application version - stored as a string for simple comparison
+	{
+		// Current application version - stored as a string for simple comparison
 		private string _currentVersion;
 
 		// Path for the updater helper
@@ -182,7 +182,8 @@ namespace RTXLauncher
 					if (selectedSource.IsStaging)
 					{
 						// For staging builds, show generic information
-						FormatReleaseNotes("Development Build", _currentVersion,
+						var formatter = new MarkdownFormatter();
+						formatter.FormatReleaseNotes(ReleaseNotesRichTextBox, "Development Build", _currentVersion,
 							"This is the latest development build from the master branch.\n\n" +
 							"Warning: This version may contain experimental features and bugs.",
 							true);
@@ -200,7 +201,8 @@ namespace RTXLauncher
 						_latestRelease = selectedSource.Release;
 						_updateAvailable = isNewer;
 
-						FormatReleaseNotes(selectedSource.Version, _currentVersion,
+						var formatter = new MarkdownFormatter();
+						formatter.FormatReleaseNotes(ReleaseNotesRichTextBox, selectedSource.Version, _currentVersion,
 							selectedSource.Release?.Body, isNewer);
 					}
 
@@ -270,539 +272,23 @@ namespace RTXLauncher
 			}
 		}
 
-
-		// Store link information for click detection
-		private List<LinkInfo> _links = new List<LinkInfo>();
-
-		/// <summary>
-		/// Formats GitHub markdown release notes in the RichTextBox with syntax highlighting and proper formatting
-		/// </summary>
-		private void FormatReleaseNotes(string newVersion, string currentVersion, string releaseNotes, bool isUpdate = true)
+		private int CompareVersions(string version1, string version2)
 		{
-			// Initialize and clear
-			_links.Clear();
-			ReleaseNotesRichTextBox.Clear();
-			ReleaseNotesRichTextBox.SuspendLayout();
+			// Clean up version strings
+			version1 = version1.TrimStart('v');
+			version2 = version2.TrimStart('v');
 
-			// Dictionary of prefixes and their formatting
-			var prefixFormats = new Dictionary<string, Color>
+			// Try to parse as Version objects
+			if (Version.TryParse(version1, out Version v1) && Version.TryParse(version2, out Version v2))
 			{
-				{ "Fixed:", Color.Green },
-				{ "Fixes:", Color.Green },
-				{ "Bug fix:", Color.Green },
-				{ "Added:", Color.DarkBlue },
-				{ "New:", Color.DarkBlue },
-				{ "Feature:", Color.DarkBlue },
-				{ "Changed:", Color.DarkOrange },
-				{ "Updated:", Color.DarkOrange },
-				{ "Improved:", Color.DarkOrange },
-				{ "Warning:", Color.Red },
-				{ "Important:", Color.Red },
-				{ "Note:", Color.Red }
-			};
-
-			// Format the header section
-			FormatHeaderSection(newVersion, currentVersion, isUpdate);
-
-			// Handle missing release notes
-			if (string.IsNullOrWhiteSpace(releaseNotes))
-			{
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f, FontStyle.Italic);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Gray;
-				ReleaseNotesRichTextBox.AppendText("No release notes available for this version.");
-				ReleaseNotesRichTextBox.ResumeLayout();
-				return;
+				return v1.CompareTo(v2);
 			}
 
-			// Process each line
-			string[] lines = releaseNotes.Replace("\r\n", "\n").Split('\n');
-			bool inCodeBlock = false;
-			bool inBulletList = false;
-
-			foreach (string line in lines)
-			{
-				string trimmedLine = line.TrimStart();
-
-				// Skip empty lines
-				if (string.IsNullOrWhiteSpace(line))
-				{
-					inBulletList = false;
-					ReleaseNotesRichTextBox.SelectionBullet = false;
-					ReleaseNotesRichTextBox.AppendText("\n");
-					continue;
-				}
-
-				// Handle code blocks
-				if (trimmedLine.StartsWith("```"))
-				{
-					FormatCodeBlockMarker(ref inCodeBlock);
-					continue;
-				}
-
-				if (inCodeBlock)
-				{
-					FormatCodeLine(line);
-					continue;
-				}
-
-				// Parse line components
-				(string content, int headerLevel, bool isBullet, string bulletPrefix) = ParseLineFormat(trimmedLine);
-
-				// Find special prefix if any
-				string matchedPrefix = prefixFormats.Keys.FirstOrDefault(prefix => content.StartsWith(prefix));
-
-				// Format the line based on its components
-				if (isBullet)
-				{
-					FormatBulletLine(content, matchedPrefix, prefixFormats, ref inBulletList);
-				}
-				else if (headerLevel > 0)
-				{
-					FormatHeaderLine(content, headerLevel, matchedPrefix, prefixFormats);
-				}
-				else if (matchedPrefix != null)
-				{
-					FormatPrefixedLine(content, matchedPrefix, prefixFormats);
-				}
-				else
-				{
-					// Regular text
-					if (inBulletList)
-					{
-						inBulletList = false;
-						ReleaseNotesRichTextBox.SelectionBullet = false;
-					}
-
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-					ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-					ProcessMarkdownText(line);
-					ReleaseNotesRichTextBox.AppendText("\n");
-				}
-			}
-
-			// Final cleanup and setup
-			ReleaseNotesRichTextBox.MouseClick -= ReleaseNotesRichTextBox_MouseClick;
-			ReleaseNotesRichTextBox.MouseClick += ReleaseNotesRichTextBox_MouseClick;
-
-			// Reset styling
-			ResetTextBoxFormatting();
-
-			ReleaseNotesRichTextBox.ResumeLayout();
+			// Fallback to string comparison (not ideal for versioning)
+			return string.Compare(version1, version2, StringComparison.Ordinal);
 		}
 
 
-		// Helper methods to break up the logic
-
-		private void FormatHeaderSection(string newVersion, string currentVersion, bool isUpdate)
-		{
-			if (isUpdate)
-			{
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 12f, FontStyle.Bold);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Green;
-				ReleaseNotesRichTextBox.AppendText("Update Available!\n");
-
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 10f, FontStyle.Regular);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-				ReleaseNotesRichTextBox.AppendText($"New version: ");
-
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 10f, FontStyle.Bold);
-				ReleaseNotesRichTextBox.AppendText($"{newVersion}\n");
-
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 10f, FontStyle.Regular);
-				ReleaseNotesRichTextBox.AppendText($"Current version: {currentVersion}\n\n");
-			}
-			else
-			{
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 12f, FontStyle.Bold);
-				ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-				ReleaseNotesRichTextBox.AppendText($"You're up to date! ({currentVersion})\n\n");
-			}
-		}
-
-		private void FormatCodeBlockMarker(ref bool inCodeBlock)
-		{
-			inCodeBlock = !inCodeBlock;
-
-			if (inCodeBlock)
-			{
-				ReleaseNotesRichTextBox.SelectionBackColor = Color.FromArgb(245, 245, 245);
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Consolas", 9f);
-			}
-			else
-			{
-				ReleaseNotesRichTextBox.SelectionBackColor = Color.White;
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-				ReleaseNotesRichTextBox.AppendText("\n");
-			}
-		}
-
-		private void FormatCodeLine(string line)
-		{
-			ReleaseNotesRichTextBox.SelectionFont = new Font("Consolas", 9f);
-			ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-			ReleaseNotesRichTextBox.AppendText(line + "\n");
-		}
-
-		private (string content, int headerLevel, bool isBullet, string bulletPrefix) ParseLineFormat(string line)
-		{
-			int headerLevel = 0;
-			bool isBullet = false;
-			string bulletPrefix = "";
-			string content = line;
-
-			// Check for headers
-			if (line.StartsWith("### "))
-			{
-				headerLevel = 3;
-				content = line.Substring(4);
-			}
-			else if (line.StartsWith("## "))
-			{
-				headerLevel = 2;
-				content = line.Substring(3);
-			}
-			else if (line.StartsWith("# "))
-			{
-				headerLevel = 1;
-				content = line.Substring(2);
-			}
-
-			// Check for bullets - REMOVE THE ELSE HERE
-			if (line.StartsWith("- ") || line.StartsWith("* "))
-			{
-				isBullet = true;
-				bulletPrefix = line.StartsWith("- ") ? "- " : "* ";
-				content = line.Substring(2);
-			}
-
-			return (content, headerLevel, isBullet, bulletPrefix);
-		}
-
-		private void FormatBulletLine(string content, string matchedPrefix, Dictionary<string, Color> prefixFormats, ref bool inBulletList)
-		{
-			inBulletList = true;
-			ReleaseNotesRichTextBox.SelectionBullet = true;
-			ReleaseNotesRichTextBox.BulletIndent = 15;
-
-			if (matchedPrefix != null)
-			{
-				// Format the special prefix part
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-				ReleaseNotesRichTextBox.SelectionColor = prefixFormats[matchedPrefix];
-				ReleaseNotesRichTextBox.AppendText(matchedPrefix);
-
-				// Format the rest of the bullet text
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-				ProcessMarkdownText(content.Substring(matchedPrefix.Length));
-			}
-			else
-			{
-				// Process normal bullet
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-				ProcessMarkdownText(content);
-			}
-
-			ReleaseNotesRichTextBox.AppendText("\n");
-			ReleaseNotesRichTextBox.SelectionBullet = false;
-		}
-
-		private void FormatHeaderLine(string content, int level, string matchedPrefix, Dictionary<string, Color> prefixFormats)
-		{
-			// Define header font based on level
-			Font headerFont;
-			switch (level)
-			{
-				case 1: headerFont = new Font("Segoe UI", 12f, FontStyle.Bold); break;
-				case 2: headerFont = new Font("Segoe UI", 11f, FontStyle.Bold); break;
-				default: headerFont = new Font("Segoe UI", 10f, FontStyle.Bold); break;
-			}
-
-			if (matchedPrefix != null)
-			{
-				// Add the prefix with special color
-				ReleaseNotesRichTextBox.SelectionFont = headerFont;
-				ReleaseNotesRichTextBox.SelectionColor = prefixFormats[matchedPrefix];
-				ReleaseNotesRichTextBox.AppendText(matchedPrefix);
-
-				// Add the rest with header style - AVOID using ProcessMarkdownText here
-				ReleaseNotesRichTextBox.SelectionFont = headerFont;
-				ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-				ReleaseNotesRichTextBox.AppendText(content.Substring(matchedPrefix.Length));
-			}
-			else
-			{
-				// Format the whole header - AVOID using ProcessMarkdownText here
-				ReleaseNotesRichTextBox.SelectionFont = headerFont;
-				ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-				ReleaseNotesRichTextBox.AppendText(content);
-			}
-
-			ReleaseNotesRichTextBox.AppendText("\n");
-		}
-
-		private void FormatPrefixedLine(string content, string prefix, Dictionary<string, Color> prefixFormats)
-		{
-			// Format the prefix part
-			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f,
-				prefix.StartsWith("Warning:") || prefix.StartsWith("Important:") || prefix.StartsWith("Note:")
-					? FontStyle.Bold : FontStyle.Regular);
-			ReleaseNotesRichTextBox.SelectionColor = prefixFormats[prefix];
-			ReleaseNotesRichTextBox.AppendText(prefix);
-
-			// Format the rest of the line
-			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-			ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-			ProcessMarkdownText(content.Substring(prefix.Length));
-
-			ReleaseNotesRichTextBox.AppendText("\n");
-		}
-
-		private void ResetTextBoxFormatting()
-		{
-			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-			ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-			ReleaseNotesRichTextBox.SelectionBackColor = Color.White;
-			ReleaseNotesRichTextBox.SelectionBullet = false;
-			ReleaseNotesRichTextBox.SelectionStart = 0;
-			ReleaseNotesRichTextBox.ScrollToCaret();
-		}
-
-		/// <summary>
-		/// Processes markdown text including links, bold, italic and changelog links
-		/// </summary>
-		private void ProcessMarkdownText(string line)
-		{
-			// Check for full changelog line
-			if (line.Contains("**Full Changelog**:") && line.Contains("compare/"))
-			{
-				// Extract the version comparison (e.g., v1.0.4...v1.0.5)
-				Regex compareRegex = new Regex(@"compare/([^/\s\)]+)");
-				Match compareMatch = compareRegex.Match(line);
-
-				// Extract the URL
-				Regex urlRegex = new Regex(@"(https?://[^\s\)]+)");
-				Match urlMatch = urlRegex.Match(line);
-
-				if (urlMatch.Success)
-				{
-					string url = urlMatch.Groups[1].Value;
-					string versionCompare = compareMatch.Success ? compareMatch.Groups[1].Value : "versions";
-
-					// Add "Full Changelog" in bold
-					ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Bold);
-					ReleaseNotesRichTextBox.AppendText("Full Changelog");
-
-					// Add the colon
-					ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Regular);
-					ReleaseNotesRichTextBox.AppendText(": ");
-
-					// Add the version comparison as a link
-					int linkStart = ReleaseNotesRichTextBox.TextLength;
-					ReleaseNotesRichTextBox.AppendText(versionCompare);
-					int linkEnd = ReleaseNotesRichTextBox.TextLength;
-
-					// Format the link text
-					ReleaseNotesRichTextBox.Select(linkStart, linkEnd - linkStart);
-					ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Underline);
-					ReleaseNotesRichTextBox.SelectionColor = Color.Blue;
-
-					// Store link info
-					_links.Add(new LinkInfo
-					{
-						StartIndex = linkStart,
-						EndIndex = linkEnd,
-						Url = url
-					});
-
-					return;
-				}
-			}
-
-			// Handle bold text (**bold**) and links ([text](url))
-			// We'll need to parse the line character by character to handle nested formatting
-
-			// First, find all the special markdown segments
-			List<MarkdownSegment> segments = new List<MarkdownSegment>();
-
-			// Find bold segments
-			FindMarkdownPatterns(line, @"\*\*(.*?)\*\*", segments, MarkdownType.Bold);
-
-			// Find italic segments
-			FindMarkdownPatterns(line, @"\*(.*?)\*", segments, MarkdownType.Italic);
-
-			// Find link segments
-			FindMarkdownPatterns(line, @"\[(.*?)\]\((https?://[^\s\)]+)\)", segments, MarkdownType.Link);
-
-			// Sort segments by their starting position
-			segments = segments.OrderBy(s => s.StartIndex).ToList();
-
-			// Detect overlapping segments and remove them
-			for (int i = segments.Count - 1; i >= 1; i--)
-			{
-				for (int j = i - 1; j >= 0; j--)
-				{
-					if (segments[i].StartIndex < segments[j].EndIndex)
-					{
-						// Segments overlap, remove the later one
-						segments.RemoveAt(i);
-						break;
-					}
-				}
-			}
-
-			// Process the line with the segments
-			int lastIndex = 0;
-			foreach (var segment in segments)
-			{
-				// Add text before the segment
-				if (segment.StartIndex > lastIndex)
-				{
-					string beforeText = line.Substring(lastIndex, segment.StartIndex - lastIndex);
-					ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Regular);
-					ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-					ReleaseNotesRichTextBox.AppendText(beforeText);
-				}
-
-				// Add the segment with appropriate formatting
-				switch (segment.Type)
-				{
-					case MarkdownType.Bold:
-						ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Bold);
-						ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-						ReleaseNotesRichTextBox.AppendText(segment.Text);
-						break;
-
-					case MarkdownType.Italic:
-						ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Italic);
-						ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-						ReleaseNotesRichTextBox.AppendText(segment.Text);
-						break;
-
-					case MarkdownType.Link:
-						int linkStart = ReleaseNotesRichTextBox.TextLength;
-						ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Underline);
-						ReleaseNotesRichTextBox.SelectionColor = Color.Blue;
-						ReleaseNotesRichTextBox.AppendText(segment.Text);
-						int linkEnd = ReleaseNotesRichTextBox.TextLength;
-
-						_links.Add(new LinkInfo
-						{
-							StartIndex = linkStart,
-							EndIndex = linkEnd,
-							Url = segment.Url
-						});
-						break;
-				}
-
-				lastIndex = segment.EndIndex;
-			}
-
-			// Add any remaining text after the last segment
-			if (lastIndex < line.Length)
-			{
-				ReleaseNotesRichTextBox.SelectionFont = new Font(ReleaseNotesRichTextBox.Font, FontStyle.Regular);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-				ReleaseNotesRichTextBox.AppendText(line.Substring(lastIndex));
-			}
-		}
-
-		/// <summary>
-		/// Helper method to find markdown patterns in text
-		/// </summary>
-		private void FindMarkdownPatterns(string text, string pattern, List<MarkdownSegment> segments, MarkdownType type)
-		{
-			Regex regex = new Regex(pattern);
-			foreach (Match match in regex.Matches(text))
-			{
-				if (type == MarkdownType.Link && match.Groups.Count >= 3)
-				{
-					segments.Add(new MarkdownSegment
-					{
-						StartIndex = match.Index,
-						EndIndex = match.Index + match.Length,
-						Text = match.Groups[1].Value,
-						Url = match.Groups[2].Value,
-						Type = type
-					});
-				}
-				else if (match.Groups.Count >= 2)
-				{
-					segments.Add(new MarkdownSegment
-					{
-						StartIndex = match.Index,
-						EndIndex = match.Index + match.Length,
-						Text = match.Groups[1].Value,
-						Type = type
-					});
-				}
-			}
-		}
-
-		/// <summary>
-		/// Class to store link information for click detection
-		/// </summary>
-		private class LinkInfo
-		{
-			public int StartIndex { get; set; }
-			public int EndIndex { get; set; }
-			public string Url { get; set; }
-		}
-
-		/// <summary>
-		/// Types of markdown formatting
-		/// </summary>
-		private enum MarkdownType
-		{
-			Bold,
-			Italic,
-			Link
-		}
-
-		/// <summary>
-		/// Class to store information about a markdown segment
-		/// </summary>
-		private class MarkdownSegment
-		{
-			public int StartIndex { get; set; }
-			public int EndIndex { get; set; }
-			public string Text { get; set; }
-			public string Url { get; set; }
-			public MarkdownType Type { get; set; }
-		}
-
-		/// <summary>
-		/// Handle mouse clicks on links
-		/// </summary>
-		private void ReleaseNotesRichTextBox_MouseClick(object sender, MouseEventArgs e)
-		{
-			// Get the character index at the clicked position
-			int index = ReleaseNotesRichTextBox.GetCharIndexFromPosition(e.Location);
-
-			// Check if the click is on a link
-			foreach (var link in _links)
-			{
-				if (index >= link.StartIndex && index < link.EndIndex)
-				{
-					try
-					{
-						// Open the URL
-						ProcessStartInfo psi = new ProcessStartInfo
-						{
-							FileName = link.Url,
-							UseShellExecute = true
-						};
-						Process.Start(psi);
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show($"Could not open link: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-					}
-					break;
-				}
-			}
-		}
 		private async void InstallLauncherUpdateButton_Click(object sender, EventArgs e)
 		{
 			if (LauncherUpdateSourceComboBox.SelectedItem is not UpdateSource selectedSource)
@@ -1219,22 +705,6 @@ timeout /t 2 /nobreak > nul
 			}
 
 			await Task.CompletedTask;
-		}
-
-		private int CompareVersions(string version1, string version2)
-		{
-			// Clean up version strings
-			version1 = version1.TrimStart('v');
-			version2 = version2.TrimStart('v');
-
-			// Try to parse as Version objects
-			if (Version.TryParse(version1, out Version v1) && Version.TryParse(version2, out Version v2))
-			{
-				return v1.CompareTo(v2);
-			}
-
-			// Fallback to string comparison (not ideal for versioning)
-			return string.Compare(version1, version2, StringComparison.Ordinal);
 		}
 
 		// Make sure to properly handle application exit
