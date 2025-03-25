@@ -293,15 +293,15 @@ namespace RTXLauncher
 		/// Try to apply a pattern to a file
 		/// </summary>
 		private static bool TryApplyPattern(
-	string fileName,
-	byte[] fileContent,
-	List<object> pattern,
-	ref Dictionary<string, byte[]> modifiedFiles,
-	ref bool fileModified,
-	string patchHex,
-	Action<string, int> progressCallback,
-	int completedPatches,
-	int totalPatches)
+		string fileName,
+		byte[] fileContent,
+		List<object> pattern,
+		ref Dictionary<string, byte[]> modifiedFiles,
+		ref bool fileModified,
+		string patchHex,
+		Action<string, int> progressCallback,
+		int completedPatches,
+		int totalPatches)
 		{
 			try
 			{
@@ -333,14 +333,21 @@ namespace RTXLauncher
 				if (pattern.Count >= 3 && pattern[2] is string customPatchHex)
 					patchHex = customPatchHex;
 
-				progressCallback?.Invoke($"Looking for pattern: {hexPattern.Substring(0, Math.Min(20, hexPattern.Length))}...", 30);
+				// Format pattern for display - show first part and indicate length
+				string displayPattern;
+				if (hexPattern.Length > 30)
+					displayPattern = $"{hexPattern.Substring(0, 30)}... ({hexPattern.Length} chars)";
+				else
+					displayPattern = hexPattern;
+
+				progressCallback?.Invoke($"Looking for pattern: {displayPattern}", 30);
 
 				// Find the pattern in the file
 				int position = FindWithMask(fileContent, hexPattern);
 
 				if (position == -1)
 				{
-					progressCallback?.Invoke($"Pattern not found: {hexPattern.Substring(0, Math.Min(20, hexPattern.Length))}...", 30);
+					progressCallback?.Invoke($"Pattern not found: {displayPattern}", 30);
 					return false;
 				}
 
@@ -387,7 +394,7 @@ namespace RTXLauncher
 
 				// Log the patch with user-friendly description
 				string description = GetPatchDescription(originalBytes, patchHex);
-				progressCallback?.Invoke($"Patched at 0x{position:X}: {originalBytes} -> {patchHex} {description}",
+				progressCallback?.Invoke($"Patched at 0x{position:X}:\nOriginal: {FormatHex(originalBytes)}\nNew:      {FormatHex(patchHex)} {description}",
 					30 + (int)((float)completedPatches / totalPatches * 60));
 
 				return true;
@@ -397,6 +404,42 @@ namespace RTXLauncher
 				progressCallback?.Invoke($"Error applying pattern: {ex.Message}", 30);
 				return false;
 			}
+		}
+
+		// Format hex bytes with spacing for better readability
+		private static string FormatHex(string hexString)
+		{
+			if (string.IsNullOrEmpty(hexString))
+				return hexString;
+
+			// Group hex bytes for readability
+			const int groupSize = 2; // One byte
+			const int groupsPerBlock = 4; // Four bytes per block
+
+			StringBuilder formatted = new StringBuilder();
+			for (int i = 0; i < hexString.Length; i += groupSize)
+			{
+				if (i + groupSize <= hexString.Length)
+				{
+					formatted.Append(hexString.Substring(i, groupSize));
+
+					// Add space between bytes
+					if (i + groupSize < hexString.Length)
+					{
+						formatted.Append(' ');
+
+						// Add extra space after blocks
+						if ((i / groupSize + 1) % groupsPerBlock == 0)
+							formatted.Append(' ');
+					}
+				}
+				else
+				{
+					formatted.Append(hexString.Substring(i));
+				}
+			}
+
+			return formatted.ToString();
 		}
 
 		// Add a helper method to check if a string is valid hex
@@ -410,19 +453,62 @@ namespace RTXLauncher
 		{
 			// Common patch: changing a JNZ (75) to JMP (EB)
 			if (original.StartsWith("75") && patch == "eb")
-				return "(Changed conditional jump to unconditional jump)";
+				return "(Changed conditional jump to unconditional jump - forces code path)";
 
 			// Common patch: changing a JZ (74) to JMP (EB)
 			if (original.StartsWith("74") && patch == "eb")
-				return "(Changed zero jump to unconditional jump)";
+				return "(Changed zero jump to unconditional jump - always takes branch)";
+
+			// Common patch: changing a JLE/JNG (7E) to JMP (EB)
+			if (original.StartsWith("7e") && patch == "eb")
+				return "(Changed less-than-or-equal jump to unconditional jump - removes bounds check)";
 
 			// Common patch: NOPs (90)
 			if (patch.All(c => c == '9' || c == '0'))
-				return "(NOP out instructions)";
+				return "(NOP out instructions - bypasses original code)";
 
 			// Common patch: Return 0 (31C0C3 = xor eax,eax; ret)
 			if (patch == "31c0c3")
-				return "(Return 0 - function skip)";
+				return "(Return 0 - skips function execution entirely)";
+
+			// Common patch: force dx9 vtx loading
+			if (original == "647838302e767478" && patch == "647839302e767478")
+				return "(Changed dx8 vtx to dx9 vtx - forces DirectX 9 vertex format)";
+
+			// m_bForceNoVis patches - client.dll specific
+			if (patch == "01" && original.Contains("000000"))
+				return "(Force visibility flag to 1 - disables frustum culling)";
+
+			if (patch == "0887")
+				return "(Modified MOV instruction for visibility flag - disables culling)";
+
+			// Return true for m_bForceNoVis getter
+			if (patch == "b001c3")
+				return "(Return true - forces visibility check to always pass)";
+
+			// Zero sized buffer protection
+			if (patch.Contains("85c0750") && (patch.Contains("b004") || patch.Contains("f7f8")))
+				return "(Added zero-size buffer protection - prevents crash with RTX)";
+
+			// Four hardware lights patch (NOP)
+			if (original.StartsWith("480f4ec1") && patch == "90909090")
+				return "(Removed max lights limitation - allows more RTX lights)";
+
+			// Four hardware lights patch (NOP) - 32-bit version
+			if (original.StartsWith("b80000000f") && patch == "909090")
+				return "(Removed max lights limitation - allows more RTX lights)";
+
+			// Brush entity backfaces
+			if ((original.StartsWith("753c") || original.StartsWith("db75")) && patch == "eb")
+				return "(Enabled brush entity backface rendering - improves RTX lighting)";
+
+			// World backfaces patches
+			if ((original.EndsWith("7e") || original.StartsWith("754")) && patch == "eb")
+				return "(Enabled world backface rendering - improves lighting for world geometry)";
+
+			// Check if it might be a buffer overrun protection patch
+			if (patch.Length > 20 && patch.Contains("85") && patch.Contains("4fc1"))
+				return "(Added buffer bounds checking - prevents RTX-related crashes)";
 
 			return "";
 		}
