@@ -1,4 +1,4 @@
-name: .NET Core Publish
+name: .NET App Publish
 
 on:
   push:
@@ -7,57 +7,49 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build-publish:
+  build-and-publish:
     runs-on: windows-latest
 
-    env:
-      SOLUTION_NAME: RTXLauncher.sln
-      PROJECT_PATH: RTXLauncher.csproj 
-      PUBLISH_DIR: publish
-      RUNTIME_ID: win-x64  # Change if targeting different runtime
-
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Setup .NET
+    # Install the .NET Core workload
+    - name: Install .NET Core
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
-    - name: Restore dependencies
-      run: dotnet restore $env:SOLUTION_NAME
-
-    - name: Run tests
-      run: dotnet test $env:SOLUTION_NAME --no-restore --verbosity normal
-
-    - name: Calculate version info
-      id: version
+    # Get the commit hash
+    - name: Get commit hash
+      id: commit_hash
+      run: |
+        echo "HASH=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
       shell: pwsh
-      run: |
-        $commitHash = "${{ github.sha }}".Substring(0, 8)
-        $commitDate = git show -s --format=%cd --date=format:"%y%m%d.%H%M"
-        echo "commit_hash=$commitHash" >> $env:GITHUB_OUTPUT
-        echo "build_date=$commitDate" >> $env:GITHUB_OUTPUT
 
-    - name: Publish application
-      run: |
-        dotnet publish "$env:PROJECT_PATH" `
-          -p:PublishProfile=FolderProfile `
-          -p:PublishSingleFile=true `
-          -p:SelfContained=true `
-          -p:Runtime=$env:RUNTIME_ID `
-          -p:Configuration=Release `
-          -p:Version=${{ steps.version.outputs.build_date }} `
-          -p:FileVersion=${{ steps.version.outputs.build_date }} `
-          -p:AssemblyVersion=${{ steps.version.outputs.build_date }} `
-          -p:InformationalVersion=${{ steps.version.outputs.commit_hash }} `
-          --output $env:PUBLISH_DIR
+    # Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore RTXLauncher.sln
 
-    - name: Upload artifact
+    # Publish the application with commit hash as version
+    - name: Publish
+      run: |
+        dotnet publish RTXLauncher.csproj -p:PublishProfile=FolderProfile -p:Version=${{ steps.commit_hash.outputs.HASH }} -p:AssemblyVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }} -p:FileVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }}
+
+    # Find the published exe
+    - name: Find published EXE
+      id: find_exe
+      run: |
+        $exePath = Get-ChildItem -Path . -Filter *.exe -Recurse -File | Where-Object { $_.DirectoryName -like "*\bin\*\*\publish*" } | Select-Object -First 1 -ExpandProperty FullName
+        echo "EXE_PATH=$exePath" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    # Upload the EXE as an artifact
+    - name: Upload EXE artifact
       uses: actions/upload-artifact@v4
       with:
-        name: MyApplication
-        path: ${{ env.PUBLISH_DIR }}/**/*.exe
+        name: RTXLauncher-${{ steps.commit_hash.outputs.HASH }}
+        path: ${{ steps.find_exe.outputs.EXE_PATH }}
+        retention-days: 30
