@@ -19,126 +19,314 @@
 
 		// However, for source side content, the folder itself shouldn't be linked, but the models, and maps folder should be linked instead, and for materials all folders inside should be linked except for the materials\vgui and materias\dev folders
 		// do this for the folder itself, aswell as all folders inside the custom folder
-		public static void MountGame(string gameFolder, string installFolder, string remixModFolder)
+		public static bool MountGame(string gameFolder, string installFolder, string remixModFolder)
 		{
-			// Mount the content
-			var installPath = SteamLibrary.GetGameInstallFolder(installFolder);
-			if (installPath == null)
+			// Reset the flag at the start of a new mounting operation
+			_userAcceptedSymlinkFailures = false;
+
+			try
 			{
-				MessageBox.Show("Game not installed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-				return;
+				// Mount the content
+				var installPath = SteamLibrary.GetGameInstallFolder(installFolder);
+				if (installPath == null)
+				{
+					MessageBox.Show("Game not installed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					return false;
+				}
+
+				var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
+				var sourceContentPath = Path.Combine(installPath, gameFolder);
+				var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
+				var remixModPath = Path.Combine(installPath, "rtx-remix", "mods", remixModFolder);
+				var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
+
+				// Ensure source paths exist
+				if (!Directory.Exists(sourceContentPath))
+				{
+					MessageBox.Show($"Source content folder not found at:\n{sourceContentPath}",
+						"Mounting Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					return false;
+				}
+
+				if (!Directory.Exists(remixModPath))
+				{
+					// This might be a warning rather than an error depending on your requirements
+					var result = MessageBox.Show(
+						$"RTX Remix mod folder not found at:\n{remixModPath}\n\nContinue anyway?",
+						"Missing RTX Content", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+					if (result == DialogResult.No)
+						return false;
+				}
+
+				// Create the mount folder structure
+				if (!Directory.Exists(Path.Combine(gmodPath, "rtx-remix", "mods")))
+				{
+					Directory.CreateDirectory(Path.Combine(gmodPath, "rtx-remix", "mods"));
+				}
+
+				// Link the remix mod if it exists
+				if (Directory.Exists(remixModPath) && !Directory.Exists(remixModMountPath))
+				{
+					LogMounting($"Mounting RTX Remix content from: {remixModPath}", false);
+					if (!CreateDirectorySymbolicLink(remixModMountPath, remixModPath))
+					{
+						LogMounting("WARNING: Failed to mount RTX Remix content", true);
+					}
+				}
+
+				// Mount source content
+				LogMounting($"Mounting source content from: {sourceContentPath}", false);
+				LinkSourceContent(sourceContentPath, sourceContentMountPath);
+
+				// Mount custom content if it exists
+				var customPath = Path.Combine(sourceContentPath, "custom");
+				if (Directory.Exists(customPath))
+				{
+					foreach (var folder in Directory.GetDirectories(customPath))
+					{
+						LogMounting($"Mounting custom content from: {folder}", false);
+						LinkSourceContent(folder, Path.Combine($"{sourceContentMountPath}-{Path.GetFileName(folder)}"));
+					}
+				}
+
+				LogMounting("Mounting completed successfully", false);
+				return true;
 			}
-			var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
-			var sourceContentPath = Path.Combine(installPath, gameFolder);
-			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
-			var remixModPath = Path.Combine(installPath, "rtx-remix", "mods", remixModFolder);
-			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
-
-			// create the mount folder
-			if (!Directory.Exists(Path.Combine(gmodPath, "rtx-remix", "mods")))
+			catch (OperationCanceledException ex)
 			{
-				Directory.CreateDirectory(Path.Combine(gmodPath, "rtx-remix", "mods"));
+				LogMounting($"Mounting cancelled: {ex.Message}", true);
+				MessageBox.Show(ex.Message, "Mounting Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				return false;
 			}
-
-			// link the remix mod
-			// check if it already exists
-
-			if (!Directory.Exists(remixModMountPath))
+			catch (Exception ex)
 			{
-				CreateSymbolicLink(remixModMountPath, remixModPath);
-			}
-
-			// run LinkSourceContent on the sourceContentPath, aswell as all folders inside the custom folder
-			LinkSourceContent(sourceContentPath, sourceContentMountPath);
-			foreach (var folder in Directory.GetDirectories(Path.Combine(sourceContentPath, "custom")))
-			{
-				LinkSourceContent(folder, Path.Combine($"{sourceContentMountPath}-{Path.GetFileName(folder)}"));
+				LogMounting($"Error during mounting: {ex.Message}", true);
+				MessageBox.Show($"An error occurred while mounting content:\n\n{ex.Message}",
+					"Mounting Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return false;
 			}
 		}
+
+
+
 		// Link the content of the source content/custom folder
 		private static void LinkSourceContent(string path, string destinationMountPath)
 		{
 			// create path
 			Directory.CreateDirectory(destinationMountPath);
+
 			// link the models folder
 			if (Directory.Exists(Path.Combine(path, "models")))
 			{
 				if (!Directory.Exists(Path.Combine(destinationMountPath, "models")))
 				{
-					CreateSymbolicLink(Path.Combine(destinationMountPath, "models"), Path.Combine(path, "models"));
+					CreateDirectorySymbolicLink(Path.Combine(destinationMountPath, "models"), Path.Combine(path, "models"));
 				}
 			}
+
 			// link the maps folder
 			if (Directory.Exists(Path.Combine(path, "maps")))
 			{
 				if (!Directory.Exists(Path.Combine(destinationMountPath, "maps")))
 				{
-					CreateSymbolicLink(Path.Combine(destinationMountPath, "maps"), Path.Combine(path, "maps"));
+					CreateDirectorySymbolicLink(Path.Combine(destinationMountPath, "maps"), Path.Combine(path, "maps"));
 				}
 			}
-			// link the materials folder, note for materials all folders inside should be linked except for the materials\vgui and materias\dev folders
+
+			// link the materials folder, except for vgui and dev folders
 			if (Directory.Exists(Path.Combine(path, "materials")))
 			{
 				if (!Directory.Exists(Path.Combine(destinationMountPath, "materials")))
 				{
 					Directory.CreateDirectory(Path.Combine(destinationMountPath, "materials"));
 				}
+
 				var dontLink = new List<string> { "vgui", "dev", "editor", "perftest", "tools" };
 				foreach (var folder in Directory.GetDirectories(Path.Combine(path, "materials")))
 				{
 					var folderName = Path.GetFileName(folder);
 					if (!dontLink.Contains(folderName))
 					{
-						CreateSymbolicLink(Path.Combine(destinationMountPath, "materials", folderName), folder);
+						CreateDirectorySymbolicLink(Path.Combine(destinationMountPath, "materials", folderName), folder);
 					}
 				}
 			}
 		}
 
-		private static bool CreateSymbolicLink(string path, string pathToTarget)
+		// Add a flag to track if the user has already been prompted about symlink failures
+		private static bool _userAcceptedSymlinkFailures = false;
+
+		// Add events for progress reporting if needed
+		public delegate void MountingProgressHandler(string message, bool isError);
+		public static event MountingProgressHandler OnMountingProgress;
+
+		// Modified symlink creation method with user prompting
+		private static bool CreateDirectorySymbolicLink(string path, string pathToTarget)
 		{
-			// Create a symbolic link 
-			Directory.CreateSymbolicLink(path, pathToTarget);
-			return true;
+			try
+			{
+				// Create a symbolic link 
+				Directory.CreateSymbolicLink(path, pathToTarget);
+				LogMounting($"Created symlink: {Path.GetFileName(path)}", false);
+				return true;
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// If symlink fails due to privileges, check if the user wants to continue
+				if (!_userAcceptedSymlinkFailures)
+				{
+					bool continueOperation = PromptSymlinkFailure(
+						$"Failed to create symlink to {Path.GetFileName(path)}. " +
+						"This may be due to insufficient privileges.\n\n" +
+						"Content mounting requires symbolic links to function correctly.\n\n" +
+						"Do you want to run RTX Launcher as administrator and try again?");
+
+					if (continueOperation)
+					{
+						// Restart as admin
+						RestartAsAdmin();
+						// We won't actually get past this point if restart succeeds
+					}
+					else
+					{
+						_userAcceptedSymlinkFailures = true;
+					}
+				}
+
+				LogMounting($"ERROR: Insufficient privileges to create symlink: {Path.GetFileName(path)}", true);
+				return false;
+			}
+			catch (Exception ex)
+			{
+				// For other errors, also check if the user wants to continue
+				if (!_userAcceptedSymlinkFailures)
+				{
+					bool continueOperation = PromptSymlinkFailure(
+						$"Failed to create symlink to {Path.GetFileName(path)}. " +
+						$"Error: {ex.Message}\n\n" +
+						"Would you like to continue without this content?\n" +
+						"(Some RTX content may not be visible in-game)");
+
+					if (!continueOperation)
+					{
+						throw new OperationCanceledException("Content mounting cancelled due to symlink failure.");
+					}
+					else
+					{
+						_userAcceptedSymlinkFailures = true;
+					}
+				}
+
+				LogMounting($"ERROR: Failed to create symlink: {Path.GetFileName(path)} - {ex.Message}", true);
+				return false;
+			}
 		}
 
-		private enum SymbolicLink
+		// Helper for logging
+		private static void LogMounting(string message, bool isError)
 		{
-			File = 0,
-			Directory = 1
+			System.Diagnostics.Debug.WriteLine(message);
+			OnMountingProgress?.Invoke(message, isError);
 		}
 
-		// Unmounting content
-		// when unmounting, delete the folders
-		// the source side content: (garrysmodPath)\garrysmod\addons\mount-(gameFolder)
-		// the remix mod: (garrysmodPath)\GarrysMod\rtx-remix\mods\mount-(gameFolder)-(remixModFolder)
-		// all custom source side content folders: (garrysmodPath)\garrysmod\addons\mount-(gameFolder)-*
-		public static void UnMountGame(string gameFolder, string installFolder, string remixModFolder)
+		// Helper method to prompt the user about symlink failures
+		private static bool PromptSymlinkFailure(string message)
 		{
-			// Unmount the content
-			var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
-			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
-			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
-			// delete the remix mod
-			// delete the remix mod
-			if (Directory.Exists(remixModMountPath))
-			{
-				Directory.Delete(remixModMountPath, true);
-			}
+			// We need to ensure this runs on the UI thread
+			bool result = false;
 
-			// delete the source content
-			if (Directory.Exists(sourceContentMountPath))
+			var task = Task.Factory.StartNew(() =>
 			{
-				Directory.Delete(sourceContentMountPath, true);
-			}
+				DialogResult dialogResult = MessageBox.Show(
+					message,
+					"RTX Content Mounting Error",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Warning);
 
-			// delete all custom source side content folders
-			var customSourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons");
-			foreach (var directory in Directory.GetDirectories(customSourceContentMountPath, "mount-" + gameFolder + "-*"))
+				result = (dialogResult == DialogResult.Yes);
+
+			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+
+			task.Wait();
+			return result;
+		}
+
+		// Helper to restart the application as administrator
+		private static void RestartAsAdmin()
+		{
+			try
 			{
-				Directory.Delete(directory, true);
+				// Get the current executable path
+				string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+
+				// Create process start info
+				var startInfo = new System.Diagnostics.ProcessStartInfo
+				{
+					UseShellExecute = true,
+					WorkingDirectory = Environment.CurrentDirectory,
+					FileName = exePath,
+					Verb = "runas" // This triggers the UAC prompt
+				};
+
+				// Start the new process
+				System.Diagnostics.Process.Start(startInfo);
+
+				// Exit the current process
+				Environment.Exit(0);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Failed to restart as administrator: {ex.Message}",
+					"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
+
+		// Unmounting content - modified to add logging and error handling
+		public static bool UnMountGame(string gameFolder, string installFolder, string remixModFolder)
+		{
+			try
+			{
+				// Unmount the content
+				var gmodPath = GarrysModInstallSystem.GetThisInstallFolder();
+				var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
+				var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
+
+				// Delete the remix mod mount
+				if (Directory.Exists(remixModMountPath))
+				{
+					LogMounting($"Unmounting RTX Remix content: {remixModMountPath}", false);
+					Directory.Delete(remixModMountPath, true);
+				}
+
+				// Delete the source content mount
+				if (Directory.Exists(sourceContentMountPath))
+				{
+					LogMounting($"Unmounting source content: {sourceContentMountPath}", false);
+					Directory.Delete(sourceContentMountPath, true);
+				}
+
+				// Delete all custom source side content folders
+				var customSourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons");
+				foreach (var directory in Directory.GetDirectories(customSourceContentMountPath, "mount-" + gameFolder + "-*"))
+				{
+					LogMounting($"Unmounting custom content: {directory}", false);
+					Directory.Delete(directory, true);
+				}
+
+				LogMounting("Unmounting completed successfully", false);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				LogMounting($"Error during unmounting: {ex.Message}", true);
+				MessageBox.Show($"An error occurred while unmounting content:\n\n{ex.Message}",
+					"Unmounting Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return false;
+			}
+		}
+
+		// Unchanged IsGameMounted method
 		public static bool IsGameMounted(string gameFolder, string installFolder, string remixModFolder)
 		{
 			// Check if the content is mounted
@@ -149,3 +337,4 @@
 		}
 	}
 }
+

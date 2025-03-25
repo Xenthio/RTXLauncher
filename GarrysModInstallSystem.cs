@@ -38,17 +38,138 @@
 			return "unknown";
 		}
 
+		// Add a flag to track if the user has already been prompted about symlink failures
+		private static bool _userAcceptedSymlinkFailures = false;
 		private static bool CreateDirectorySymbolicLink(string path, string pathToTarget)
 		{
-			// Create a symbolic link 
-			Directory.CreateSymbolicLink(path, pathToTarget);
-			return true;
+			try
+			{
+				// Attempt to create a symbolic link
+				Directory.CreateSymbolicLink(path, pathToTarget);
+				return true;
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// If symlink fails due to privileges, check if the user wants to continue
+				if (!_userAcceptedSymlinkFailures)
+				{
+					bool continueInstallation = PromptSymlinkFailure(
+						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
+						"This may be due to insufficient privileges. " +
+						"The installation can continue by copying files instead, but this will use more disk space.\n\n" +
+						"Do you want to continue with the installation?");
+
+					if (!continueInstallation)
+					{
+						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+					}
+				}
+
+				// Fall back to copying if user agrees to continue
+				LogProgress($"  Insufficient privileges to create symlink - falling back to copying directory: {Path.GetFileName(path)}", 0);
+				CopyDirectory(pathToTarget, path);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				// For other errors, also check if the user wants to continue
+				if (!_userAcceptedSymlinkFailures)
+				{
+					bool continueInstallation = PromptSymlinkFailure(
+						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
+						$"Error: {ex.Message}\n\n" +
+						"Do you want to continue with the installation without this symlink?");
+
+					if (!continueInstallation)
+					{
+						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+					}
+				}
+
+				// Log other errors but don't stop installation if user agreed to continue
+				LogProgress($"  Error creating symlink: {ex.Message}", 0);
+				return false;
+			}
 		}
+
 		private static bool CreateFileSymbolicLink(string path, string pathToTarget)
 		{
-			// Create a symbolic link 
-			File.CreateSymbolicLink(path, pathToTarget);
-			return true;
+			try
+			{
+				// Attempt to create a symbolic link
+				File.CreateSymbolicLink(path, pathToTarget);
+				return true;
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// If symlink fails due to privileges, check if the user wants to continue
+				if (!_userAcceptedSymlinkFailures)
+				{
+					bool continueInstallation = PromptSymlinkFailure(
+						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
+						"This may be due to insufficient privileges. " +
+						"The installation can continue by copying files instead, but this will use more disk space.\n\n" +
+						"Do you want to continue with the installation?");
+
+					if (!continueInstallation)
+					{
+						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+					}
+				}
+
+				// Fall back to copying if user agrees to continue
+				LogProgress($"  Insufficient privileges to create symlink - falling back to copying file: {Path.GetFileName(path)}", 0);
+				File.Copy(pathToTarget, path, true);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				// For other errors, also check if the user wants to continue
+				if (!_userAcceptedSymlinkFailures)
+				{
+					bool continueInstallation = PromptSymlinkFailure(
+						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
+						$"Error: {ex.Message}\n\n" +
+						"Do you want to continue with the installation without this symlink?");
+
+					if (!continueInstallation)
+					{
+						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+					}
+				}
+
+				// Log other errors but don't stop installation if user agreed to continue
+				LogProgress($"  Error creating symlink: {ex.Message}", 0);
+				return false;
+			}
+		}
+
+		// Helper method to prompt the user about symlink failures
+		private static bool PromptSymlinkFailure(string message)
+		{
+			// We need to ensure this runs on the UI thread
+			bool result = false;
+
+			var task = Task.Factory.StartNew(() =>
+			{
+				DialogResult dialogResult = MessageBox.Show(
+					message,
+					"Symlink Creation Failed",
+					MessageBoxButtons.OKCancel,
+					MessageBoxIcon.Warning);
+
+				result = (dialogResult == DialogResult.OK);
+
+				// Set the flag if user clicked OK to prevent future prompts
+				if (result)
+				{
+					_userAcceptedSymlinkFailures = true;
+				}
+
+			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+
+			task.Wait();
+			return result;
 		}
 
 		// Log a message with progress update
@@ -374,10 +495,21 @@
 		// Original method for backward compatibility
 		public static void CreateRTXInstall()
 		{
+			// Reset the flag at the start of a new installation
+			_userAcceptedSymlinkFailures = false;
+
 			if (ShowConfirmationDialog())
 			{
-				PerformInstallation();
-				LogProgress("RTX installation complete!", 100);
+				try
+				{
+					PerformInstallation();
+					LogProgress("RTX installation complete!", 100);
+				}
+				catch (OperationCanceledException ex)
+				{
+					LogProgress($"Installation cancelled: {ex.Message}", 100);
+					MessageBox.Show(ex.Message, "Installation Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				}
 			}
 			else
 			{
