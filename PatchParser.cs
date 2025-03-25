@@ -4,6 +4,69 @@ using System.Text.RegularExpressions;
 namespace RTXLauncher
 {
 
+
+
+	/*	
+	# Example patch (thanks https://github.com/BlueAmulet/SourceRTXTweaks)
+
+	# Generic patches for most 32bit source engine games
+	patches32 = {
+	'bin/engine.dll': [
+		[('558bec538b5d08568b7510578b7d0c565753e8????ffff83c40c83f8027466', 0), '31c0c3'], # c_frustumcull
+		[('015b5dc3cccccccc55', 8), '31c0c3'], # c_frustumcull
+		[('db7530', 1), 'eb'], # brush entity backfaces
+		[('88894d??85d27e', 6), 'eb'], # world backfaces
+		[('75438b??04f3', 0), 'eb'], # world backfaces
+	],
+	'bin/shaderapidx9.dll': [
+		[('b80000000f4c', 4), '909090'], # four hardware lights
+		[('9483c4108be55dc3cccccc', 1), '85c07502b0048be55dc3'], # zero sized buffer
+		[('558bec8b451053568b750833', 0), '31c0c3'], # shader constants
+	],
+	'bin/client.dll': [
+		[('558bec538b5d08568b7510578b', 0), '31c0c3'], # c_frustumcull
+		[[
+			('c6????03000000e8??????ff8b????????10', 6, '01'), # m_bForceNoVis [mov 1]
+			('889f??030000', 0, '0887') # m_bForceNoVis [mov bl]
+			]],
+		[[
+			('8a81??030000c3cccccccccccccccccc8b', 0), # m_bForceNoVis [getter]
+			('cccccccccccccccccc8a814403', 9) # m_bForceNoVis [alt getter]
+			], 'b001c3'],
+	],
+	'bin/datacache.dll': [
+		[('647838302e767478', 0), '647839302e767478'], # force load dx9 vtx
+	],
+	'bin/materialsystem.dll': [
+		[('f77d945f3bc15e0f4fc18be55dc20400cccccccccccc', 0), '8b7d9485ff7402f7ff5f39c85e0f4fc189ec5dc20400'], # zero sized buffer protection
+	],
+	}
+
+	# Incomplete Garry's Mod 64bit patches
+	patches64 = {
+		'bin/win64/engine.dll': [
+			# TODO: Missing c_frustumcull patches
+		[('753cf30f10', 0), 'eb'], # brush entity backfaces
+		[('7e5244', 0), 'eb'], # world backfaces
+		[('753c498b4204', 0), 'eb'], # world backfaces
+	],
+	'bin/win64/shaderapidx9.dll': [
+
+		[('480f4ec1c7', 0), '90909090'], # four hardware lights
+		[('4833cce8????03004881c448', 0), '85c0750466b80400'], # zero sized buffer
+		[('4883ec084c', 0), '31c0c3'] # shader constants
+	],
+	'bin/win64/client.dll': [
+
+		[('4883ec480f1022', 0), '31c0c3'], # c_frustumcull
+		[('0fb68154', 0), 'b001c3'], # r_forcenovis [getter]
+	],
+	'bin/win64/materialsystem.dll': [
+
+		[('f77c24683bc10f4fc1488b8c24300100004833cce8????04004881c448010000', 0), '448b4424684585c0740341f7f839c80f4fc14881c448010000c3'], # zero sized buffer protection
+	],
+	}*/
+
 	/// <summary>
 	/// Parses Python-style patch definitions into C# objects
 	/// </summary>
@@ -155,10 +218,12 @@ namespace RTXLauncher
 			{
 				List<object> result = new List<object>();
 
-				// Remove leading/trailing whitespace and the trailing comma
 				blockText = blockText.Trim();
 				if (blockText.EndsWith(","))
 					blockText = blockText.Substring(0, blockText.Length - 1);
+
+				// Ensure trailing quote/bracket characters are stripped
+				blockText = blockText.TrimEnd(']', '\'');
 
 				// Remove the outer brackets if they exist
 				if (blockText.StartsWith("[") && blockText.EndsWith("]"))
@@ -233,13 +298,11 @@ namespace RTXLauncher
 
 					if (parts.Length == 2)
 					{
-						// Parse pattern tuple
 						List<object> patternTuple = ParsePatternTuple(parts[0] + ")", progressCallback);
 						if (patternTuple != null)
 							result.Add(patternTuple);
 
-						// Parse replacement (remove quotes)
-						string replacementText = parts[1].Trim('\'', '"');
+						string replacementText = parts[1].Trim('\'', '"', ']');
 						result.Add(replacementText);
 					}
 				}
