@@ -63,43 +63,32 @@ jobs:
         $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
         echo "Using project file: $projectFile"
         dotnet restore "$projectFile"
-      shell: pwsh
-
-    # Build the solution
-    - name: Build
-      run: |
-        $solutionFile = Get-ChildItem -Path . -Filter *.sln -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
-        echo "Building solution: $solutionFile"
-        dotnet build "$solutionFile" --configuration Release --no-restore
-      shell: pwsh
-
-    # Run VSTest unit tests
-    - name: Run unit tests
-      run: |
-        $testProjects = Get-ChildItem -Path . -Recurse -Filter "*Test*.csproj" | Select-Object -ExpandProperty FullName
-        if ($testProjects) {
-          foreach ($testProject in $testProjects) {
-            echo "Running tests for: $testProject"
-            dotnet test "$testProject" --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
-          }
-        } else {
-          echo "No test projects found"
+        
+        # Also restore test project dependencies if it exists
+        $testProjectFile = Get-ChildItem -Path . -Filter RTXLauncher-Tests.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        if ($testProjectFile) {
+          echo "Using test project file: $testProjectFile"
+          dotnet restore "$testProjectFile"
         }
       shell: pwsh
 
-    # Publish test results
-    - name: Publish test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: "**/*.trx"
-        retention-days: 30
-
+    # Run unit tests
+    - name: Run unit tests
+      run: |
+        $testProjectFile = Get-ChildItem -Path . -Filter RTXLauncher-Tests.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        if ($testProjectFile) {
+          echo "Running tests from: $testProjectFile"
+          dotnet test "$testProjectFile" --no-restore --verbosity normal
+        } else {
+          echo "Test project RTXLauncher-Tests.csproj not found"
+          exit 1
+        }
+      shell: pwsh
+      
     # Publish the application with proper version
     - name: Publish
       run: |
-        $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Where-Object { $_.Name -ne "RTXLauncher-Tests.csproj" } | Select-Object -First 1 -ExpandProperty FullName
         echo "Using project file: $projectFile"
         dotnet publish "$projectFile" -p:PublishProfile=FolderProfile -p:InformationalVersion="${{ steps.version.outputs.VERSION }}" -p:AssemblyVersion="1.0.0.0" -p:FileVersion="${{ steps.version.outputs.FILE_VERSION }}"
       shell: pwsh
