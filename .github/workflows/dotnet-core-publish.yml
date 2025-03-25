@@ -11,8 +11,8 @@ jobs:
     runs-on: windows-latest
 
     env:
-      SOLUTION_NAME: YourSolution.sln  # Update with your solution name
-      PROJECT_PATH: src/YourProject/YourProject.csproj  # Update with your project path
+      SOLUTION_NAME: RTXLauncher.sln
+      PROJECT_PATH: RTXLauncher.csproj 
       PUBLISH_DIR: publish
       RUNTIME_ID: win-x64  # Change if targeting different runtime
 
