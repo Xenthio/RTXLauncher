@@ -65,6 +65,37 @@ jobs:
         dotnet restore "$projectFile"
       shell: pwsh
 
+    # Build the solution
+    - name: Build
+      run: |
+        $solutionFile = Get-ChildItem -Path . -Filter *.sln -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        echo "Building solution: $solutionFile"
+        dotnet build "$solutionFile" --configuration Release --no-restore
+      shell: pwsh
+
+    # Run VSTest unit tests
+    - name: Run unit tests
+      run: |
+        $testProjects = Get-ChildItem -Path . -Recurse -Filter "*Test*.csproj" | Select-Object -ExpandProperty FullName
+        if ($testProjects) {
+          foreach ($testProject in $testProjects) {
+            echo "Running tests for: $testProject"
+            dotnet test "$testProject" --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+          }
+        } else {
+          echo "No test projects found"
+        }
+      shell: pwsh
+
+    # Publish test results
+    - name: Publish test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: "**/*.trx"
+        retention-days: 30
+
     # Publish the application with proper version
     - name: Publish
       run: |
