@@ -19,6 +19,7 @@ namespace RTXLauncher
 		private Dictionary<string, (string Owner, string Repo, string FilePath)> _patchSources = new Dictionary<string, (string, string, string)>
 		{
 			{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py") },
+			{ "sambow23/SourceRTXTweaks", ("sambow23", "SourceRTXTweaks", "applypatch.py") },
 			{ "Xenthio/SourceRTXTweaks (outdated, here to test multiple repos)", ("Xenthio", "SourceRTXTweaks", "applypatch.py") }
 		};
 

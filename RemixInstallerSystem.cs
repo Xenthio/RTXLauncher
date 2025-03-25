@@ -22,15 +22,58 @@ namespace RTXLauncher
 			string basePath,
 			Action<string, int> progressCallback)
 		{
+			// For x64 installations, we need to use the specialized sambow23 remix version
+			if (installType == "gmod_x86-64")
+			{
+				// Override the parameters to use sambow23's repository
+				owner = "sambow23";
+				repo = "dxvk-remix-gmod";
+
+				// Get the latest release from sambow23's repository
+				progressCallback?.Invoke($"Detected x64 installation, fetching specialized Remix version from {owner}/{repo}...", 0);
+				
+				try
+				{
+					// Fetch all releases from sambow23's repository
+					var releases = await GitHubAPI.FetchReleasesAsync(owner, repo);
+					
+					if (releases == null || releases.Count == 0)
+					{
+						throw new Exception($"Could not find any releases in {owner}/{repo}");
+					}
+					
+					// Sort releases by published date (newest first) and get the latest
+					selectedRelease = releases.OrderByDescending(r => r.PublishedAt).First();
+					
+					progressCallback?.Invoke($"Found specialized x64 release: {selectedRelease.Name}", 5);
+					
+					// Find the asset ending with -gmod.zip
+					var asset = selectedRelease.Assets.FirstOrDefault(a => a.Name.EndsWith("-gmod.zip"));
+					
+					if (asset == null)
+					{
+						throw new Exception("Could not find -gmod.zip asset in the latest release");
+					}
+					
+					// Rebuild the assets collection with just this one asset
+					selectedRelease.Assets.Clear();
+					selectedRelease.Assets.Add(asset);
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Failed to fetch specialized x64 Remix version: {ex.Message}", ex);
+				}
+			}
+
 			if (selectedRelease == null)
 				throw new ArgumentNullException(nameof(selectedRelease), "No release selected");
 
-			progressCallback?.Invoke($"Starting RTX Remix installation from {owner}/{repo}...", 0);
+			progressCallback?.Invoke($"Starting RTX Remix installation from {owner}/{repo}...", 5);
 
 			try
 			{
 				// Store repository info for debugging/logging
-				progressCallback?.Invoke($"Repository: {owner}/{repo}, Release: {selectedRelease.Name}", 5);
+				progressCallback?.Invoke($"Repository: {owner}/{repo}, Release: {selectedRelease.Name}", 10);
 
 				// Find the most appropriate asset to download using prioritized search
 				GitHubAsset assetToDownload = FindBestReleaseAsset(selectedRelease);
@@ -40,7 +83,7 @@ namespace RTXLauncher
 					throw new Exception("Could not find a suitable release asset to download.");
 				}
 
-				progressCallback?.Invoke($"Found asset: {assetToDownload.Name}", 10);
+				progressCallback?.Invoke($"Found asset: {assetToDownload.Name}", 15);
 
 				// Create a temporary directory for downloading
 				string tempDir = Path.Combine(Path.GetTempPath(), "RTXRemixTemp");
@@ -95,17 +138,22 @@ namespace RTXLauncher
 		/// </summary>
 		private static GitHubAsset FindBestReleaseAsset(GitHubRelease release)
 		{
+			// For sambow23's repository, look specifically for -gmod.zip files first
+			var gmodAsset = release.Assets.FirstOrDefault(a => a.Name.EndsWith("-gmod.zip"));
+			if (gmodAsset != null)
+				return gmodAsset;
+
 			// Prioritized list of asset naming patterns to look for
 			string[] assetPatterns = new[]
 			{
-            // Official naming patterns (newer format)
-            "-release.zip",
-			"-debugoptimized.zip",
-			"-debug.zip",
-            
-            // Community versions or older formats might just be .zip files
-            ".zip"
-		};
+				// Official naming patterns (newer format)
+				"-release.zip",
+				"-debugoptimized.zip",
+				"-debug.zip",
+				
+				// Community versions or older formats might just be .zip files
+				".zip"
+			};
 
 			// Try each pattern in order until we find a matching asset
 			foreach (var pattern in assetPatterns)
