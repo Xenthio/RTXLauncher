@@ -734,7 +734,7 @@ bin/win64/usd_ms.dll
 					// Download the file
 					string content = await client.GetStringAsync(url);
 
-					// Extract just the patches32 and patches64 dictionaries
+					// Extract just the patches32 and patches64 dictionaries, ignoring the rest of the code
 					return PatchParser.ExtractPatchDictionaries(content);
 				}
 			}

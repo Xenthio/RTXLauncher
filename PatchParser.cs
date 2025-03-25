@@ -1,528 +1,291 @@
 ﻿using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+
+//--------------------------------------------------------------------------------
+// PatchParser.cs (revised excerpt — replace your existing class with this)
+// Removes the need for (?<!\\) by using a naive placeholder approach.
+//--------------------------------------------------------------------------------
+
 
 namespace RTXLauncher
 {
-
-
-
-	/*	
-	# Example patch (thanks https://github.com/BlueAmulet/SourceRTXTweaks)
-
-	# Generic patches for most 32bit source engine games
-	patches32 = {
-	'bin/engine.dll': [
-		[('558bec538b5d08568b7510578b7d0c565753e8????ffff83c40c83f8027466', 0), '31c0c3'], # c_frustumcull
-		[('015b5dc3cccccccc55', 8), '31c0c3'], # c_frustumcull
-		[('db7530', 1), 'eb'], # brush entity backfaces
-		[('88894d??85d27e', 6), 'eb'], # world backfaces
-		[('75438b??04f3', 0), 'eb'], # world backfaces
-	],
-	'bin/shaderapidx9.dll': [
-		[('b80000000f4c', 4), '909090'], # four hardware lights
-		[('9483c4108be55dc3cccccc', 1), '85c07502b0048be55dc3'], # zero sized buffer
-		[('558bec8b451053568b750833', 0), '31c0c3'], # shader constants
-	],
-	'bin/client.dll': [
-		[('558bec538b5d08568b7510578b', 0), '31c0c3'], # c_frustumcull
-		[[
-			('c6????03000000e8??????ff8b????????10', 6, '01'), # m_bForceNoVis [mov 1]
-			('889f??030000', 0, '0887') # m_bForceNoVis [mov bl]
-			]],
-		[[
-			('8a81??030000c3cccccccccccccccccc8b', 0), # m_bForceNoVis [getter]
-			('cccccccccccccccccc8a814403', 9) # m_bForceNoVis [alt getter]
-			], 'b001c3'],
-	],
-	'bin/datacache.dll': [
-		[('647838302e767478', 0), '647839302e767478'], # force load dx9 vtx
-	],
-	'bin/materialsystem.dll': [
-		[('f77d945f3bc15e0f4fc18be55dc20400cccccccccccc', 0), '8b7d9485ff7402f7ff5f39c85e0f4fc189ec5dc20400'], # zero sized buffer protection
-	],
-	}
-
-	# Incomplete Garry's Mod 64bit patches
-	patches64 = {
-		'bin/win64/engine.dll': [
-			# TODO: Missing c_frustumcull patches
-		[('753cf30f10', 0), 'eb'], # brush entity backfaces
-		[('7e5244', 0), 'eb'], # world backfaces
-		[('753c498b4204', 0), 'eb'], # world backfaces
-	],
-	'bin/win64/shaderapidx9.dll': [
-
-		[('480f4ec1c7', 0), '90909090'], # four hardware lights
-		[('4833cce8????03004881c448', 0), '85c0750466b80400'], # zero sized buffer
-		[('4883ec084c', 0), '31c0c3'] # shader constants
-	],
-	'bin/win64/client.dll': [
-
-		[('4883ec480f1022', 0), '31c0c3'], # c_frustumcull
-		[('0fb68154', 0), 'b001c3'], # r_forcenovis [getter]
-	],
-	'bin/win64/materialsystem.dll': [
-
-		[('f77c24683bc10f4fc1488b8c24300100004833cce8????04004881c448010000', 0), '448b4424684585c0740341f7f839c80f4fc14881c448010000c3'], # zero sized buffer protection
-	],
-	}*/
-
 	/// <summary>
 	/// Parses Python-style patch definitions into C# objects
 	/// </summary>
 	public static class PatchParser
 	{
 		/// <summary>
-		/// Represents a parsed patch dictionary (for 32-bit or 64-bit)
+		/// Represents a parsed patch dictionary (for 32-bit or 64-bit).
 		/// </summary>
 		public class PatchDictionary
 		{
+			// Each file => list of patch entries.
+			// Each patch entry => a List<object> that can contain patterns or patch hex.
 			public Dictionary<string, List<List<object>>> Patches { get; set; } = new Dictionary<string, List<List<object>>>();
 		}
-		private static void DebugLog(string message, Action<string, int> progressCallback = null)
-		{
-			System.Diagnostics.Debug.WriteLine(message);
-			progressCallback?.Invoke(message, 10);
-		}
+
 		/// <summary>
-		/// Parse the Python-style patch string into patch dictionaries
+		/// Extracts just the patch dictionaries (patches32 and patches64) from a Python script.
 		/// </summary>
-		public static (PatchDictionary Patches32, PatchDictionary Patches64) ParsePatches(
-	string patchString, Action<string, int> progressCallback = null)
+		public static string ExtractPatchDictionaries(string pythonScript)
 		{
-			var patches32 = new PatchDictionary();
-			var patches64 = new PatchDictionary();
+			var result = new StringBuilder();
 
-			try
-			{
-				// Process the patch string line by line
-				string[] allLines = patchString.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
-				DebugLog($"Starting to parse {allLines.Length} lines", progressCallback);
+			// Extract the "patches32" block
+			ExtractDictionary(pythonScript, "patches32", result);
 
-				// Remove comments from lines
-				List<string> lines = allLines
-					.Select(line => line.Contains('#') ? line.Substring(0, line.IndexOf('#')).Trim() : line.Trim())
-					.Where(line => !string.IsNullOrWhiteSpace(line))
-					.ToList();
+			// Extract the "patches64" block
+			ExtractDictionary(pythonScript, "patches64", result);
 
-				DebugLog($"After removing comments: {lines.Count} lines", progressCallback);
+			return result.ToString();
+		}
 
-				string currentDict = null;
-				string currentFile = null;
+		/// <summary>
+		/// Parses the combined patch string into two PatchDictionaries: (patches32, patches64).
+		/// </summary>
+		public static (PatchDictionary, PatchDictionary) ParsePatches(string patchString)
+		{
+			// 1) Find the body for patches32:
+			string dict32 = FindDictionaryBody(patchString, "patches32");
 
-				// Parse each line
-				for (int i = 0; i < lines.Count; i++)
-				{
-					string line = lines[i];
+			// 2) Find the body for patches64:
+			string dict64 = FindDictionaryBody(patchString, "patches64");
 
-					// Detect dictionary start
-					if (line.StartsWith("patches32") || line.StartsWith("patches64"))
-					{
-						currentDict = line.StartsWith("patches32") ? "patches32" : "patches64";
-						DebugLog($"Found dictionary: {currentDict}", progressCallback);
-						continue;
-					}
-
-					// Detect file name
-					if (line.Contains("':") || line.EndsWith("',"))
-					{
-						// Extract file name between quotes
-						Match fileMatch = Regex.Match(line, @"'([^']+)'");
-						if (fileMatch.Success)
-						{
-							currentFile = fileMatch.Groups[1].Value;
-							DebugLog($"Found file: {currentFile} in {currentDict}", progressCallback);
-
-							// Initialize the file list in the appropriate dictionary
-							if (currentDict == "patches32")
-								patches32.Patches[currentFile] = new List<List<object>>();
-							else if (currentDict == "patches64")
-								patches64.Patches[currentFile] = new List<List<object>>();
-						}
-						continue;
-					}
-
-					try
-					{
-						// Parse patch entry
-						if ((line.StartsWith("[[(") || line.StartsWith("    [[(")) ||
-							(line.StartsWith("[(") || line.StartsWith("    [(")) ||
-							(line.StartsWith("[('") || line.StartsWith("    [('")) ||
-							(line.StartsWith("[[") || line.StartsWith("    [[")))
-						{
-							// This is a patch line - it could be multi-line
-							string patchBlockText = line;
-
-							// Check if the patch continues on next lines
-							while (!patchBlockText.EndsWith("],") && i + 1 < lines.Count)
-							{
-								i++;
-								patchBlockText += " " + lines[i].Trim();
-							}
-
-							// Parse the patch block
-							List<object> patch = ParsePatchBlock(patchBlockText, progressCallback);
-							if (patch != null)
-							{
-								if (currentDict == "patches32" && currentFile != null)
-								{
-									patches32.Patches[currentFile].Add(patch);
-									DebugLog($"Added patch for {currentFile} in patches32: {patchBlockText.Substring(0, Math.Min(30, patchBlockText.Length))}...", progressCallback);
-								}
-								else if (currentDict == "patches64" && currentFile != null)
-								{
-									patches64.Patches[currentFile].Add(patch);
-									DebugLog($"Added patch for {currentFile} in patches64: {patchBlockText.Substring(0, Math.Min(30, patchBlockText.Length))}...", progressCallback);
-								}
-							}
-							else
-							{
-								DebugLog($"Failed to parse patch block: {patchBlockText}", progressCallback);
-							}
-						}
-					}
-					catch (Exception ex)
-					{
-						DebugLog($"Error parsing line '{line}': {ex.Message}", progressCallback);
-						// Continue with the next line
-					}
-				}
-
-				// Print summary
-				DebugLog($"Parsed {patches32.Patches.Count} files for 32-bit patches", progressCallback);
-				foreach (var file in patches32.Patches.Keys)
-				{
-					DebugLog($"  - {file}: {patches32.Patches[file].Count} patches", progressCallback);
-				}
-
-				DebugLog($"Parsed {patches64.Patches.Count} files for 64-bit patches", progressCallback);
-				foreach (var file in patches64.Patches.Keys)
-				{
-					DebugLog($"  - {file}: {patches64.Patches[file].Count} patches", progressCallback);
-				}
-			}
-			catch (Exception ex)
-			{
-				DebugLog($"Error parsing patches: {ex.Message}", progressCallback);
-			}
+			// 3) Parse each into a PatchDictionary:
+			PatchDictionary patches32 = ParseSingleDictionary(dict32);
+			PatchDictionary patches64 = ParseSingleDictionary(dict64);
 
 			return (patches32, patches64);
 		}
 
+		#region Dictionary Extraction Helpers
+
 		/// <summary>
-		/// Parse a single patch block line
+		/// Extracts the dictionary assignment block (e.g. patches32 = {...}) and appends to StringBuilder.
 		/// </summary>
-		private static List<object> ParsePatchBlock(string blockText, Action<string, int> progressCallback = null)
+		private static void ExtractDictionary(string pythonScript, string dictName, StringBuilder sb)
 		{
+			// We look for something like:
+			//   patches32 = {
+			//     'bin/file.dll': [...]
+			//   }
+			// We'll attempt to return the whole chunk from "patches32 =" up to the matching "}".
+			string block = ExtractBlock(pythonScript, dictName + " =", '{', '}');
+			if (!string.IsNullOrEmpty(block))
+			{
+				sb.AppendLine(block);
+				sb.AppendLine(); // extra spacing
+			}
+		}
+
+		/// <summary>
+		/// From the combined patch string, finds just the body of a dictionary ("patches32" or "patches64").
+		/// Returns the text from '{' up to the corresponding '}'.
+		/// </summary>
+		private static string FindDictionaryBody(string patchString, string dictName)
+		{
+			string block = ExtractBlock(patchString, dictName + " =", '{', '}');
+			if (string.IsNullOrEmpty(block)) return block;
+
+			// Remove everything up to the first '{', so the result starts at '{'.
+			int brace = block.IndexOf('{');
+			if (brace >= 0)
+				block = block.Substring(brace);
+
+			return block;
+		}
+
+		/// <summary>
+		/// Naive "find the matching braces" extraction starting from startMarker, 
+		/// then from the next occurrence of openingBrace to its matching closingBrace.
+		/// </summary>
+		private static string ExtractBlock(string text, string startMarker, char openingBrace, char closingBrace)
+		{
+			int startIndex = text.IndexOf(startMarker);
+			if (startIndex < 0) return null;
+
+			// Find the {
+			int braceStart = text.IndexOf(openingBrace, startIndex);
+			if (braceStart < 0) return null;
+
+			int depth = 0;
+			int pos = braceStart;
+			for (; pos < text.Length; pos++)
+			{
+				if (text[pos] == openingBrace) depth++;
+				else if (text[pos] == closingBrace) depth--;
+				if (depth == 0) break; // matched
+			}
+			if (depth != 0) return null; // no matching brace
+
+			int length = (pos - startIndex) + 1; // includes the closingBrace
+			return text.Substring(startIndex, length);
+		}
+
+		#endregion
+
+		#region Parsing the Python Dictionary Blocks
+
+		/// <summary>
+		/// Tries to parse a single dictionary block "{ 'bin/...': [...], ... }" into a PatchDictionary.
+		/// </summary>
+		private static PatchDictionary ParseSingleDictionary(string dictText)
+		{
+			PatchDictionary result = new PatchDictionary();
+			if (string.IsNullOrWhiteSpace(dictText))
+				return result; // no data
+
+			// 1) Remove comments
+			dictText = RemovePythonComments(dictText);
+
+			// 2) Convert Python syntax -> JSON
+			string asJson = PythonDictToJson(dictText);
+
+			// 3) Parse the JSON
 			try
 			{
-				List<object> result = new List<object>();
-
-				blockText = blockText.Trim();
-				if (blockText.EndsWith(","))
-					blockText = blockText.Substring(0, blockText.Length - 1);
-
-				// Ensure trailing quote/bracket characters are stripped
-				blockText = blockText.TrimEnd(']', '\'');
-
-				// Remove the outer brackets if they exist
-				if (blockText.StartsWith("[") && blockText.EndsWith("]"))
-					blockText = blockText.Substring(1, blockText.Length - 2).Trim();
-
-				// Check if this is a multi-pattern block (starts with another '[')
-				if (blockText.StartsWith("["))
+				using (var doc = JsonDocument.Parse(asJson))
 				{
-					// This is a list of patterns or a complex pattern
+					if (doc.RootElement.ValueKind != JsonValueKind.Object)
+						return result;
 
-					// Find the position of the first '],' which ends the pattern list
-					int endPos = blockText.IndexOf("],");
-
-					if (endPos != -1)
+					foreach (var fileProp in doc.RootElement.EnumerateObject())
 					{
-						// There's a replacement after the pattern list
-						string patternListText = blockText.Substring(0, endPos + 1);
-						string replacementText = blockText.Substring(endPos + 2).Trim();
+						string fileName = fileProp.Name;
+						if (fileProp.Value.ValueKind != JsonValueKind.Array)
+							continue;
 
-						// Parse the pattern list
-						List<object> patternList = new List<object>();
-
-						// Is it a multi-pattern? (multi-pattern contains multiple '(' characters)
-						if (patternListText.Count(c => c == '(') > 1)
+						// Each item in this array is itself an array describing a patch or set of patches
+						var patchList = new List<List<object>>();
+						foreach (var patchEntry in fileProp.Value.EnumerateArray())
 						{
-							// Split the pattern list into individual patterns
-							string[] patternTexts = SplitPatternList(patternListText);
-							foreach (string patternText in patternTexts)
+							if (patchEntry.ValueKind == JsonValueKind.Array)
 							{
-								List<object> pattern = ParsePatternTuple(patternText, progressCallback);
-								if (pattern != null)
-									patternList.Add(pattern);
+								// Convert JSON array -> List<object>
+								var patchData = JsonArrayToListOfObjects(patchEntry);
+								patchList.Add(patchData);
 							}
 						}
-						else
+						// Store in dictionary
+						if (patchList.Count > 0)
 						{
-							// It's a single pattern
-							List<object> pattern = ParsePatternTuple(patternListText, progressCallback);
-							if (pattern != null)
-								patternList.Add(pattern);
+							result.Patches[fileName] = patchList;
 						}
-
-						// Add the pattern list and replacement
-						result.Add(patternList);
-
-						// Parse replacement (remove quotes)
-						replacementText = replacementText.Trim('\'', '"');
-						result.Add(replacementText);
-					}
-					else
-					{
-						// The entire block is a pattern list
-						List<object> patternList = new List<object>();
-
-						// Split the pattern list into individual patterns
-						string[] patternTexts = SplitPatternList(blockText);
-						foreach (string patternText in patternTexts)
-						{
-							List<object> pattern = ParsePatternTuple(patternText, progressCallback);
-							if (pattern != null)
-								patternList.Add(pattern);
-						}
-
-						// Add the pattern list
-						result.Add(patternList);
 					}
 				}
-				else
-				{
-					// This is a simple pattern and replacement
-					string[] parts = blockText.Split(new string[] { "), " }, StringSplitOptions.None);
-
-					if (parts.Length == 2)
-					{
-						List<object> patternTuple = ParsePatternTuple(parts[0] + ")", progressCallback);
-						if (patternTuple != null)
-							result.Add(patternTuple);
-
-						string replacementText = parts[1].Trim('\'', '"', ']');
-						result.Add(replacementText);
-					}
-				}
-
-				return result.Count > 0 ? result : null;
 			}
 			catch (Exception ex)
 			{
-				System.Diagnostics.Debug.WriteLine($"Error parsing patch block '{blockText}': {ex.Message}");
-				progressCallback?.Invoke($"Error parsing patch block: {ex.Message}", 10);
-				return null;
+				System.Diagnostics.Debug.WriteLine($"ParseSingleDictionary error: {ex.Message}");
 			}
+			return result;
 		}
 
 		/// <summary>
-		/// Split a pattern list into individual patterns
+		/// Converts a JSON array element into a List<object> recursively.
+		/// This matches what PatchingSystem expects (list-of-lists).
 		/// </summary>
-		private static string[] SplitPatternList(string patternListText)
+		private static List<object> JsonArrayToListOfObjects(JsonElement arr)
 		{
-			// Remove outer brackets
-			patternListText = patternListText.Trim();
-			if (patternListText.StartsWith("[") && patternListText.EndsWith("]"))
-				patternListText = patternListText.Substring(1, patternListText.Length - 2).Trim();
-
-			// Current tuple
-			StringBuilder currentTuple = new StringBuilder();
-			List<string> tuples = new List<string>();
-
-			// Track nesting level
-			int parenthesisLevel = 0;
-
-			for (int i = 0; i < patternListText.Length; i++)
+			var list = new List<object>();
+			foreach (var item in arr.EnumerateArray())
 			{
-				char c = patternListText[i];
-
-				if (c == '(')
-					parenthesisLevel++;
-				else if (c == ')')
-					parenthesisLevel--;
-
-				// Add character to current tuple
-				currentTuple.Append(c);
-
-				// If we've completed a tuple and are at a comma, add it to the list
-				if (parenthesisLevel == 0 && (c == ',' || i == patternListText.Length - 1))
+				switch (item.ValueKind)
 				{
-					// Check if we've reached the end of a tuple
-					string tuple = currentTuple.ToString().Trim();
-					if (tuple.EndsWith(","))
-						tuple = tuple.Substring(0, tuple.Length - 1).Trim();
-
-					if (!string.IsNullOrWhiteSpace(tuple))
-						tuples.Add(tuple);
-
-					currentTuple.Clear();
+					case JsonValueKind.Array:
+						// Nested array => recurse
+						list.Add(JsonArrayToListOfObjects(item));
+						break;
+					case JsonValueKind.String:
+						list.Add(item.GetString());
+						break;
+					case JsonValueKind.Number:
+						if (item.TryGetInt32(out int iVal)) list.Add(iVal);
+						else if (item.TryGetInt64(out long lVal)) list.Add(lVal);
+						else list.Add(item.GetDouble());
+						break;
+					case JsonValueKind.True:
+					case JsonValueKind.False:
+						list.Add(item.GetBoolean());
+						break;
+					case JsonValueKind.Undefined:
+					case JsonValueKind.Null:
+						list.Add(null);
+						break;
+					default:
+						// Object or other stuff we don't expect in a patch definition
+						break;
 				}
 			}
+			return list;
+		}
 
-			return tuples.ToArray();
+		#endregion
+
+		#region Helpers: Remove Comments & Convert Python→JSON
+
+		/// <summary>
+		/// Removes everything from '#' to the end of each line.
+		/// </summary>
+		private static string RemovePythonComments(string text)
+		{
+			var sb = new StringBuilder();
+			using (var reader = new StringReader(text))
+			{
+				string line;
+				while ((line = reader.ReadLine()) != null)
+				{
+					int cmt = line.IndexOf('#');
+					if (cmt >= 0) line = line.Substring(0, cmt);
+					if (!string.IsNullOrWhiteSpace(line))
+						sb.AppendLine(line);
+				}
+			}
+			return sb.ToString();
 		}
 
 		/// <summary>
-		/// Parse a pattern tuple like "('pattern', 0, 'replacement')"
+		/// Converts a Python dictionary snippet (with single quotes, tuples, etc.)
+		/// into a rough JSON equivalent. Avoids lookbehind to prevent regex errors.
 		/// </summary>
-		private static List<object> ParsePatternTuple(string tupleText, Action<string, int> progressCallback = null)
+		private static string PythonDictToJson(string pythonDict)
 		{
-			List<object> result = new List<object>();
+			// Trim whitespace
+			pythonDict = pythonDict.Trim();
 
-			// Remove the parentheses
-			tupleText = tupleText.Trim();
-			if (tupleText.StartsWith("(") && tupleText.EndsWith(")"))
-				tupleText = tupleText.Substring(1, tupleText.Length - 2).Trim();
+			// 1) Replace escaped single-quotes ('\') with placeholder to avoid collision
+			//    Then replace unescaped single quotes with double quotes, restore placeholders as escaped quotes.
+			pythonDict = ReplaceSingleQuotesNaive(pythonDict);
 
-			// Split by commas, keeping track of string literals
-			List<string> parts = new List<string>();
-			StringBuilder currentPart = new StringBuilder();
-			bool inQuotes = false;
+			// 2) Convert Python tuples ( ) → JSON arrays [ ]
+			pythonDict = pythonDict.Replace('(', '[').Replace(')', ']');
 
-			for (int i = 0; i < tupleText.Length; i++)
-			{
-				char c = tupleText[i];
+			// 3) Remove any trailing commas before a ] or }
+			pythonDict = Regex.Replace(pythonDict, @",(\s*[\]\}])", "$1");
 
-				if ((c == '\'' || c == '"') && (i == 0 || tupleText[i - 1] != '\\'))
-					inQuotes = !inQuotes;
-
-				if (c == ',' && !inQuotes)
-				{
-					parts.Add(currentPart.ToString().Trim());
-					currentPart.Clear();
-				}
-				else
-				{
-					currentPart.Append(c);
-				}
-			}
-
-			// Add the last part
-			if (currentPart.Length > 0)
-				parts.Add(currentPart.ToString().Trim());
-
-			// Parse each part
-			foreach (string part in parts)
-			{
-				try
-				{
-					if (part.StartsWith("'") || part.StartsWith("\""))
-					{
-						// String literal - remove quotes
-						result.Add(part.Trim('\'', '"'));
-					}
-					else
-					{
-						// Try to parse as integer
-						string trimmedPart = part.Trim();
-						if (int.TryParse(trimmedPart, out int intValue))
-						{
-							result.Add(intValue);
-						}
-						else
-						{
-							// Log the error but continue with a default value (0)
-							System.Diagnostics.Debug.WriteLine($"Warning: Could not parse '{trimmedPart}' as integer in tuple {tupleText}, using 0");
-							progressCallback?.Invoke($"Warning: Could not parse '{trimmedPart}' as integer, using 0", 10);
-							result.Add(0);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					// Log the error but continue
-					System.Diagnostics.Debug.WriteLine($"Error parsing part '{part}' in tuple {tupleText}: {ex.Message}");
-					progressCallback?.Invoke($"Error parsing part '{part}': {ex.Message}", 10);
-				}
-			}
-
-			return result.Count > 0 ? result : null;
+			// In principle, we should now have a JSON-like object that starts with '{' and ends with '}'.
+			return pythonDict;
 		}
 
-		public static string ExtractPatchDictionaries(string pythonFileContent)
+		/// <summary>
+		/// Simple approach to convert single quotes → double quotes so JSON parsing can work.
+		/// Avoids negative lookbehind by using placeholders for \'
+		/// </summary>
+		private static string ReplaceSingleQuotesNaive(string text)
 		{
-			StringBuilder extractedPatches = new StringBuilder();
+			// Step 1: replace all instances of \' with a placeholder, e.g. [ESC_QUOTE]
+			text = text.Replace("\\'", "[ESC_QUOTE]");
 
-			// Extract patches32 dictionary
-			int patches32Start = pythonFileContent.IndexOf("patches32 = {");
-			if (patches32Start >= 0)
-			{
-				int braceLevel = 0;
-				bool inDictionary = false;
-				int startPos = patches32Start;
+			// Step 2: replace all ' with "
+			text = text.Replace("'", "\"");
 
-				// Find the end of the dictionary by tracking braces
-				for (int i = startPos; i < pythonFileContent.Length; i++)
-				{
-					char c = pythonFileContent[i];
+			// Step 3: restore [ESC_QUOTE] to \"
+			text = text.Replace("[ESC_QUOTE]", "\\\"");
 
-					if (c == '{')
-					{
-						if (!inDictionary) inDictionary = true;
-						braceLevel++;
-					}
-					else if (c == '}')
-					{
-						braceLevel--;
-						if (braceLevel == 0 && inDictionary)
-						{
-							// Found the end of the dictionary, extract it
-							string patches32Dict = pythonFileContent.Substring(startPos, i - startPos + 1);
-							extractedPatches.AppendLine("# 32-bit patches");
-							extractedPatches.AppendLine("patches32 = " + patches32Dict);
-							extractedPatches.AppendLine();
-							break;
-						}
-					}
-				}
-			}
-
-			// Extract patches64 dictionary
-			int patches64Start = pythonFileContent.IndexOf("patches64 = {");
-			if (patches64Start >= 0)
-			{
-				int braceLevel = 0;
-				bool inDictionary = false;
-				int startPos = patches64Start;
-
-				// Find the end of the dictionary by tracking braces
-				for (int i = startPos; i < pythonFileContent.Length; i++)
-				{
-					char c = pythonFileContent[i];
-
-					if (c == '{')
-					{
-						if (!inDictionary) inDictionary = true;
-						braceLevel++;
-					}
-					else if (c == '}')
-					{
-						braceLevel--;
-						if (braceLevel == 0 && inDictionary)
-						{
-							// Found the end of the dictionary, extract it
-							string patches64Dict = pythonFileContent.Substring(startPos, i - startPos + 1);
-							extractedPatches.AppendLine("# 64-bit patches");
-							extractedPatches.AppendLine("patches64 = " + patches64Dict);
-							break;
-						}
-					}
-				}
-			}
-
-			// For debugging, print what we extracted
-			string extracted = extractedPatches.ToString();
-			System.Diagnostics.Debug.WriteLine($"Extracted patch dictionaries ({extracted.Length} chars)");
-
-			// If we couldn't extract patches, throw an exception
-			if (extracted.Length == 0)
-			{
-				throw new Exception("Could not find patch dictionaries in the Python file.");
-			}
-
-			return extracted;
+			return text;
 		}
+
+		#endregion
 	}
 }
