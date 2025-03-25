@@ -28,7 +28,6 @@ namespace RTXLauncher
 				{ "What's Changed:", Color.DarkOrange },
 				{ "Updated:", Color.DarkOrange },
 				{ "Improved:", Color.DarkOrange },
-				{ "Improved:", Color.DarkOrange },
 				{ "Technical Details:", Color.DarkMagenta },
 				{ "Known Issues:", Color.Red },
 				{ "Known Issue:", Color.Red },
