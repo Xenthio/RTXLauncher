@@ -30,29 +30,40 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+
   </ItemGroup>
-
 	<ItemGroup>
-	    <Compile Include="Form1.AboutPage.Updater.cs">
-		    <SubType>Code</SubType>
-		    <DependentUpon>Form1.cs</DependentUpon>
-		    <!-- this is the magic incantation -->
-	    </Compile>
-
-	    <Compile Include="Form1.InstallPage.cs">
-		    <SubType>Code</SubType>
-		    <DependentUpon>Form1.cs</DependentUpon>
-		    <!-- this is the magic incantation -->
-	    </Compile>
-
-	    <Compile Include="Form1.InstallPage.QuickInstall.cs">
-		    <SubType>Code</SubType>
-		    <DependentUpon>Form1.cs</DependentUpon>
-		    <!-- this is the magic incantation -->
-	    </Compile>
+		<Compile Update="Controls\GameMountCheckbox.cs">
+			<SubType>Component</SubType>
+		</Compile>
+		<Compile Update="Controls\LogReflectionControl.cs">
+			<SubType>Component</SubType>
+		</Compile>
+		<Compile Update="Form1.AboutPage.Updater.cs">
+			<SubType>Form</SubType>
+			<DependentUpon>Form1.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Form1.cs">
+			<SubType>Form</SubType> 
+		</Compile>
+		<Compile Update="Form1.InstallPage.cs">
+			<SubType>Form</SubType>
+			<DependentUpon>Form1.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Form1.InstallPage.QuickInstall.cs">
+			<SubType>Form</SubType>
+			<DependentUpon>Form1.cs</DependentUpon>
+		</Compile>
+		<Compile Update="ProgressForm.cs">
+			<SubType>Form</SubType>
+		</Compile>
+		<Compile Update="UpdateForm.cs">
+			<SubType>Form</SubType>
+		</Compile>
 	</ItemGroup>
 
-  <ItemGroup>
+
+	<ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
