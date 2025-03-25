@@ -1,0 +1,63 @@
+name: .NET Core Publish
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-publish:
+    runs-on: windows-latest
+
+    env:
+      SOLUTION_NAME: YourSolution.sln  # Update with your solution name
+      PROJECT_PATH: src/YourProject/YourProject.csproj  # Update with your project path
+      PUBLISH_DIR: publish
+      RUNTIME_ID: win-x64  # Change if targeting different runtime
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore $env:SOLUTION_NAME
+
+    - name: Run tests
+      run: dotnet test $env:SOLUTION_NAME --no-restore --verbosity normal
+
+    - name: Calculate version info
+      id: version
+      shell: pwsh
+      run: |
+        $commitHash = "${{ github.sha }}".Substring(0, 8)
+        $commitDate = git show -s --format=%cd --date=format:"%y%m%d.%H%M"
+        echo "commit_hash=$commitHash" >> $env:GITHUB_OUTPUT
+        echo "build_date=$commitDate" >> $env:GITHUB_OUTPUT
+
+    - name: Publish application
+      run: |
+        dotnet publish "$env:PROJECT_PATH" `
+          -p:PublishProfile=FolderProfile `
+          -p:PublishSingleFile=true `
+          -p:SelfContained=true `
+          -p:Runtime=$env:RUNTIME_ID `
+          -p:Configuration=Release `
+          -p:Version=${{ steps.version.outputs.build_date }} `
+          -p:FileVersion=${{ steps.version.outputs.build_date }} `
+          -p:AssemblyVersion=${{ steps.version.outputs.build_date }} `
+          -p:InformationalVersion=${{ steps.version.outputs.commit_hash }} `
+          --output $env:PUBLISH_DIR
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyApplication
+        path: ${{ env.PUBLISH_DIR }}/**/*.exe
