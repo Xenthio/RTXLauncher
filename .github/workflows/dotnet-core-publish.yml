@@ -16,6 +16,11 @@ jobs:
       with:
         fetch-depth: 0
 
+    # List directory contents for debugging
+    - name: List directory contents
+      run: dir /s /b *.sln *.csproj
+      shell: cmd
+
     # Install the .NET Core workload
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
@@ -29,21 +34,34 @@ jobs:
         echo "HASH=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    # Restore dependencies
+    # Restore dependencies using the correct solution file path found in the listing
     - name: Restore dependencies
-      run: dotnet restore RTXLauncher.sln
+      run: |
+        $solutionFile = Get-ChildItem -Path . -Filter *.sln -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        echo "Using solution file: $solutionFile"
+        dotnet restore "$solutionFile"
+      shell: pwsh
 
     # Publish the application with commit hash as version
     - name: Publish
       run: |
-        dotnet publish RTXLauncher.csproj -p:PublishProfile=FolderProfile -p:Version=${{ steps.commit_hash.outputs.HASH }} -p:AssemblyVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }} -p:FileVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }}
+        $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        echo "Using project file: $projectFile"
+        dotnet publish "$projectFile" -p:PublishProfile=FolderProfile -p:Version=${{ steps.commit_hash.outputs.HASH }} -p:AssemblyVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }} -p:FileVersion=1.0.0.${{ steps.commit_hash.outputs.HASH }}
+      shell: pwsh
 
     # Find the published exe
     - name: Find published EXE
       id: find_exe
       run: |
         $exePath = Get-ChildItem -Path . -Filter *.exe -Recurse -File | Where-Object { $_.DirectoryName -like "*\bin\*\*\publish*" } | Select-Object -First 1 -ExpandProperty FullName
-        echo "EXE_PATH=$exePath" >> $env:GITHUB_OUTPUT
+        if ($exePath) {
+          echo "Found EXE at: $exePath"
+          echo "EXE_PATH=$exePath" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "No EXE found in publish directories"
+          exit 1
+        }
       shell: pwsh
 
     # Upload the EXE as an artifact
