@@ -19,9 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Form1.AboutPage.Updater.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Update="Form1.AboutPage.Updater.cs" />
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -33,6 +31,26 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
   </ItemGroup>
+
+	<ItemGroup>
+	    <Compile Include="Form1.AboutPage.Updater.cs">
+		    <SubType>Code</SubType>
+		    <DependentUpon>Form1.cs</DependentUpon>
+		    <!-- this is the magic incantation -->
+	    </Compile>
+
+	    <Compile Include="Form1.InstallPage.cs">
+		    <SubType>Code</SubType>
+		    <DependentUpon>Form1.cs</DependentUpon>
+		    <!-- this is the magic incantation -->
+	    </Compile>
+
+	    <Compile Include="Form1.InstallPage.QuickInstall.cs">
+		    <SubType>Code</SubType>
+		    <DependentUpon>Form1.cs</DependentUpon>
+		    <!-- this is the magic incantation -->
+	    </Compile>
+	</ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
