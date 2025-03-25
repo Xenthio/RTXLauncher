@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 //--------------------------------------------------------------------------------
-// PatchParser.cs (revised excerpt — replace your existing class with this)
+// PatchParser.cs (revised excerpt)
 // Removes the need for (?<!\\) by using a naive placeholder approach.
 //--------------------------------------------------------------------------------
 
