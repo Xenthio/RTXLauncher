@@ -17,13 +17,14 @@ namespace RTXLauncher
 			// Dictionary of prefixes and their formatting
 			var prefixFormats = new Dictionary<string, Color>
 			{
-				{ "Fixed:", Color.Green },
-				{ "Fixes:", Color.Green },
-				{ "Bug fix:", Color.Green },
-				{ "Added:", Color.DarkBlue },
-				{ "New:", Color.DarkBlue },
-				{ "What's New:", Color.DarkBlue },
-				{ "Feature:", Color.DarkBlue },
+				{ "Fixed:", Color.DarkSlateGray },
+				{ "Fixes:", Color.DarkSlateGray },
+				{ "Bug fix:", Color.DarkSlateGray },
+				{ "Added:", Color.DarkGreen },
+				{ "New:", Color.DarkGreen },
+				{ "What's New:", Color.DarkGreen },
+				{ "Feature:", Color.DarkGreen },
+				{ "Removed:", Color.DarkRed },
 				{ "Changed:", Color.DarkOrange },
 				{ "What's Changed:", Color.DarkOrange },
 				{ "Updated:", Color.DarkOrange },
@@ -34,7 +35,7 @@ namespace RTXLauncher
 				{ "Warning:", Color.Red },
 				{ "Important:", Color.Red },
 				{ "Note:", Color.Red },
-				{ "New Contributors:", Color.Gold },
+				{ "New Contributors:", Color.Fuchsia },
 			};
 
 			// Format the header section
