@@ -101,6 +101,7 @@
 			linkLabel1 = new LinkLabel();
 			label4 = new Label();
 			groupBox7 = new GroupBox();
+			LauncherUpdateSourceComboBox = new ComboBox();
 			ReleaseNotesRichTextBox = new RichTextBox();
 			InstallLauncherUpdateButton = new Button();
 			progressBar1 = new ProgressBar();
@@ -992,6 +993,7 @@
 			// groupBox7
 			// 
 			groupBox7.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox7.Controls.Add(LauncherUpdateSourceComboBox);
 			groupBox7.Controls.Add(ReleaseNotesRichTextBox);
 			groupBox7.Controls.Add(InstallLauncherUpdateButton);
 			groupBox7.Controls.Add(progressBar1);
@@ -1002,6 +1004,15 @@
 			groupBox7.TabIndex = 2;
 			groupBox7.TabStop = false;
 			groupBox7.Text = "Updates";
+			// 
+			// LauncherUpdateSourceComboBox
+			// 
+			LauncherUpdateSourceComboBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+			LauncherUpdateSourceComboBox.FormattingEnabled = true;
+			LauncherUpdateSourceComboBox.Location = new Point(6, 208);
+			LauncherUpdateSourceComboBox.Name = "LauncherUpdateSourceComboBox";
+			LauncherUpdateSourceComboBox.Size = new Size(106, 23);
+			LauncherUpdateSourceComboBox.TabIndex = 11;
 			// 
 			// ReleaseNotesRichTextBox
 			// 
@@ -1175,5 +1186,6 @@
 		private Label label17;
 		private Label label16;
 		private RichTextBox ReleaseNotesRichTextBox;
+		private ComboBox LauncherUpdateSourceComboBox;
 	}
 }

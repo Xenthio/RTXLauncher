@@ -16,7 +16,20 @@ namespace RTXLauncher
 		private GitHubRelease _latestRelease;
 		private bool _updateAvailable = false;
 
-		// Constructor - make sure this integrates with your existing form
+		private class UpdateSource
+		{
+			public string Name { get; set; }
+			public string Version { get; set; }
+			public string DownloadUrl { get; set; }
+			public bool IsStaging { get; set; }
+			public GitHubRelease Release { get; set; }
+
+			public override string ToString()
+			{
+				return IsStaging ? $"{Name}" : $"{Name} ({Version})";
+			}
+		}
+
 		public void InitialiseUpdater()
 		{
 			// Get current version from assembly
@@ -31,6 +44,7 @@ namespace RTXLauncher
 			// Set up event handlers
 			CheckForLauncherUpdatesButton.Click += CheckForLauncherUpdatesButton_Click;
 			InstallLauncherUpdateButton.Click += InstallLauncherUpdateButton_Click;
+			LauncherUpdateSourceComboBox.SelectedIndexChanged += LauncherUpdateSourceComboBox_SelectedIndexChanged;
 
 			// Create temp folder for updates if it doesn't exist
 			_updateTempPath = Path.Combine(Path.GetTempPath(), "RTXLauncherUpdater");
@@ -43,11 +57,173 @@ namespace RTXLauncher
 			CheckForUpdatesAsync(false);
 		}
 
+		// Add these methods to your Form1 class:
+
+		private async Task PopulateUpdateSourcesComboBox(bool userInitiated = false)
+		{
+			LauncherUpdateSourceComboBox.Items.Clear();
+			LauncherUpdateSourceComboBox.Enabled = false;
+
+			try
+			{
+				// Add staging source as the first option
+				LauncherUpdateSourceComboBox.Items.Add(new UpdateSource
+				{
+					Name = "Development Build (Staging)",
+					Version = "Latest",
+					DownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe",
+					IsStaging = true
+				});
+
+				// Fetch releases from GitHub
+				var releases = await GitHubAPI.FetchReleasesAsync("Xenthio", "RTXLauncher", userInitiated);
+
+				// Filter out pre-releases if needed
+				var stableReleases = releases.Where(r => !r.Prerelease).ToList();
+
+				// Prefer non-prereleases, but use prereleases if no stable releases are available
+				var releasesToUse = stableReleases.Count > 0 ? stableReleases : releases;
+
+				if (releasesToUse.Count > 0)
+				{
+					// Sort releases by publish date (newest first)
+					releasesToUse = releasesToUse.OrderByDescending(r => r.PublishedAt).ToList();
+
+					// Add each release to the combo box
+					foreach (var release in releasesToUse)
+					{
+						// Find appropriate asset
+						var exeAsset = release.Assets.FirstOrDefault(a =>
+							a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+							a.Name.Contains("RTXLauncher", StringComparison.OrdinalIgnoreCase));
+
+						if (exeAsset != null)
+						{
+							LauncherUpdateSourceComboBox.Items.Add(new UpdateSource
+							{
+								Name = $"Version {release.TagName}",
+								Version = release.TagName,
+								DownloadUrl = exeAsset.BrowserDownloadUrl,
+								IsStaging = false,
+								Release = release
+							});
+						}
+						else
+						{
+							// If no exe found but there is a zip or zipball
+							var zipAsset = release.Assets.FirstOrDefault(a =>
+								a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+								a.Name.Contains("RTXLauncher", StringComparison.OrdinalIgnoreCase));
+
+							string downloadUrl = zipAsset?.BrowserDownloadUrl ?? release.ZipballUrl;
+
+							LauncherUpdateSourceComboBox.Items.Add(new UpdateSource
+							{
+								Name = $"Version {release.TagName}",
+								Version = release.TagName,
+								DownloadUrl = downloadUrl,
+								IsStaging = false,
+								Release = release
+							});
+						}
+					}
+
+					// Select the latest release by default (second item, after staging)
+					if (LauncherUpdateSourceComboBox.Items.Count > 1)
+					{
+						LauncherUpdateSourceComboBox.SelectedIndex = 1; // Index 1 is the first release (after staging)
+					}
+					else
+					{
+						LauncherUpdateSourceComboBox.SelectedIndex = 0; // Staging if nothing else
+					}
+				}
+				else
+				{
+					// If no releases found, at least select the staging option
+					LauncherUpdateSourceComboBox.SelectedIndex = 0;
+				}
+			}
+			catch (Exception ex)
+			{
+				if (userInitiated)
+				{
+					MessageBox.Show($"Error loading update sources: {ex.Message}",
+						"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
+
+				// Add only staging source as fallback
+				if (LauncherUpdateSourceComboBox.Items.Count == 0)
+				{
+					LauncherUpdateSourceComboBox.Items.Add(new UpdateSource
+					{
+						Name = "Development Build (Staging)",
+						Version = "Latest",
+						DownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe",
+						IsStaging = true
+					});
+					LauncherUpdateSourceComboBox.SelectedIndex = 0;
+				}
+			}
+			finally
+			{
+				LauncherUpdateSourceComboBox.Enabled = true;
+			}
+		}
+
+		private async void LauncherUpdateSourceComboBox_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (LauncherUpdateSourceComboBox.SelectedItem is UpdateSource selectedSource)
+			{
+				try
+				{
+					ReleaseNotesRichTextBox.Clear();
+
+					if (selectedSource.IsStaging)
+					{
+						// For staging builds, show generic information
+						FormatReleaseNotes("Development Build", _currentVersion,
+							"This is the latest development build from the master branch.\n\n" +
+							"Warning: This version may contain experimental features and bugs.",
+							true);
+					}
+					else
+					{
+						// For regular releases, show the release notes
+						string latestVersion = selectedSource.Version.TrimStart('v');
+						string currentVersion = _currentVersion.TrimStart('v');
+
+						// Check if this release is newer than current version
+						bool isNewer = CompareVersions(latestVersion, currentVersion) > 0;
+
+						// Update the _latestRelease field to use in installation
+						_latestRelease = selectedSource.Release;
+						_updateAvailable = isNewer;
+
+						FormatReleaseNotes(selectedSource.Version, _currentVersion,
+							selectedSource.Release?.Body, isNewer);
+					}
+
+					// Always enable install button when a source is selected
+					InstallLauncherUpdateButton.Enabled = true;
+				}
+				catch (Exception ex)
+				{
+					ReleaseNotesRichTextBox.Text = $"Error loading release information: {ex.Message}";
+					InstallLauncherUpdateButton.Enabled = true; // Still allow installation
+				}
+			}
+			else
+			{
+				ReleaseNotesRichTextBox.Clear();
+				InstallLauncherUpdateButton.Enabled = false;
+			}
+		}
+
 		private async void CheckForLauncherUpdatesButton_Click(object sender, EventArgs e)
 		{
 			await CheckForUpdatesAsync(true);
 		}
-
 		private async Task CheckForUpdatesAsync(bool userInitiated)
 		{
 			try
@@ -62,66 +238,21 @@ namespace RTXLauncher
 					ReleaseNotesRichTextBox.Text = "Checking for updates...";
 				}
 
-				// Fetch releases from GitHub
-				var releases = await GitHubAPI.FetchReleasesAsync("Xenthio", "RTXLauncher", userInitiated);
+				// Populate the combo box with available versions
+				await PopulateUpdateSourcesComboBox(userInitiated);
 
-				// Filter out pre-releases if needed
-				var stableReleases = releases.Where(r => !r.Prerelease).ToList();
+				// The combo box selection change will handle displaying release notes
+				// and setting _updateAvailable
 
-				// Prefer non-prereleases, but use prereleases if no stable releases are available
-				var releasesToUse = stableReleases.Count > 0 ? stableReleases : releases;
-
-				if (releasesToUse.Count == 0)
+				if (userInitiated && _updateAvailable)
 				{
-					if (userInitiated)
-					{
-						ReleaseNotesRichTextBox.Text = "No releases found on GitHub.";
-						MessageBox.Show("No releases found on GitHub.", "Update Check", MessageBoxButtons.OK, MessageBoxIcon.Information);
-					}
-					return;
+					MessageBox.Show($"Update available! New version: {_latestRelease.TagName}",
+						"Update Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
 				}
-
-				// Get the latest release
-				_latestRelease = releasesToUse.OrderByDescending(r => r.PublishedAt).First();
-
-				// Check if update is available by comparing versions
-				string latestVersion = _latestRelease.TagName.TrimStart('v');
-				string currentVersion = _currentVersion.TrimStart('v');
-
-				// Compare versions (simple string comparison might not work for all versioning schemes)
-				_updateAvailable = CompareVersions(latestVersion, currentVersion) > 0;
-
-				// Update UI based on update availability
-				if (_updateAvailable)
+				else if (userInitiated && !_updateAvailable && LauncherUpdateSourceComboBox.SelectedIndex > 0)
 				{
-					ReleaseNotesRichTextBox.Clear();
-					ReleaseNotesRichTextBox.AppendText($"New version available: {_latestRelease.TagName}\r\n");
-					ReleaseNotesRichTextBox.AppendText($"Current version: {_currentVersion}\r\n\r\n");
-					ReleaseNotesRichTextBox.AppendText("Release Notes:\r\n");
-					ReleaseNotesRichTextBox.AppendText(_latestRelease.Body ?? "No release notes available");
-
-					FormatReleaseNotes(_latestRelease.TagName, _currentVersion, _latestRelease.Body);
-
-					InstallLauncherUpdateButton.Enabled = true;
-
-					if (userInitiated)
-					{
-						MessageBox.Show($"Update available! New version: {_latestRelease.TagName}",
-							"Update Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
-					}
-				}
-				else
-				{
-					ReleaseNotesRichTextBox.Text = $"You have the latest version ({_currentVersion}).\r\n\r\n" +
-						"Latest release notes:\r\n" + (_latestRelease.Body ?? "No release notes available");
-
-					FormatReleaseNotes(_latestRelease.TagName, _currentVersion, _latestRelease.Body, false);
-
-					if (userInitiated)
-					{
-						MessageBox.Show("You have the latest version of the launcher.",
-							"No Updates Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
-					}
+					MessageBox.Show("You have the latest version of the launcher.",
+						"No Updates Available", MessageBoxButtons.OK, MessageBoxIcon.Information);
 				}
 			}
 			catch (Exception ex)
@@ -139,6 +270,7 @@ namespace RTXLauncher
 			}
 		}
 
+
 		// Store link information for click detection
 		private List<LinkInfo> _links = new List<LinkInfo>();
 
@@ -147,19 +279,124 @@ namespace RTXLauncher
 		/// </summary>
 		private void FormatReleaseNotes(string newVersion, string currentVersion, string releaseNotes, bool isUpdate = true)
 		{
-			// Clear previous links
+			// Initialize and clear
 			_links.Clear();
-
 			ReleaseNotesRichTextBox.Clear();
 			ReleaseNotesRichTextBox.SuspendLayout();
 
-			// Default font
-			ReleaseNotesRichTextBox.Font = new Font("Segoe UI", 9.0f);
+			// Dictionary of prefixes and their formatting
+			var prefixFormats = new Dictionary<string, Color>
+			{
+				{ "Fixed:", Color.Green },
+				{ "Fixes:", Color.Green },
+				{ "Bug fix:", Color.Green },
+				{ "Added:", Color.DarkBlue },
+				{ "New:", Color.DarkBlue },
+				{ "Feature:", Color.DarkBlue },
+				{ "Changed:", Color.DarkOrange },
+				{ "Updated:", Color.DarkOrange },
+				{ "Improved:", Color.DarkOrange },
+				{ "Warning:", Color.Red },
+				{ "Important:", Color.Red },
+				{ "Note:", Color.Red }
+			};
 
-			// Add header
+			// Format the header section
+			FormatHeaderSection(newVersion, currentVersion, isUpdate);
+
+			// Handle missing release notes
+			if (string.IsNullOrWhiteSpace(releaseNotes))
+			{
+				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f, FontStyle.Italic);
+				ReleaseNotesRichTextBox.SelectionColor = Color.Gray;
+				ReleaseNotesRichTextBox.AppendText("No release notes available for this version.");
+				ReleaseNotesRichTextBox.ResumeLayout();
+				return;
+			}
+
+			// Process each line
+			string[] lines = releaseNotes.Replace("\r\n", "\n").Split('\n');
+			bool inCodeBlock = false;
+			bool inBulletList = false;
+
+			foreach (string line in lines)
+			{
+				string trimmedLine = line.TrimStart();
+
+				// Skip empty lines
+				if (string.IsNullOrWhiteSpace(line))
+				{
+					inBulletList = false;
+					ReleaseNotesRichTextBox.SelectionBullet = false;
+					ReleaseNotesRichTextBox.AppendText("\n");
+					continue;
+				}
+
+				// Handle code blocks
+				if (trimmedLine.StartsWith("```"))
+				{
+					FormatCodeBlockMarker(ref inCodeBlock);
+					continue;
+				}
+
+				if (inCodeBlock)
+				{
+					FormatCodeLine(line);
+					continue;
+				}
+
+				// Parse line components
+				(string content, int headerLevel, bool isBullet, string bulletPrefix) = ParseLineFormat(trimmedLine);
+
+				// Find special prefix if any
+				string matchedPrefix = prefixFormats.Keys.FirstOrDefault(prefix => content.StartsWith(prefix));
+
+				// Format the line based on its components
+				if (isBullet)
+				{
+					FormatBulletLine(content, matchedPrefix, prefixFormats, ref inBulletList);
+				}
+				else if (headerLevel > 0)
+				{
+					FormatHeaderLine(content, headerLevel, matchedPrefix, prefixFormats);
+				}
+				else if (matchedPrefix != null)
+				{
+					FormatPrefixedLine(content, matchedPrefix, prefixFormats);
+				}
+				else
+				{
+					// Regular text
+					if (inBulletList)
+					{
+						inBulletList = false;
+						ReleaseNotesRichTextBox.SelectionBullet = false;
+					}
+
+					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
+					ReleaseNotesRichTextBox.SelectionColor = Color.Black;
+					ProcessMarkdownText(line);
+					ReleaseNotesRichTextBox.AppendText("\n");
+				}
+			}
+
+			// Final cleanup and setup
+			ReleaseNotesRichTextBox.MouseClick -= ReleaseNotesRichTextBox_MouseClick;
+			ReleaseNotesRichTextBox.MouseClick += ReleaseNotesRichTextBox_MouseClick;
+
+			// Reset styling
+			ResetTextBoxFormatting();
+
+			ReleaseNotesRichTextBox.ResumeLayout();
+		}
+
+
+		// Helper methods to break up the logic
+
+		private void FormatHeaderSection(string newVersion, string currentVersion, bool isUpdate)
+		{
 			if (isUpdate)
 			{
-				// Update available styling
 				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 12f, FontStyle.Bold);
 				ReleaseNotesRichTextBox.SelectionColor = Color.Green;
 				ReleaseNotesRichTextBox.AppendText("Update Available!\n");
@@ -176,171 +413,160 @@ namespace RTXLauncher
 			}
 			else
 			{
-				// No update styling
 				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 12f, FontStyle.Bold);
 				ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-				ReleaseNotesRichTextBox.AppendText("You're up to date!\n");
-
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 10f);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-				ReleaseNotesRichTextBox.AppendText($"Current version: {currentVersion}\n");
-
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 10f);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-				ReleaseNotesRichTextBox.AppendText($"Latest release: {newVersion}\n\n");
+				ReleaseNotesRichTextBox.AppendText($"You're up to date! ({currentVersion})\n\n");
 			}
+		}
 
-			// Add "Release Notes" header
-			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 11f, FontStyle.Bold);
+		private void FormatCodeBlockMarker(ref bool inCodeBlock)
+		{
+			inCodeBlock = !inCodeBlock;
+
+			if (inCodeBlock)
+			{
+				ReleaseNotesRichTextBox.SelectionBackColor = Color.FromArgb(245, 245, 245);
+				ReleaseNotesRichTextBox.SelectionFont = new Font("Consolas", 9f);
+			}
+			else
+			{
+				ReleaseNotesRichTextBox.SelectionBackColor = Color.White;
+				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
+				ReleaseNotesRichTextBox.AppendText("\n");
+			}
+		}
+
+		private void FormatCodeLine(string line)
+		{
+			ReleaseNotesRichTextBox.SelectionFont = new Font("Consolas", 9f);
 			ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-			ReleaseNotesRichTextBox.AppendText("Release Notes:\n");
+			ReleaseNotesRichTextBox.AppendText(line + "\n");
+		}
 
-			// Handle missing release notes
-			if (string.IsNullOrWhiteSpace(releaseNotes))
+		private (string content, int headerLevel, bool isBullet, string bulletPrefix) ParseLineFormat(string line)
+		{
+			int headerLevel = 0;
+			bool isBullet = false;
+			string bulletPrefix = "";
+			string content = line;
+
+			// Check for headers
+			if (line.StartsWith("### "))
 			{
-				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f, FontStyle.Italic);
-				ReleaseNotesRichTextBox.SelectionColor = Color.Gray;
-				ReleaseNotesRichTextBox.AppendText("No release notes available for this version.");
-				ReleaseNotesRichTextBox.ResumeLayout();
-				return;
+				headerLevel = 3;
+				content = line.Substring(4);
+			}
+			else if (line.StartsWith("## "))
+			{
+				headerLevel = 2;
+				content = line.Substring(3);
+			}
+			else if (line.StartsWith("# "))
+			{
+				headerLevel = 1;
+				content = line.Substring(2);
 			}
 
-			// Process each line but with fixed link handling
-			string[] lines = releaseNotes.Replace("\r\n", "\n").Split('\n');
-			bool inCodeBlock = false;
-			bool inBulletList = false;
-
-			foreach (string line in lines)
+			// Check for bullets - REMOVE THE ELSE HERE
+			if (line.StartsWith("- ") || line.StartsWith("* "))
 			{
-				string trimmedLine = line.TrimStart();
-
-				// Handle code blocks
-				if (trimmedLine.StartsWith("```"))
-				{
-					inCodeBlock = !inCodeBlock;
-
-					// Add a gray background to code blocks
-					if (inCodeBlock)
-					{
-						ReleaseNotesRichTextBox.SelectionBackColor = Color.FromArgb(245, 245, 245);
-						ReleaseNotesRichTextBox.SelectionFont = new Font("Consolas", 9f);
-					}
-					else
-					{
-						ReleaseNotesRichTextBox.SelectionBackColor = Color.White;
-						ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-						ReleaseNotesRichTextBox.AppendText("\n");
-					}
-					continue;
-				}
-
-				// Inside a code block
-				if (inCodeBlock)
-				{
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Consolas", 9f);
-					ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-					ReleaseNotesRichTextBox.AppendText(line + "\n");
-					continue;
-				}
-
-				// Handle headings (# Heading)
-				if (trimmedLine.StartsWith("# "))
-				{
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 12f, FontStyle.Bold);
-					ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-					ReleaseNotesRichTextBox.AppendText(trimmedLine.Substring(2) + "\n");
-				}
-				else if (trimmedLine.StartsWith("## "))
-				{
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 11f, FontStyle.Bold);
-					ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-					ReleaseNotesRichTextBox.AppendText(trimmedLine.Substring(3) + "\n");
-				}
-				else if (trimmedLine.StartsWith("### "))
-				{
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 10f, FontStyle.Bold);
-					ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-					ReleaseNotesRichTextBox.AppendText(trimmedLine.Substring(4) + "\n");
-				}
-				// Handle bullet points
-				else if (trimmedLine.StartsWith("- ") || trimmedLine.StartsWith("* "))
-				{
-					inBulletList = true;
-					ReleaseNotesRichTextBox.SelectionBullet = true;
-					ReleaseNotesRichTextBox.BulletIndent = 15;
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-					ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-
-					// Process links in bullet points
-					ProcessMarkdownText(trimmedLine.Substring(2));
-					ReleaseNotesRichTextBox.AppendText("\n");
-					ReleaseNotesRichTextBox.SelectionBullet = false;
-				}
-				// Handle blank lines
-				else if (string.IsNullOrWhiteSpace(line))
-				{
-					inBulletList = false;
-					ReleaseNotesRichTextBox.SelectionBullet = false;
-					ReleaseNotesRichTextBox.AppendText("\n");
-				}
-				// Regular text
-				else
-				{
-					// Reset bullet formatting if we were in a bullet list
-					if (inBulletList)
-					{
-						inBulletList = false;
-						ReleaseNotesRichTextBox.SelectionBullet = false;
-					}
-
-					// Set the base font and color for the line
-					ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
-					ReleaseNotesRichTextBox.SelectionColor = Color.Black;
-
-					// Special handling for common patterns in release notes styling
-					if (trimmedLine.StartsWith("Fixed:") || trimmedLine.StartsWith("Fixes:") ||
-						trimmedLine.StartsWith("Bug fix:") || trimmedLine.Contains("FIXED"))
-					{
-						ReleaseNotesRichTextBox.SelectionColor = Color.Green;
-					}
-					else if (trimmedLine.StartsWith("Added:") || trimmedLine.StartsWith("New:") ||
-							 trimmedLine.StartsWith("Feature:") || trimmedLine.Contains("NEW"))
-					{
-						ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
-					}
-					else if (trimmedLine.StartsWith("Changed:") || trimmedLine.StartsWith("Updated:") ||
-							 trimmedLine.StartsWith("Improved:") || trimmedLine.Contains("CHANGED"))
-					{
-						ReleaseNotesRichTextBox.SelectionColor = Color.DarkOrange;
-					}
-					else if (trimmedLine.StartsWith("Warning:") || trimmedLine.StartsWith("Important:") ||
-							 trimmedLine.StartsWith("Note:") || trimmedLine.Contains("WARNING"))
-					{
-						ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f, FontStyle.Bold);
-						ReleaseNotesRichTextBox.SelectionColor = Color.Red;
-					}
-
-					ProcessMarkdownText(line);
-
-					ReleaseNotesRichTextBox.AppendText("\n"); // Add newline after processing
-				}
+				isBullet = true;
+				bulletPrefix = line.StartsWith("- ") ? "- " : "* ";
+				content = line.Substring(2);
 			}
 
-			// Attach the click event
-			ReleaseNotesRichTextBox.MouseClick -= ReleaseNotesRichTextBox_MouseClick;
-			ReleaseNotesRichTextBox.MouseClick += ReleaseNotesRichTextBox_MouseClick;
+			return (content, headerLevel, isBullet, bulletPrefix);
+		}
 
-			// Restore default selection styling
+		private void FormatBulletLine(string content, string matchedPrefix, Dictionary<string, Color> prefixFormats, ref bool inBulletList)
+		{
+			inBulletList = true;
+			ReleaseNotesRichTextBox.SelectionBullet = true;
+			ReleaseNotesRichTextBox.BulletIndent = 15;
+
+			if (matchedPrefix != null)
+			{
+				// Format the special prefix part
+				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
+				ReleaseNotesRichTextBox.SelectionColor = prefixFormats[matchedPrefix];
+				ReleaseNotesRichTextBox.AppendText(matchedPrefix);
+
+				// Format the rest of the bullet text
+				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
+				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
+				ProcessMarkdownText(content.Substring(matchedPrefix.Length));
+			}
+			else
+			{
+				// Process normal bullet
+				ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
+				ReleaseNotesRichTextBox.SelectionColor = Color.Black;
+				ProcessMarkdownText(content);
+			}
+
+			ReleaseNotesRichTextBox.AppendText("\n");
+			ReleaseNotesRichTextBox.SelectionBullet = false;
+		}
+
+		private void FormatHeaderLine(string content, int level, string matchedPrefix, Dictionary<string, Color> prefixFormats)
+		{
+			// Define header font based on level
+			Font headerFont;
+			switch (level)
+			{
+				case 1: headerFont = new Font("Segoe UI", 12f, FontStyle.Bold); break;
+				case 2: headerFont = new Font("Segoe UI", 11f, FontStyle.Bold); break;
+				default: headerFont = new Font("Segoe UI", 10f, FontStyle.Bold); break;
+			}
+
+			if (matchedPrefix != null)
+			{
+				// Add the prefix with special color
+				ReleaseNotesRichTextBox.SelectionFont = headerFont;
+				ReleaseNotesRichTextBox.SelectionColor = prefixFormats[matchedPrefix];
+				ReleaseNotesRichTextBox.AppendText(matchedPrefix);
+
+				// Add the rest with header style - AVOID using ProcessMarkdownText here
+				ReleaseNotesRichTextBox.SelectionFont = headerFont;
+				ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
+				ReleaseNotesRichTextBox.AppendText(content.Substring(matchedPrefix.Length));
+			}
+			else
+			{
+				// Format the whole header - AVOID using ProcessMarkdownText here
+				ReleaseNotesRichTextBox.SelectionFont = headerFont;
+				ReleaseNotesRichTextBox.SelectionColor = Color.DarkBlue;
+				ReleaseNotesRichTextBox.AppendText(content);
+			}
+
+			ReleaseNotesRichTextBox.AppendText("\n");
+		}
+
+		private void FormatPrefixedLine(string content, string prefix, Dictionary<string, Color> prefixFormats)
+		{
+			// Format the prefix part
+			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f,
+				prefix.StartsWith("Warning:") || prefix.StartsWith("Important:") || prefix.StartsWith("Note:")
+					? FontStyle.Bold : FontStyle.Regular);
+			ReleaseNotesRichTextBox.SelectionColor = prefixFormats[prefix];
+			ReleaseNotesRichTextBox.AppendText(prefix);
+
+			// Format the rest of the line
+			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
+			ReleaseNotesRichTextBox.SelectionColor = Color.Black;
+			ProcessMarkdownText(content.Substring(prefix.Length));
+
+			ReleaseNotesRichTextBox.AppendText("\n");
+		}
+
+		private void ResetTextBoxFormatting()
+		{
 			ReleaseNotesRichTextBox.SelectionFont = new Font("Segoe UI", 9f);
 			ReleaseNotesRichTextBox.SelectionColor = Color.Black;
 			ReleaseNotesRichTextBox.SelectionBackColor = Color.White;
 			ReleaseNotesRichTextBox.SelectionBullet = false;
-
-			// Move to the beginning of the text
 			ReleaseNotesRichTextBox.SelectionStart = 0;
 			ReleaseNotesRichTextBox.ScrollToCaret();
-
-			ReleaseNotesRichTextBox.ResumeLayout();
 		}
 
 		/// <summary>
@@ -577,19 +803,20 @@ namespace RTXLauncher
 				}
 			}
 		}
-
 		private async void InstallLauncherUpdateButton_Click(object sender, EventArgs e)
 		{
-			if (_latestRelease == null || !_updateAvailable)
+			if (LauncherUpdateSourceComboBox.SelectedItem is not UpdateSource selectedSource)
 			{
-				MessageBox.Show("No updates available to install.",
-					"No Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				MessageBox.Show("No update source selected.",
+					"Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return;
 			}
 
 			// Confirm the update
+			string versionDisplay = selectedSource.IsStaging ? "Development Build" : selectedSource.Version;
 			var result = MessageBox.Show(
-				$"Do you want to update to {_latestRelease.TagName}?\n\n" +
+				$"Do you want to install {versionDisplay}?\n\n" +
+				(selectedSource.IsStaging ? "Warning: This is a development build and may contain bugs.\n\n" : "") +
 				"The launcher will restart after the update is installed.",
 				"Update Confirmation",
 				MessageBoxButtons.YesNo,
@@ -613,65 +840,29 @@ namespace RTXLauncher
 					progressForm.Show(this);
 					progressForm.UpdateProgress("Preparing update...", 0);
 
-					// Determine the asset to download based on available assets
-					string assetToDownload = null;
-					GitHubAsset selectedAsset = null;
-
-					// Look for .exe files first (since you're uploading an exe as an asset)
-					var exeAsset = _latestRelease.Assets.FirstOrDefault(a =>
-						a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-						a.Name.Contains("RTXLauncher", StringComparison.OrdinalIgnoreCase));
-
-					if (exeAsset != null)
-					{
-						selectedAsset = exeAsset;
-						assetToDownload = exeAsset.BrowserDownloadUrl;
-						progressForm.UpdateProgress($"Found executable asset: {exeAsset.Name}", 5);
-					}
-					else
-					{
-						// Fall back to .zip files if no exe
-						var zipAsset = _latestRelease.Assets.FirstOrDefault(a =>
-							a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-							a.Name.Contains("RTXLauncher", StringComparison.OrdinalIgnoreCase));
-
-						if (zipAsset != null)
-						{
-							selectedAsset = zipAsset;
-							assetToDownload = zipAsset.BrowserDownloadUrl;
-							progressForm.UpdateProgress($"Found zip asset: {zipAsset.Name}", 5);
-						}
-						else
-						{
-							// If no exe or zip found, use the zipball URL as last resort
-							assetToDownload = _latestRelease.ZipballUrl;
-							progressForm.UpdateProgress("Using default GitHub archive", 5);
-						}
-					}
-
-					if (string.IsNullOrEmpty(assetToDownload))
-					{
-						progressForm.Close();
-						MessageBox.Show("No valid download found in the release.",
-							"Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-						return;
-					}
+					// Determine download information
+					string assetToDownload = selectedSource.DownloadUrl;
+					bool isExe = assetToDownload.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
 					// Prepare download paths
-					string downloadFolder = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{_latestRelease.TagName.Replace(".", "_")}");
+					string versionTag = selectedSource.IsStaging ? "dev_build" : selectedSource.Version.Replace(".", "_");
+					string downloadFolder = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{versionTag}");
 					string extractPath = downloadFolder;
 
 					// File extension depends on what we're downloading
-					bool isExe = selectedAsset != null && selectedAsset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 					string downloadPath;
 
 					if (isExe)
 					{
-						downloadPath = Path.Combine(_updateTempPath, selectedAsset.Name);
+						string fileName = Path.GetFileName(assetToDownload);
+						if (string.IsNullOrEmpty(fileName))
+							fileName = "RTXLauncher.exe";
+
+						downloadPath = Path.Combine(_updateTempPath, fileName);
 					}
 					else
 					{
-						downloadPath = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{_latestRelease.TagName.Replace(".", "_")}.zip");
+						downloadPath = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{versionTag}.zip");
 					}
 
 					// Clean up any existing files
@@ -693,8 +884,8 @@ namespace RTXLauncher
 					}
 
 					// Calculate total size for progress calculation
-					long totalSize = selectedAsset?.Size ?? 0;
-					if (totalSize == 0) totalSize = 1000000; // Default size estimate if unknown
+					long totalSize = selectedSource.IsStaging ? 1000000 :
+									 selectedSource.Release?.Assets.FirstOrDefault()?.Size ?? 1000000;
 
 					// Download the update file with progress reporting
 					progressForm.UpdateProgress($"Downloading from: {assetToDownload}", 15);
@@ -773,6 +964,7 @@ namespace RTXLauncher
 
 					// Create the updater batch script
 					progressForm.UpdateProgress("Preparing update installer...", 80);
+
 					// Use AppContext.BaseDirectory for more reliable path resolution
 					string currentExePath = Process.GetCurrentProcess().MainModule?.FileName;
 					if (string.IsNullOrEmpty(currentExePath))
@@ -819,6 +1011,11 @@ namespace RTXLauncher
 					string updaterBatchPath = Path.Combine(_updateTempPath, "RTXLauncherUpdater.bat");
 					await CreateUpdaterBatchFile(updaterBatchPath, sourceDir, currentDirectory, currentExePath);
 
+					progressForm.UpdateProgress("Launching updater...", 95);
+
+					// Give a moment for the progress to display
+					await Task.Delay(500);
+
 					// Launch the updater
 					LaunchUpdaterAndExit(updaterBatchPath);
 				}
@@ -837,9 +1034,11 @@ namespace RTXLauncher
 					"Please try again later or download the latest version manually from GitHub.";
 
 				CheckForLauncherUpdatesButton.Enabled = true;
-				InstallLauncherUpdateButton.Enabled = _updateAvailable;
+				InstallLauncherUpdateButton.Enabled = true;
 			}
 		}
+
+
 		private void LaunchUpdaterAndExit(string updaterBatchPath)
 		{
 			try
