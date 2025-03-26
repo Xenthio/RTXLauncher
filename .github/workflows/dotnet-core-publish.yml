@@ -47,11 +47,12 @@ jobs:
     - name: Create version
       id: version
       run: |
-        $commitHash = git rev-parse --short HEAD
-        # Generate a version that conforms to SemVer format (1.0.0+[hash])
+        $commitHash = git rev-parse HEAD
+        $shortHash = $commitHash.Substring(0,8)
+        # Generate a version that includes the full commit hash
         $version = "1.0.0+$commitHash"
-        $fileVersion = "1.0.0.$([int]::Parse($commitHash.Substring(0, 4), [System.Globalization.NumberStyles]::HexNumber))"
-        
+        $fileVersion = "1.0.0.$([int]::Parse($shortHash, [System.Globalization.NumberStyles]::HexNumber))
+
         echo "HASH=$commitHash" >> $env:GITHUB_OUTPUT
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
         echo "FILE_VERSION=$fileVersion" >> $env:GITHUB_OUTPUT
@@ -111,6 +112,6 @@ jobs:
     - name: Upload EXE artifact
       uses: actions/upload-artifact@v4
       with:
-        name: RTXLauncher-${{ steps.version.outputs.HASH }}
+        name: RTXLauncher-${{ steps.version.outputs.VERSION }}
         path: ${{ steps.find_exe.outputs.EXE_PATH }}
         retention-days: 30
