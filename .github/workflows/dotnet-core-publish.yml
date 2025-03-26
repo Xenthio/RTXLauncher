@@ -48,12 +48,12 @@ jobs:
       id: version
       run: |
         # Get the version number from the project file
-        $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+        $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Where-Object { $_.Name -ne "RTXLauncher-Tests.csproj" } | Select-Object -First 1 -ExpandProperty FullName
         $versionNumber = [xml](Get-Content $projectFile).Project.PropertyGroup.Version
         $commitHash = git rev-parse HEAD
         $shortHash = $commitHash.Substring(0,8)
-        # Generate a version that includes the full commit hash
-        $version = "$versionNumber+$commitHash"
+        # Generate a version that includes the full commit hash, example RTXLauncher-1.0.9+a3e8610d5d5feffec8763fe90d6a6628e1e08041
+        $version = "$versionNumber+$shortHash"
         $fileVersion = "$versionNumber.$([int]::Parse($shortHash, [System.Globalization.NumberStyles]::HexNumber))"
 
         echo "HASH=$commitHash" >> $env:GITHUB_OUTPUT
