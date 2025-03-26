@@ -49,12 +49,20 @@ jobs:
       run: |
         $projectFile = Get-ChildItem -Path . -Filter *.csproj -Recurse -File | Where-Object { $_.Name -ne "RTXLauncher-Tests.csproj" } | Select-Object -First 1 -ExpandProperty FullName
         
-        # Get the version number from the project file
-        $versionNumber = [xml](Get-Content $projectFile).Project.PropertyGroup.Version
+        # Get the version (Release.Major.Minor) number from the project file
+            # Parse the .csproj file to retrieve the version
+        [xml]$csprojXml = Get-Content -Path $projectFile
+        $versionNode = $csprojXml.SelectSingleNode("//Version")
+        if (-not $versionNode) {
+            Write-Error "Version not found in project file: $projectFile"
+            exit 1
+        }
+
+        $versionNumber = $versionNode.InnerText
         $commitHash = git rev-parse HEAD
         $shortHash = $commitHash.Substring(0,8)
         # Generate a version that includes the full commit hash, example RTXLauncher-1.0.9+a3e8610d5d5feffec8763fe90d6a6628e1e08041
-        $version = "$versionNumber+$shortHash"
+        $version = "$versionNumber+$commitHash"
         $fileVersion = "$versionNumber.$([int]::Parse($shortHash, [System.Globalization.NumberStyles]::HexNumber))"
 
         echo "HASH=$commitHash" >> $env:GITHUB_OUTPUT
