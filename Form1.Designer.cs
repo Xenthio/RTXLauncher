@@ -106,6 +106,7 @@
 			InstallLauncherUpdateButton = new Button();
 			progressBar1 = new ProgressBar();
 			CheckForLauncherUpdatesButton = new Button();
+			OpenGameInstallFolderButton = new Button();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -1053,11 +1054,22 @@
 			CheckForLauncherUpdatesButton.Text = "Check for Updates";
 			CheckForLauncherUpdatesButton.UseVisualStyleBackColor = true;
 			// 
+			// OpenGameInstallFolderButton
+			// 
+			OpenGameInstallFolderButton.Location = new Point(10, 432);
+			OpenGameInstallFolderButton.Name = "OpenGameInstallFolderButton";
+			OpenGameInstallFolderButton.Size = new Size(120, 23);
+			OpenGameInstallFolderButton.TabIndex = 8;
+			OpenGameInstallFolderButton.Text = "Open Install Folder";
+			OpenGameInstallFolderButton.UseVisualStyleBackColor = true;
+			OpenGameInstallFolderButton.Click += OpenGameInstallFolderButton_Click;
+			// 
 			// Form1
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
 			AutoScaleMode = AutoScaleMode.Font;
 			ClientSize = new Size(364, 461);
+			Controls.Add(OpenGameInstallFolderButton);
 			Controls.Add(tabControl1);
 			Controls.Add(CloseButton);
 			Controls.Add(LaunchGameButton);
@@ -1187,5 +1199,6 @@
 		private Label label16;
 		private RichTextBox ReleaseNotesRichTextBox;
 		private ComboBox LauncherUpdateSourceComboBox;
+		private Button OpenGameInstallFolderButton;
 	}
 }

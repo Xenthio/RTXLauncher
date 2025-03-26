@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Xml.Serialization;
 
 namespace RTXLauncher
@@ -151,6 +152,17 @@ namespace RTXLauncher
 			if (e.TabPage?.Name == "InstallPage")
 			{
 				InitInstallPage();
+			}
+		}
+
+		private void OpenGameInstallFolderButton_Click(object sender, EventArgs e)
+		{
+			// open the game install folder in explorer (where this executable is)
+			var executablePath = System.AppContext.BaseDirectory;
+			var folderPath = Path.GetDirectoryName(executablePath);
+			if (folderPath != null)
+			{
+				Process.Start("explorer.exe", folderPath);
 			}
 		}
 	}
