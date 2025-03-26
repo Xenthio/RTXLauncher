@@ -39,10 +39,10 @@
 
   </ItemGroup>
 	<ItemGroup>
-		<Compile Update="Mounting\GameMountCheckbox.cs">
+		<Compile Update="Controls\GameMountCheckbox.cs">
 			<SubType>Component</SubType>
 		</Compile>
-		<Compile Update="Utils\Controls\LogReflectionControl.cs">
+		<Compile Update="Controls\LogReflectionControl.cs">
 			<SubType>Component</SubType>
 		</Compile>
 		<Compile Update="Form1.AboutPage.Updater.cs">

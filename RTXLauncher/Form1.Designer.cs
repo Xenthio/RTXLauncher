@@ -49,7 +49,7 @@
 			OneClickEasyInstallButton = new Button();
 			label13 = new Label();
 			groupBox2 = new GroupBox();
-			checkBox6 = new CheckBox();
+			EnableRTXCheckBox = new CheckBox();
 			checkBox2 = new CheckBox();
 			MountingPage = new TabPage();
 			groupBox6 = new GroupBox();
@@ -59,6 +59,7 @@
 			MountHL2RTXCheckbox = new GameMountCheckbox();
 			AdvancedPage = new TabPage();
 			groupBox5 = new GroupBox();
+			checkBox6 = new CheckBox();
 			label3 = new Label();
 			numericUpDown1 = new NumericUpDown();
 			checkBox3 = new CheckBox();
@@ -293,7 +294,7 @@
 			QuickInstallGroup.Controls.Add(label14);
 			QuickInstallGroup.Controls.Add(OneClickEasyInstallButton);
 			QuickInstallGroup.Controls.Add(label13);
-			QuickInstallGroup.Location = new Point(6, 236);
+			QuickInstallGroup.Location = new Point(6, 222);
 			QuickInstallGroup.Name = "QuickInstallGroup";
 			QuickInstallGroup.Size = new Size(332, 113);
 			QuickInstallGroup.TabIndex = 7;
@@ -360,27 +361,27 @@
 			// groupBox2
 			// 
 			groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-			groupBox2.Controls.Add(checkBox6);
+			groupBox2.Controls.Add(EnableRTXCheckBox);
 			groupBox2.Controls.Add(checkBox2);
 			groupBox2.Location = new Point(6, 135);
 			groupBox2.Name = "groupBox2";
-			groupBox2.Size = new Size(332, 95);
+			groupBox2.Size = new Size(332, 81);
 			groupBox2.TabIndex = 7;
 			groupBox2.TabStop = false;
 			groupBox2.Text = "Garry's Mod";
 			groupBox2.Enter += groupBox2_Enter;
 			// 
-			// checkBox6
+			// EnableRTXCheckBox
 			// 
-			checkBox6.AutoSize = true;
-			checkBox6.DataBindings.Add(new Binding("Checked", settingsDataBindingSource, "DisableChromium", true, DataSourceUpdateMode.OnPropertyChanged));
-			checkBox6.FlatStyle = FlatStyle.System;
-			checkBox6.Location = new Point(6, 48);
-			checkBox6.Name = "checkBox6";
-			checkBox6.Size = new Size(131, 20);
-			checkBox6.TabIndex = 2;
-			checkBox6.Text = "Disable Chromium";
-			checkBox6.UseVisualStyleBackColor = true;
+			EnableRTXCheckBox.AutoSize = true;
+			EnableRTXCheckBox.DataBindings.Add(new Binding("Enabled", settingsDataBindingSource, "RTXInstalled", true, DataSourceUpdateMode.OnPropertyChanged));
+			EnableRTXCheckBox.FlatStyle = FlatStyle.System;
+			EnableRTXCheckBox.Location = new Point(6, 48);
+			EnableRTXCheckBox.Name = "EnableRTXCheckBox";
+			EnableRTXCheckBox.Size = new Size(70, 20);
+			EnableRTXCheckBox.TabIndex = 2;
+			EnableRTXCheckBox.Text = "RTX On";
+			EnableRTXCheckBox.UseVisualStyleBackColor = true;
 			// 
 			// checkBox2
 			// 
@@ -498,21 +499,34 @@
 			// 
 			groupBox5.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			groupBox5.BackColor = SystemColors.Window;
+			groupBox5.Controls.Add(checkBox6);
 			groupBox5.Controls.Add(label3);
 			groupBox5.Controls.Add(numericUpDown1);
 			groupBox5.Controls.Add(checkBox3);
 			groupBox5.FlatStyle = FlatStyle.System;
 			groupBox5.Location = new Point(6, 88);
 			groupBox5.Name = "groupBox5";
-			groupBox5.Size = new Size(332, 81);
+			groupBox5.Size = new Size(332, 107);
 			groupBox5.TabIndex = 11;
 			groupBox5.TabStop = false;
 			groupBox5.Text = "Engine";
 			// 
+			// checkBox6
+			// 
+			checkBox6.AutoSize = true;
+			checkBox6.DataBindings.Add(new Binding("Checked", settingsDataBindingSource, "DisableChromium", true, DataSourceUpdateMode.OnPropertyChanged));
+			checkBox6.FlatStyle = FlatStyle.System;
+			checkBox6.Location = new Point(6, 48);
+			checkBox6.Name = "checkBox6";
+			checkBox6.Size = new Size(131, 20);
+			checkBox6.TabIndex = 5;
+			checkBox6.Text = "Disable Chromium";
+			checkBox6.UseVisualStyleBackColor = true;
+			// 
 			// label3
 			// 
 			label3.AutoSize = true;
-			label3.Location = new Point(6, 50);
+			label3.Location = new Point(6, 76);
 			label3.Name = "label3";
 			label3.Size = new Size(55, 15);
 			label3.TabIndex = 4;
@@ -521,7 +535,7 @@
 			// numericUpDown1
 			// 
 			numericUpDown1.DataBindings.Add(new Binding("Value", settingsDataBindingSource, "DXLevel", true, DataSourceUpdateMode.OnPropertyChanged));
-			numericUpDown1.Location = new Point(67, 48);
+			numericUpDown1.Location = new Point(67, 74);
 			numericUpDown1.Name = "numericUpDown1";
 			numericUpDown1.Size = new Size(120, 23);
 			numericUpDown1.TabIndex = 3;
@@ -585,7 +599,7 @@
 			groupBox3.BackColor = SystemColors.Window;
 			groupBox3.Controls.Add(textBox1);
 			groupBox3.FlatStyle = FlatStyle.System;
-			groupBox3.Location = new Point(6, 175);
+			groupBox3.Location = new Point(6, 201);
 			groupBox3.Name = "groupBox3";
 			groupBox3.Size = new Size(332, 78);
 			groupBox3.TabIndex = 9;
@@ -1147,7 +1161,6 @@
 		private NumericUpDown numericUpDown1;
 		private Label label3;
 		private CheckBox checkBox5;
-		private CheckBox checkBox6;
 		private TabPage MountingPage;
 		private GroupBox groupBox6;
 		private GameMountCheckbox MountHL2RTXCheckbox;
@@ -1200,5 +1213,7 @@
 		private RichTextBox ReleaseNotesRichTextBox;
 		private ComboBox LauncherUpdateSourceComboBox;
 		private Button OpenGameInstallFolderButton;
+		private CheckBox EnableRTXCheckBox;
+		private CheckBox checkBox6;
 	}
 }

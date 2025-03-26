@@ -12,6 +12,8 @@ namespace RTXLauncher
 			InitializeComponent();
 			RefreshInstallInfo();
 			InitialiseUpdater();
+
+			SetInitialRTXCheckBoxValue();
 		}
 
 		protected override void OnClosing(CancelEventArgs e)
@@ -163,6 +165,25 @@ namespace RTXLauncher
 			if (folderPath != null)
 			{
 				Process.Start("explorer.exe", folderPath);
+			}
+		}
+		bool _hasInitCheckbox;
+		void SetInitialRTXCheckBoxValue()
+		{
+			if (_hasInitCheckbox) EnableRTXCheckBox.CheckedChanged -= EnableRTXCheckBox_CheckedChanged;
+			EnableRTXCheckBox.Checked = RemixSystem.Enabled;
+			EnableRTXCheckBox.CheckedChanged += EnableRTXCheckBox_CheckedChanged;
+			_hasInitCheckbox = true;
+		}
+		private void EnableRTXCheckBox_CheckedChanged(object sender, EventArgs e)
+		{
+			if (RemixSystem.Enabled)
+			{
+				RemixSystem.Enabled = false;
+			}
+			else
+			{
+				RemixSystem.Enabled = true;
 			}
 		}
 	}
