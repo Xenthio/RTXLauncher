@@ -1,0 +1,49 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# visual studio stuff
+*.vcxproj
+*.vcxproj.*
+*.sln
+/.vs
+/x86
+/x86_64
+.vscode/settings.json
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+notes.md
+
+.vs
+bin/Debug
+obj
+/RTXLauncher-Tests/bin

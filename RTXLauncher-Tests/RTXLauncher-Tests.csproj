@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RTXLauncher.csproj" />
+    <ProjectReference Include="..\RTXLauncher\RTXLauncher.csproj" />
   </ItemGroup>
 
   <ItemGroup>
