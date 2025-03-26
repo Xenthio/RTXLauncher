@@ -87,7 +87,7 @@ namespace RTXLauncher
 				}
 				catch
 				{
-					devDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe";
+					devDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe";
 				}
 
 				LauncherUpdateSourceComboBox.Items.Add(new UpdateSource
@@ -183,7 +183,7 @@ namespace RTXLauncher
 					{
 						Name = "Development Build (Staging)",
 						Version = "Latest",
-						DownloadUrl = "staging-url-placeholder", // Latest passing action from the repo, or if artifacts dont exist for any passing actions, use https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe
+						DownloadUrl = "staging-url-placeholder", // Latest passing action from the repo, or if artifacts dont exist for any passing actions, use https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe
 						IsStaging = true
 					});
 					LauncherUpdateSourceComboBox.SelectedIndex = 0;
