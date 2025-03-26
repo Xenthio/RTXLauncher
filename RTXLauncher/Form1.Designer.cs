@@ -686,7 +686,7 @@
 			// 
 			// remixReleaseComboBox
 			// 
-			remixReleaseComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			remixReleaseComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			remixReleaseComboBox.FlatStyle = FlatStyle.System;
 			remixReleaseComboBox.FormattingEnabled = true;
 			remixReleaseComboBox.Items.AddRange(new object[] { "Error" });
@@ -698,7 +698,7 @@
 			// 
 			// remixSourceComboBox
 			// 
-			remixSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			remixSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			remixSourceComboBox.FlatStyle = FlatStyle.System;
 			remixSourceComboBox.FormattingEnabled = true;
 			remixSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
@@ -757,7 +757,7 @@
 			// 
 			// patchesSourceComboBox
 			// 
-			patchesSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			patchesSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			patchesSourceComboBox.FlatStyle = FlatStyle.System;
 			patchesSourceComboBox.FormattingEnabled = true;
 			patchesSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
@@ -805,7 +805,7 @@
 			// 
 			// packageVersionComboBox
 			// 
-			packageVersionComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			packageVersionComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			packageVersionComboBox.FlatStyle = FlatStyle.System;
 			packageVersionComboBox.FormattingEnabled = true;
 			packageVersionComboBox.Items.AddRange(new object[] { "gmod_x86-64 Xenthio/gmod-rtx-fixes-2", "gmod_x86-64 sambow23/gmod-rtx-binary (fork)", "gmod_main skurtyyskirts/GmodRTX", "gmod_main Xenthio/GMRTXClassic" });
@@ -817,7 +817,7 @@
 			// 
 			// packageSourceComboBox
 			// 
-			packageSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			packageSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			packageSourceComboBox.FlatStyle = FlatStyle.System;
 			packageSourceComboBox.FormattingEnabled = true;
 			packageSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
@@ -1070,6 +1070,7 @@
 			// 
 			// OpenGameInstallFolderButton
 			// 
+			OpenGameInstallFolderButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
 			OpenGameInstallFolderButton.Location = new Point(10, 432);
 			OpenGameInstallFolderButton.Name = "OpenGameInstallFolderButton";
 			OpenGameInstallFolderButton.Size = new Size(120, 23);
