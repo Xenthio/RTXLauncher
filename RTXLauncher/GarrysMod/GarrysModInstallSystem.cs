@@ -66,7 +66,7 @@
 						continueOperation = PromptSymlinkFailure(
 						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
 						"This may be due to insufficient privileges.\n\n" +
-						"Content mounting requires symbolic links to function correctly.\n\n" +
+						"File size efficient installation requires symbolic links to function correctly.\n\n" +
 						"Do you want to run RTX Launcher as administrator and try again?");
 					}
 
@@ -156,7 +156,7 @@
 						continueOperation = PromptSymlinkFailure(
 						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
 						"This may be due to insufficient privileges.\n\n" +
-						"Content mounting requires symbolic links to function correctly.\n\n" +
+						"File size efficient installation requires symbolic links to function correctly.\n\n" +
 						"Do you want to run RTX Launcher as administrator and try again?");
 					}
 
@@ -245,68 +245,100 @@
 		// Helper method to prompt the user about symlink failures
 		private static bool PromptSymlinkFailure(string message)
 		{
-			// We need to ensure this runs on the UI thread
-			bool result = false;
-
-			var task = Task.Factory.StartNew(() =>
+			// Use a simpler approach that doesn't rely on CurrentSynchronizationContext
+			if (Application.OpenForms.Count > 0)
 			{
-				DialogResult dialogResult = MessageBox.Show(
-					message,
-					"Symlink Creation Failed",
-					MessageBoxButtons.OKCancel,
-					MessageBoxIcon.Warning);
+				// If we have a UI form, use Invoke to show dialog on UI thread
+				var mainForm = Application.OpenForms[0];
+				bool result = false;
 
-				result = (dialogResult == DialogResult.OK);
-
-				// Set the flag if user clicked OK to prevent future prompts
-				if (result)
+				mainForm.Invoke(new Action(() =>
 				{
-					_userAcceptedSymlinkFailures = true;
-				}
+					DialogResult dialogResult = MessageBox.Show(
+						message,
+						"Symlink Creation Failed",
+						MessageBoxButtons.YesNo,
+						MessageBoxIcon.Warning);
 
-			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+					result = (dialogResult == DialogResult.OK);
 
-			task.Wait();
-			return result;
+					// Set the flag if user clicked OK to prevent future prompts
+					if (result)
+					{
+						_userAcceptedSymlinkFailures = true;
+					}
+				}));
+
+				return result;
+			}
+			else
+			{
+				// Fallback for no UI context
+				// Just log and assume "cancel" (false)
+				System.Diagnostics.Debug.WriteLine("No UI context available for symlink failure prompt. Message: " + message);
+				return false;
+			}
 		}
 
-		// Helper method to prompt the user about copying instead of symlink
+		// Apply the same pattern to these two methods as well
 		private static bool PromptCopyInstead(string message)
 		{
-			// We need to ensure this runs on the UI thread
-			bool result = false;
-
-			var task = Task.Factory.StartNew(() =>
+			// Use a simpler approach that doesn't rely on CurrentSynchronizationContext
+			if (Application.OpenForms.Count > 0)
 			{
-				DialogResult dialogResult = MessageBox.Show(
-					message,
-					"Symlink Creation Failed",
-					MessageBoxButtons.YesNo,
-					MessageBoxIcon.Question);
+				// If we have a UI form, use Invoke to show dialog on UI thread
+				var mainForm = Application.OpenForms[0];
+				bool result = false;
 
-				result = (dialogResult == DialogResult.Yes);
+				mainForm.Invoke(new Action(() =>
+				{
+					DialogResult dialogResult = MessageBox.Show(
+						message,
+						"Symlink Creation Failed",
+						MessageBoxButtons.YesNo,
+						MessageBoxIcon.Question);
 
-			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+					result = (dialogResult == DialogResult.Yes);
+				}));
 
-			task.Wait();
-			return result;
+				return result;
+			}
+			else
+			{
+				// Fallback for no UI context
+				System.Diagnostics.Debug.WriteLine("No UI context available for copy instead prompt. Message: " + message);
+				return false;
+			}
 		}
 
 		private static bool PromptContinueWithout(string message)
 		{
-			// We need to ensure this runs on the UI thread
-			bool result = false;
-			var task = Task.Factory.StartNew(() =>
+			// Use a simpler approach that doesn't rely on CurrentSynchronizationContext
+			if (Application.OpenForms.Count > 0)
 			{
-				DialogResult dialogResult = MessageBox.Show(
-					message,
-					"Symlink Creation Failed",
-					MessageBoxButtons.YesNo,
-					MessageBoxIcon.Question);
-				result = (dialogResult == DialogResult.Yes);
-			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
-			task.Wait();
-			return result;
+				// If we have a UI form, use Invoke to show dialog on UI thread
+				var mainForm = Application.OpenForms[0];
+				bool result = false;
+
+				mainForm.Invoke(new Action(() =>
+				{
+					DialogResult dialogResult = MessageBox.Show(
+						message,
+						"Symlink Creation Failed",
+						MessageBoxButtons.YesNo,
+						MessageBoxIcon.Question);
+
+					result = (dialogResult == DialogResult.Yes);
+				}));
+
+				return result;
+			}
+			else
+			{
+				// Fallback for no UI context
+				System.Diagnostics.Debug.WriteLine("No UI context available for continue without prompt. Message: " + message);
+				return false;
+			}
 		}
 
 		// Log a message with progress update
