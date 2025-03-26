@@ -9,9 +9,9 @@
     <PublishSingleFile>true</PublishSingleFile>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
-    <AssemblyVersion>1.0.9</AssemblyVersion>
-    <FileVersion>1.0.9</FileVersion>
-    <Version>1.0.9</Version>
+    <AssemblyVersion>1.0.10</AssemblyVersion>
+    <FileVersion>1.0.10</FileVersion>
+    <Version>1.0.10</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,10 +39,10 @@
 
   </ItemGroup>
 	<ItemGroup>
-		<Compile Update="Controls\GameMountCheckbox.cs">
+		<Compile Update="Mounting\GameMountCheckbox.cs">
 			<SubType>Component</SubType>
 		</Compile>
-		<Compile Update="Controls\LogReflectionControl.cs">
+		<Compile Update="Utils\Controls\LogReflectionControl.cs">
 			<SubType>Component</SubType>
 		</Compile>
 		<Compile Update="Form1.AboutPage.Updater.cs">
