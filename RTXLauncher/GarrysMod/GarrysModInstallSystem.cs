@@ -52,46 +52,84 @@
 				Directory.CreateSymbolicLink(path, pathToTarget);
 				return true;
 			}
-			catch (UnauthorizedAccessException)
-			{
-				// If symlink fails due to privileges, check if the user wants to continue
-				if (!_userAcceptedSymlinkFailures)
-				{
-					bool continueInstallation = PromptSymlinkFailure(
-						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
-						"This may be due to insufficient privileges. " +
-						"The installation can continue by copying files instead, but this will use more disk space.\n\n" +
-						"Do you want to continue with the installation?");
-
-					if (!continueInstallation)
-					{
-						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
-					}
-				}
-
-				// Fall back to copying if user agrees to continue
-				LogProgress($"  Insufficient privileges to create symlink - falling back to copying directory: {Path.GetFileName(path)}", 0);
-				CopyDirectory(pathToTarget, path);
-				return true;
-			}
 			catch (Exception ex)
 			{
-				// For other errors, also check if the user wants to continue
+				// If symlink fails, check if the user wants to continue
 				if (!_userAcceptedSymlinkFailures)
 				{
-					bool continueInstallation = PromptSymlinkFailure(
-						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
-						$"Error: {ex.Message}\n\n" +
-						"Do you want to continue with the installation without this symlink?");
+					bool continueOperation = false;
 
-					if (!continueInstallation)
+					// only prompt if we're not already running as admin.
+					bool isAdmin = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+					if (!isAdmin)
 					{
-						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+						continueOperation = PromptSymlinkFailure(
+						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
+						"This may be due to insufficient privileges.\n\n" +
+						"Content mounting requires symbolic links to function correctly.\n\n" +
+						"Do you want to run RTX Launcher as administrator and try again?");
+					}
+
+
+					if (continueOperation)
+					{
+						// Restart as admin
+						RestartAsAdmin();
+						// We won't actually get past this point if restart succeeds
+					}
+					else
+					{
+						bool copyInstead = PromptCopyInstead(
+						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
+						"The installation can continue by copying files instead, but this will use more disk space." +
+						"Do you want to copy instead? This may substantially increase disk space usage.");
+
+						if (copyInstead)
+						{
+							try
+							{
+								CopyDirectory(pathToTarget, path);
+								return true;
+							}
+							catch (Exception ex2)
+							{
+								LogProgress($"Failed to copy directory: {ex2.Message}", 0);
+								bool continueInstallation = PromptContinueWithout(
+									$"Failed to copy directory to {Path.GetFileName(path)}. " +
+									$"Error: {ex2.Message}\n\n" +
+									$"Would you like to continue without this content?" +
+									$"Best case scenario is you won't see some things ingame." +
+									$"Worst case, the game will crash or not start at all.");
+
+								if (!continueInstallation)
+								{
+									throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+								}
+								else
+								{
+									_userAcceptedSymlinkFailures = true;
+								}
+							}
+						}
+						else
+						{
+							bool continueInstallation = PromptContinueWithout(
+								$"Would you like to continue without this content?" +
+								$"Best case scenario is you won't see some things ingame." +
+								$"Worst case, the game will crash or not start at all.");
+							if (!continueInstallation)
+							{
+								throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+							}
+							else
+							{
+								_userAcceptedSymlinkFailures = true;
+							}
+						}
 					}
 				}
 
-				// Log other errors but don't stop installation if user agreed to continue
-				LogProgress($"  Error creating symlink: {ex.Message}", 0);
+				LogProgress($"ERROR: Insufficient privileges to create symlink: {Path.GetFileName(path)}", 0);
 				return false;
 			}
 		}
@@ -104,47 +142,103 @@
 				File.CreateSymbolicLink(path, pathToTarget);
 				return true;
 			}
-			catch (UnauthorizedAccessException)
+			catch (Exception ex)
 			{
-				// If symlink fails due to privileges, check if the user wants to continue
+				// If symlink fails, check if the user wants to continue
 				if (!_userAcceptedSymlinkFailures)
 				{
-					bool continueInstallation = PromptSymlinkFailure(
-						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
-						"This may be due to insufficient privileges. " +
-						"The installation can continue by copying files instead, but this will use more disk space.\n\n" +
-						"Do you want to continue with the installation?");
+					bool continueOperation = false;
 
-					if (!continueInstallation)
+					// only prompt if we're not already running as admin.
+					bool isAdmin = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+					if (!isAdmin)
 					{
-						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+						continueOperation = PromptSymlinkFailure(
+						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
+						"This may be due to insufficient privileges.\n\n" +
+						"Content mounting requires symbolic links to function correctly.\n\n" +
+						"Do you want to run RTX Launcher as administrator and try again?");
+					}
+
+					if (continueOperation)
+					{
+						// Restart as admin
+						RestartAsAdmin();
+						// We won't actually get past this point if restart succeeds
+					}
+					else
+					{
+						bool copyInstead = PromptCopyInstead(
+						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
+						"The installation can continue by copying files instead, but this will use more disk space." +
+						"Do you want to copy instead? This may substantially increase disk space usage.");
+
+						if (copyInstead)
+						{
+							try
+							{
+								File.Copy(pathToTarget, path, true);
+								return true;
+							}
+							catch (Exception ex2)
+							{
+								LogProgress($"Failed to copy file: {ex2.Message}", 0);
+								bool continueInstallation = PromptContinueWithout(
+									$"Failed to copy file to {Path.GetFileName(path)}. " +
+									$"Error: {ex2.Message}\n\n" +
+									$"Would you like to continue without this content?" +
+									$"Best case scenario is you won't see some things ingame." +
+									$"Worst case, the game will crash or not start at all.");
+
+								if (!continueInstallation)
+								{
+									throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+								}
+								else
+								{
+									_userAcceptedSymlinkFailures = true;
+								}
+							}
+						}
+						else
+						{
+							bool continueInstallation = PromptContinueWithout(
+								$"Would you like to continue without this content?" +
+								$"Best case scenario is you won't see some things ingame." +
+								$"Worst case, the game will crash or not start at all.");
+							if (!continueInstallation)
+							{
+								throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+							}
+							else
+							{
+								_userAcceptedSymlinkFailures = true;
+							}
+						}
 					}
 				}
 
-				// Fall back to copying if user agrees to continue
-				LogProgress($"  Insufficient privileges to create symlink - falling back to copying file: {Path.GetFileName(path)}", 0);
-				File.Copy(pathToTarget, path, true);
-				return true;
+				LogProgress($"ERROR: Insufficient privileges to create symlink: {Path.GetFileName(path)}", 0);
+				return false;
+			}
+		}
+
+		private static void RestartAsAdmin()
+		{
+			var exeName = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+			var startInfo = new System.Diagnostics.ProcessStartInfo(exeName)
+			{
+				Verb = "runas"
+			};
+
+			try
+			{
+				System.Diagnostics.Process.Start(startInfo);
+				System.Windows.Forms.Application.Exit();
 			}
 			catch (Exception ex)
 			{
-				// For other errors, also check if the user wants to continue
-				if (!_userAcceptedSymlinkFailures)
-				{
-					bool continueInstallation = PromptSymlinkFailure(
-						$"Failed to create file symlink to {Path.GetFileName(path)}. " +
-						$"Error: {ex.Message}\n\n" +
-						"Do you want to continue with the installation without this symlink?");
-
-					if (!continueInstallation)
-					{
-						throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
-					}
-				}
-
-				// Log other errors but don't stop installation if user agreed to continue
-				LogProgress($"  Error creating symlink: {ex.Message}", 0);
-				return false;
+				LogProgress($"Failed to restart as admin: {ex.Message}", 0);
 			}
 		}
 
@@ -172,6 +266,45 @@
 
 			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
 
+			task.Wait();
+			return result;
+		}
+
+		// Helper method to prompt the user about copying instead of symlink
+		private static bool PromptCopyInstead(string message)
+		{
+			// We need to ensure this runs on the UI thread
+			bool result = false;
+
+			var task = Task.Factory.StartNew(() =>
+			{
+				DialogResult dialogResult = MessageBox.Show(
+					message,
+					"Symlink Creation Failed",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+
+				result = (dialogResult == DialogResult.Yes);
+
+			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+
+			task.Wait();
+			return result;
+		}
+
+		private static bool PromptContinueWithout(string message)
+		{
+			// We need to ensure this runs on the UI thread
+			bool result = false;
+			var task = Task.Factory.StartNew(() =>
+			{
+				DialogResult dialogResult = MessageBox.Show(
+					message,
+					"Symlink Creation Failed",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+				result = (dialogResult == DialogResult.Yes);
+			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
 			task.Wait();
 			return result;
 		}

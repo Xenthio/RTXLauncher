@@ -166,21 +166,27 @@
 		{
 			try
 			{
-				// Create a symbolic link 
+				// Attempt to create a symbolic link
 				Directory.CreateSymbolicLink(path, pathToTarget);
-				LogMounting($"Created symlink: {Path.GetFileName(path)}", false);
 				return true;
 			}
-			catch (UnauthorizedAccessException)
+			catch (Exception ex)
 			{
-				// If symlink fails due to privileges, check if the user wants to continue
+				// If symlink fails, check if the user wants to continue
 				if (!_userAcceptedSymlinkFailures)
 				{
-					bool continueOperation = PromptSymlinkFailure(
-						$"Failed to create symlink to {Path.GetFileName(path)}. " +
+					bool continueOperation = false;
+
+					// only prompt if we're not already running as admin.
+					bool isAdmin = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+					if (!isAdmin)
+					{
+						continueOperation = PromptSymlinkFailure(
+						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
 						"This may be due to insufficient privileges.\n\n" +
 						"Content mounting requires symbolic links to function correctly.\n\n" +
 						"Do you want to run RTX Launcher as administrator and try again?");
+					}
 
 					if (continueOperation)
 					{
@@ -190,35 +196,55 @@
 					}
 					else
 					{
-						_userAcceptedSymlinkFailures = true;
+						bool copyInstead = PromptCopyInstead(
+						$"Failed to create directory symlink to {Path.GetFileName(path)}. " +
+						"The installation can continue by copying files instead, but this will use more disk space." +
+						"Do you want to copy instead? This may substantially increase disk space usage.");
+
+						if (copyInstead)
+						{
+							try
+							{
+								CopyDirectory(pathToTarget, path);
+								return true;
+							}
+							catch (Exception ex2)
+							{
+								LogMounting($"Failed to copy directory: {ex2.Message}", true);
+								bool continueInstallation = PromptContinueWithout(
+									$"Failed to copy directory to {Path.GetFileName(path)}. " +
+									$"Error: {ex2.Message}\n\n" +
+									"Would you like to continue without this content?\n" +
+									"(Some or all Remix replaced content may not be visible in-game)");
+
+								if (!continueInstallation)
+								{
+									throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+								}
+								else
+								{
+									_userAcceptedSymlinkFailures = true;
+								}
+							}
+						}
+						else
+						{
+							bool continueInstallation = PromptContinueWithout(
+								"Would you like to continue without this content?\n" +
+								"(Some or all Remix replaced content may not be visible in-game)");
+							if (!continueInstallation)
+							{
+								throw new OperationCanceledException("Installation cancelled due to symlink creation failure.");
+							}
+							else
+							{
+								_userAcceptedSymlinkFailures = true;
+							}
+						}
 					}
 				}
 
 				LogMounting($"ERROR: Insufficient privileges to create symlink: {Path.GetFileName(path)}", true);
-				return false;
-			}
-			catch (Exception ex)
-			{
-				// For other errors, also check if the user wants to continue
-				if (!_userAcceptedSymlinkFailures)
-				{
-					bool continueOperation = PromptSymlinkFailure(
-						$"Failed to create symlink to {Path.GetFileName(path)}. " +
-						$"Error: {ex.Message}\n\n" +
-						"Would you like to continue without this content?\n" +
-						"(Some RTX content may not be visible in-game)");
-
-					if (!continueOperation)
-					{
-						throw new OperationCanceledException("Content mounting cancelled due to symlink failure.");
-					}
-					else
-					{
-						_userAcceptedSymlinkFailures = true;
-					}
-				}
-
-				LogMounting($"ERROR: Failed to create symlink: {Path.GetFileName(path)} - {ex.Message}", true);
 				return false;
 			}
 		}
@@ -248,6 +274,46 @@
 
 			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
 
+			task.Wait();
+			return result;
+		}
+
+
+		// Helper method to prompt the user about copying instead of symlink
+		private static bool PromptCopyInstead(string message)
+		{
+			// We need to ensure this runs on the UI thread
+			bool result = false;
+
+			var task = Task.Factory.StartNew(() =>
+			{
+				DialogResult dialogResult = MessageBox.Show(
+					message,
+					"RTX Content Mounting Error",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+
+				result = (dialogResult == DialogResult.Yes);
+
+			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+
+			task.Wait();
+			return result;
+		}
+
+		private static bool PromptContinueWithout(string message)
+		{
+			// We need to ensure this runs on the UI thread
+			bool result = false;
+			var task = Task.Factory.StartNew(() =>
+			{
+				DialogResult dialogResult = MessageBox.Show(
+					message,
+					"RTX Content Mounting Error",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+				result = (dialogResult == DialogResult.Yes);
+			}, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
 			task.Wait();
 			return result;
 		}
@@ -334,6 +400,30 @@
 			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", "mount-" + gameFolder);
 			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
 			return Directory.Exists(sourceContentMountPath) && Directory.Exists(remixModMountPath);
+		}
+
+
+		// Helper method to copy directories recursively
+		private static void CopyDirectory(string sourceDir, string destinationDir)
+		{
+			// Create the destination directory if it doesn't exist
+			Directory.CreateDirectory(destinationDir);
+
+			// Copy files
+			foreach (var file in Directory.GetFiles(sourceDir))
+			{
+				var fileName = Path.GetFileName(file);
+				var destFile = Path.Combine(destinationDir, fileName);
+				File.Copy(file, destFile, true);
+			}
+
+			// Copy subdirectories recursively
+			foreach (var directory in Directory.GetDirectories(sourceDir))
+			{
+				var dirName = Path.GetFileName(directory);
+				var destDir = Path.Combine(destinationDir, dirName);
+				CopyDirectory(directory, destDir);
+			}
 		}
 	}
 }
