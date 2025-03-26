@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -89,6 +90,38 @@ namespace RTXLauncher
 		[JsonPropertyName("core")]
 		public GitHubRateLimit Core { get; set; }
 	}
+
+	#region GitHub Actions classes
+	public class GitHubActionsRunsResponse
+	{
+		[JsonPropertyName("workflow_runs")]
+		public List<GitHubActionsRun> WorkflowRuns { get; set; }
+	}
+
+	public class GitHubActionsRun
+	{
+		[JsonPropertyName("run_number")]
+		public int RunNumber { get; set; }
+
+		[JsonPropertyName("artifacts_url")]
+		public string ArtifactsUrl { get; set; }
+	}
+
+	public class GitHubActionsArtifactsResponse
+	{
+		[JsonPropertyName("artifacts")]
+		public List<GitHubArtifactInfo> Artifacts { get; set; }
+	}
+
+	public class GitHubArtifactInfo
+	{
+		[JsonPropertyName("name")]
+		public string Name { get; set; }
+
+		[JsonPropertyName("archive_download_url")]
+		public string ArchiveDownloadUrl { get; set; }
+	}
+	#endregion
 
 	public static class GitHubAPI
 	{
@@ -320,6 +353,111 @@ namespace RTXLauncher
 						}
 					}
 					return new List<GitHubRelease>();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Fetches the latest staging artifact URL from GitHub Actions or returns a fallback URL.
+		/// Uses the same caching approach as FetchReleasesAsync, but stores artifacts in a separate file.
+		/// </summary>
+		public static async Task<GitHubArtifactInfo> FetchLatestStagingArtifact(string owner, string repo, bool forceRefresh = false)
+		{
+			// Cache file name for staging artifacts
+			string cacheKey = $"{owner}_{repo}_staging_artifact.json";
+			string cacheFile = Path.Combine(_cacheDirectory, cacheKey);
+			bool useCache = !forceRefresh && IsCacheValid(cacheFile);
+
+			var fallback = new GitHubArtifactInfo()
+			{
+				Name = "Latest",
+				ArchiveDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe"
+			};
+
+			// Attempt to load from cache
+			if (useCache)
+			{
+				try
+				{
+					var json = await File.ReadAllTextAsync(cacheFile);
+					return JsonSerializer.Deserialize<GitHubArtifactInfo>(json);
+				}
+				catch
+				{
+					// If cache is corrupted, we'll fetch fresh data
+					useCache = false;
+				}
+			}
+
+			// Ensure rate limit
+			if (!useCache && !await EnsureRateLimitAvailableAsync())
+			{
+				// If rate-limited, try returning stale cache
+				if (File.Exists(cacheFile))
+				{
+					try
+					{
+						var json = await File.ReadAllTextAsync(cacheFile);
+						return JsonSerializer.Deserialize<GitHubArtifactInfo>(json);
+					}
+					catch
+					{
+						// If that fails, return fallback
+						return fallback;
+					}
+				}
+				// No valid cache
+				return fallback;
+			}
+
+			// Fetch runs
+			using (HttpClient client = CreateHttpClient())
+			{
+				try
+				{
+					var runsUrl = $"https://api.github.com/repos/{owner}/{repo}/actions/runs?status=success&event=push";
+
+					// Replace GetFromJsonAsync with a manual request so we can get response headers
+					var runsResponse = await client.GetAsync(runsUrl);
+					UpdateRateLimitFromHeaders(runsResponse.Headers);
+
+					if (!runsResponse.IsSuccessStatusCode)
+						return fallback;
+
+					var runsJson = await runsResponse.Content.ReadFromJsonAsync<GitHubActionsRunsResponse>();
+					var latestRun = runsJson?.WorkflowRuns?.OrderByDescending(r => r.RunNumber).FirstOrDefault();
+					if (latestRun == null)
+						return fallback;
+
+					// Fetch artifacts
+					var artifactsUrl = latestRun.ArtifactsUrl;
+					var artifactsResponse = await client.GetAsync(artifactsUrl);
+					UpdateRateLimitFromHeaders(artifactsResponse.Headers);
+
+					if (!artifactsResponse.IsSuccessStatusCode)
+						return fallback;
+
+					var artifactsJson = await artifactsResponse.Content.ReadFromJsonAsync<GitHubActionsArtifactsResponse>();
+					var artifact = artifactsJson?.Artifacts?.FirstOrDefault(a =>
+						a.Name.StartsWith("RTXLauncher-", StringComparison.OrdinalIgnoreCase));
+
+					var certainArtifact = artifact ?? fallback;
+
+					// Save to cache
+					try
+					{
+						var serialized = JsonSerializer.Serialize<GitHubArtifactInfo>(certainArtifact);
+						await File.WriteAllTextAsync(cacheFile, serialized);
+						File.WriteAllText(cacheFile + ".timestamp", DateTime.Now.ToString("o"));
+					}
+					catch { /* ignore cache write errors */ }
+
+					return certainArtifact;
+				}
+				catch
+				{
+					// Return fallback on error
+					return fallback;
 				}
 			}
 		}

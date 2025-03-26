@@ -33,9 +33,17 @@ namespace RTXLauncher
 		public void InitialiseUpdater()
 		{
 			// Get current version from assembly
-			AssemblyName assemblyName = Assembly.GetExecutingAssembly().GetName();
-			Version version = assemblyName.Version ?? new Version(0, 0);
-			_currentVersion = $"v{version.Major}.{version.Minor}.{version.Build}";
+			var infoAttr = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+			if (infoAttr != null && !string.IsNullOrWhiteSpace(infoAttr.InformationalVersion))
+			{
+				_currentVersion = $"dev-{infoAttr.InformationalVersion}";
+			}
+			else
+			{
+				AssemblyName assemblyName = Assembly.GetExecutingAssembly().GetName();
+				Version version = assemblyName.Version ?? new Version(0, 0);
+				_currentVersion = $"v{version.Major}.{version.Minor}.{version.Build}";
+			}
 
 			// Set up initial states
 			InstallLauncherUpdateButton.Enabled = false;
@@ -66,12 +74,28 @@ namespace RTXLauncher
 
 			try
 			{
-				// Add staging source as the first option
+				GitHubArtifactInfo devDownload;
+				string devDownloadUrl;
+				string artifactCommitHash = "latest";
+
+				try
+				{
+					devDownload = await GitHubAPI.FetchLatestStagingArtifact("Xenthio", "RTXLauncher", userInitiated);
+					devDownloadUrl = devDownload.ArchiveDownloadUrl;
+					Debug.WriteLine(devDownload.Name);
+					artifactCommitHash = devDownload.Name.Remove(0, "RTXLauncher-".Length);
+				}
+				catch
+				{
+					devDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe";
+				}
+
 				LauncherUpdateSourceComboBox.Items.Add(new UpdateSource
 				{
+					// We keep the displayed name for clarity, but store the parsed dev-hash for version comparisons
 					Name = "Development Build (Staging)",
-					Version = "Latest",
-					DownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe",
+					Version = $"dev-{artifactCommitHash}",
+					DownloadUrl = devDownloadUrl,
 					IsStaging = true
 				});
 
@@ -159,7 +183,7 @@ namespace RTXLauncher
 					{
 						Name = "Development Build (Staging)",
 						Version = "Latest",
-						DownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe",
+						DownloadUrl = "staging-url-placeholder", // Latest passing action from the repo, or if artifacts dont exist for any passing actions, use https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe
 						IsStaging = true
 					});
 					LauncherUpdateSourceComboBox.SelectedIndex = 0;
@@ -171,7 +195,7 @@ namespace RTXLauncher
 			}
 		}
 
-		private async void LauncherUpdateSourceComboBox_SelectedIndexChanged(object sender, EventArgs e)
+		private void LauncherUpdateSourceComboBox_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (LauncherUpdateSourceComboBox.SelectedItem is UpdateSource selectedSource)
 			{
@@ -181,12 +205,16 @@ namespace RTXLauncher
 
 					if (selectedSource.IsStaging)
 					{
-						// For staging builds, show generic information
+						// For staging builds, show the dev-hash version directly
 						var formatter = new MarkdownFormatter();
-						formatter.FormatReleaseNotes(ReleaseNotesRichTextBox, "Development Build", _currentVersion,
+						formatter.FormatReleaseNotes(
+							ReleaseNotesRichTextBox,
+							selectedSource.Version,               // dev-<hash>
+							_currentVersion,
 							"This is the latest development build from the master branch.\n\n" +
 							"Warning: This version may contain experimental features and bugs.",
-							true);
+							true
+						);
 					}
 					else
 					{
@@ -274,7 +302,6 @@ namespace RTXLauncher
 
 		private int CompareVersions(string version1, string version2)
 		{
-			// Clean up version strings
 			version1 = version1.TrimStart('v');
 			version2 = version2.TrimStart('v');
 
@@ -284,10 +311,26 @@ namespace RTXLauncher
 				return v1.CompareTo(v2);
 			}
 
-			// Fallback to string comparison (not ideal for versioning)
+			// Check for dev-<hash> patterns
+			bool isDev1 = version1.StartsWith("dev-", StringComparison.OrdinalIgnoreCase);
+			bool isDev2 = version2.StartsWith("dev-", StringComparison.OrdinalIgnoreCase);
+
+			if (isDev1 && !isDev2) return 1;
+			if (!isDev1 && isDev2) return -1;
+
+			if (isDev1 && isDev2)
+			{
+				string hash1 = version1.Replace("dev-", "", StringComparison.OrdinalIgnoreCase);
+				string hash2 = version2.Replace("dev-", "", StringComparison.OrdinalIgnoreCase);
+
+				if (hash1.Equals("latest", StringComparison.OrdinalIgnoreCase)) return 1;
+				if (hash2.Equals("latest", StringComparison.OrdinalIgnoreCase)) return -1;
+
+				return string.Compare(hash1, hash2, StringComparison.OrdinalIgnoreCase);
+			}
+
 			return string.Compare(version1, version2, StringComparison.Ordinal);
 		}
-
 
 		private async void InstallLauncherUpdateButton_Click(object sender, EventArgs e)
 		{
@@ -328,6 +371,7 @@ namespace RTXLauncher
 
 					// Determine download information
 					string assetToDownload = selectedSource.DownloadUrl;
+
 					bool isExe = assetToDownload.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
 					// Prepare download paths
