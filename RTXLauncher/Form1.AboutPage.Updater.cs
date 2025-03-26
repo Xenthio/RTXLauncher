@@ -371,6 +371,7 @@ namespace RTXLauncher
 
 					// Determine download information
 					string assetToDownload = selectedSource.DownloadUrl;
+					string fallbackUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe";
 
 					bool isExe = assetToDownload.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
@@ -425,32 +426,86 @@ namespace RTXLauncher
 						client.DefaultRequestHeaders.Add("User-Agent", "RTXLauncherUpdater");
 						client.Timeout = TimeSpan.FromMinutes(5); // Set a longer timeout
 
-						using (var response = await client.GetAsync(assetToDownload, HttpCompletionOption.ResponseHeadersRead))
+						try
 						{
-							response.EnsureSuccessStatusCode();
-
-							// Get content length if available
-							if (response.Content.Headers.ContentLength.HasValue)
-								totalSize = response.Content.Headers.ContentLength.Value;
-
-							progressForm.UpdateProgress($"Downloading {totalSize / 1024} KB...", 20);
-
-							using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-							using (var downloadStream = await response.Content.ReadAsStreamAsync())
+							using (var response = await client.GetAsync(assetToDownload, HttpCompletionOption.ResponseHeadersRead))
 							{
-								byte[] buffer = new byte[8192];
-								long totalBytesRead = 0;
-								int bytesRead;
+								response.EnsureSuccessStatusCode();
 
-								while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+								// Get content length if available
+								if (response.Content.Headers.ContentLength.HasValue)
+									totalSize = response.Content.Headers.ContentLength.Value;
+
+								progressForm.UpdateProgress($"Downloading {totalSize / 1024} KB...", 20);
+
+								using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
+								using (var downloadStream = await response.Content.ReadAsStreamAsync())
 								{
-									await fileStream.WriteAsync(buffer, 0, bytesRead);
+									byte[] buffer = new byte[8192];
+									long totalBytesRead = 0;
+									int bytesRead;
 
-									totalBytesRead += bytesRead;
-									int progressPercentage = (int)((totalBytesRead * 100) / totalSize);
-									int overallProgress = 20 + (int)(progressPercentage * 0.3); // 20% to 50% overall progress
+									while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+									{
+										await fileStream.WriteAsync(buffer, 0, bytesRead);
 
-									progressForm.UpdateProgress($"Downloading... {progressPercentage}%", overallProgress);
+										totalBytesRead += bytesRead;
+										int progressPercentage = (int)((totalBytesRead * 100) / totalSize);
+										int overallProgress = 20 + (int)(progressPercentage * 0.3); // 20% to 50% overall progress
+
+										progressForm.UpdateProgress($"Downloading... {progressPercentage}%", overallProgress);
+									}
+								}
+							}
+						}
+						catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+						{
+							// Fallback to hardcoded URL
+							assetToDownload = fallbackUrl;
+							progressForm.UpdateProgress($"403 Forbidden. Falling back to: {assetToDownload}", 15);
+
+							isExe = assetToDownload.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+
+							if (isExe)
+							{
+								string fileName = Path.GetFileName(assetToDownload);
+								if (string.IsNullOrEmpty(fileName))
+									fileName = "RTXLauncher.exe";
+
+								downloadPath = Path.Combine(_updateTempPath, fileName);
+							}
+							else
+							{
+								downloadPath = Path.Combine(_updateTempPath, $"RTXLauncher_Update_{versionTag}.zip");
+							}
+
+							using (var response = await client.GetAsync(assetToDownload, HttpCompletionOption.ResponseHeadersRead))
+							{
+								response.EnsureSuccessStatusCode();
+
+								// Get content length if available
+								if (response.Content.Headers.ContentLength.HasValue)
+									totalSize = response.Content.Headers.ContentLength.Value;
+
+								progressForm.UpdateProgress($"Downloading {totalSize / 1024} KB...", 20);
+
+								using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
+								using (var downloadStream = await response.Content.ReadAsStreamAsync())
+								{
+									byte[] buffer = new byte[8192];
+									long totalBytesRead = 0;
+									int bytesRead;
+
+									while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+									{
+										await fileStream.WriteAsync(buffer, 0, bytesRead);
+
+										totalBytesRead += bytesRead;
+										int progressPercentage = (int)((totalBytesRead * 100) / totalSize);
+										int overallProgress = 20 + (int)(progressPercentage * 0.3); // 20% to 50% overall progress
+
+										progressForm.UpdateProgress($"Downloading... {progressPercentage}%", overallProgress);
+									}
 								}
 							}
 						}
@@ -716,7 +771,10 @@ timeout /t 2 /nobreak > nul
 
 #if (DEBUG)
 			// In debug mode, pause at the end
-			batchScript += "echo Update complete.\npause\n";
+			batchScript += @"
+echo Update complete.
+pause\n
+";
 #else
     // In release mode, self-delete
     batchScript += @"
