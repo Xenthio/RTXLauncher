@@ -51,7 +51,7 @@ jobs:
         $shortHash = $commitHash.Substring(0,8)
         # Generate a version that includes the full commit hash
         $version = "1.0.0+$commitHash"
-        $fileVersion = "1.0.0.$([int]::Parse($shortHash, [System.Globalization.NumberStyles]::HexNumber))
+        $fileVersion = "1.0.0.$([int]::Parse($shortHash, [System.Globalization.NumberStyles]::HexNumber))"
 
         echo "HASH=$commitHash" >> $env:GITHUB_OUTPUT
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
