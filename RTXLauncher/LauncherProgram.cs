@@ -56,7 +56,7 @@ namespace RTXLauncher
 				launchOptions += " -tools";
 
 
-			launchOptions += settings.CustomLaunchOptions;
+			launchOptions += $" {settings.CustomLaunchOptions}";
 
 			var game = FindGameExecutable();
 
