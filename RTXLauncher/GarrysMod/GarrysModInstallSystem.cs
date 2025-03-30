@@ -260,7 +260,7 @@
 						MessageBoxButtons.YesNo,
 						MessageBoxIcon.Warning);
 
-					result = (dialogResult == DialogResult.OK);
+					result = (dialogResult == DialogResult.Yes);
 
 					// Set the flag if user clicked OK to prevent future prompts
 					if (result)
