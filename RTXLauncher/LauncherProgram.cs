@@ -40,8 +40,18 @@ namespace RTXLauncher
 
 			launchOptions += $" -windowed -noborder";
 
-			launchOptions += $" -w {settings.Width}";
-			launchOptions += $" -h {settings.Height}";
+			var width = settings.Width;
+			var height = settings.Height;
+
+			if (width == 0 || height == 0)
+			{
+				// use the current screen resolution
+				width = Screen.PrimaryScreen.Bounds.Width;
+				height = Screen.PrimaryScreen.Bounds.Height;
+			}
+
+			launchOptions += $" -w {width}";
+			launchOptions += $" -h {height}";
 
 			if (!settings.LoadWorkshopAddons)
 				launchOptions += " -noworkshop";

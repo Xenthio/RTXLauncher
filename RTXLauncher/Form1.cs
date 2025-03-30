@@ -44,6 +44,10 @@ namespace RTXLauncher
 			if (settingsDataBindingSource.DataSource is SettingsData settings)
 			{
 				WidthHeightComboBox.Text = $"{settings.Width}x{settings.Height}";
+				if (settings.Width == 0 || settings.Height == 0)
+				{
+					WidthHeightComboBox.Text = "Native Resolution";
+				}
 			}
 		}
 		public void SaveSettings()
@@ -107,6 +111,17 @@ namespace RTXLauncher
 		{
 			// set width and height from combo box string
 			var resolution = WidthHeightComboBox.Text;
+			// if "Native Resolution" is selected, set width and height to 0
+			if (resolution == "Native Resolution")
+			{
+				if (settingsDataBindingSource.DataSource is SettingsData settings)
+				{
+					settings.Width = 0;
+					settings.Height = 0;
+					Refresh();
+				}
+				return;
+			}
 			var parts = resolution.Split('x');
 			if (parts.Length == 2)
 			{
