@@ -95,6 +95,14 @@ bin/win64/usd_ms.dll
 			PopulatePatchSourceComboBox();
 			patchesSourceComboBox.SelectedIndexChanged += PatchesSourceComboBox_SelectedIndexChanged;
 			ApplyPatchesButton.Click += ApplyPatchesButton_ClickAsync;
+
+			// Initialize OptiScaler components
+			await PopulateOptiScalerSourceComboBox();
+			optiScalerSourceComboBox.SelectedIndexChanged += OptiScalerSourceComboBox_SelectedIndexChanged;
+			InstallOptiScalerButton.Click += InstallOptiScalerButton_ClickAsync;
+
+			// Initially populate the OptiScaler version combo box
+			await PopulateOptiScalerVersionComboBoxAsync();
 		}
 
 		private async void CreateInstallButton_ClickAsync(object sender, EventArgs e)
