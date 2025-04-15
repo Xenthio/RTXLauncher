@@ -24,11 +24,45 @@ namespace RTXLauncher
 		{
 			if (Checked)
 			{
-				ContentMountingSystem.MountGame(GameFolder, InstallFolder, RemixModFolder);
+              string message = 	$"Are you sure you want to mount {InstallFolder}?\n\n" +
+					$"By selecting yes, you agree that you have correctly extracted any RTX IO assets prior to mounting.\n\n" +
+					$"You also agree that there will be no user support for assets that have incomplete replacements such as the Half-Life 2: RTX demo.";
+                string linkText = "Learn more about content mounting";
+                string linkUrl = "https://github.com/Xenthio/gmod-rtx-fixes-2/wiki/Using-HL2-RTX-Assets-in-Garry's-Mod-RTX";
+                
+                using (var customDialog = new CustomWarningDialog(message, "Confirm Mount", linkText, linkUrl))
+                {
+                    var result = customDialog.ShowDialog();
+                    
+                    if (result == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        ContentMountingSystem.MountGame(GameFolder, InstallFolder, RemixModFolder);
+                    }
+                    else
+                    {
+                        // Revert checkbox state if user cancels
+                        Checked = false;
+                    }
+                }
 			}
 			else
 			{
-				ContentMountingSystem.UnMountGame(GameFolder, InstallFolder, RemixModFolder);
+				// Show confirmation dialog before unmounting
+				var result = System.Windows.Forms.MessageBox.Show(
+					$"Are you sure you want to unmount {InstallFolder}?",
+					"Confirm Unmount",
+					System.Windows.Forms.MessageBoxButtons.YesNo,
+					System.Windows.Forms.MessageBoxIcon.Warning);
+					
+				if (result == System.Windows.Forms.DialogResult.Yes)
+				{
+					ContentMountingSystem.UnMountGame(GameFolder, InstallFolder, RemixModFolder);
+				}
+				else
+				{
+					// Revert the checkbox state if user cancels
+					Checked = true;
+				}
 			}
 		}
 

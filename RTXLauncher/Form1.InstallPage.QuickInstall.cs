@@ -176,7 +176,7 @@
 			try
 			{
 				// Use the official NVIDIA release
-				var remixSource = _remixSources["(OFFICIAL) NVIDIAGameWorks/rtx-remix"];
+				var remixSource = _remixSources["sambow23/dxvk-remix-gmod"];
 
 				// Get the latest release
 				List<GitHubRelease> releases = await GitHubAPI.FetchReleasesAsync(remixSource.Owner, remixSource.Repo);
