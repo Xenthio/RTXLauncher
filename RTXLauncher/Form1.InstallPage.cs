@@ -76,6 +76,15 @@ bin/win64/usd_ms.dll
 
 		private async Task RefreshPackageInfo()
 		{
+			// Unsubscribe existing handlers first
+			remixSourceComboBox.SelectedIndexChanged -= RemixSourceComboBox_SelectedIndexChanged;
+			packageSourceComboBox.SelectedIndexChanged -= PackageSourceComboBox_SelectedIndexChanged;
+			InstallFixesPackageButton.Click -= InstallFixesPackageButton_ClickAsync;
+			ApplyPatchesButton.Click -= ApplyPatchesButton_ClickAsync;
+			InstallRTXRemixButton.Click -= InstallRTXRemixButton_Click;
+			optiScalerSourceComboBox.SelectedIndexChanged -= OptiScalerSourceComboBox_SelectedIndexChanged;
+			InstallOptiScalerButton.Click -= InstallOptiScalerButton_ClickAsync;
+
 			// Initialize remix source combo box
 			PopulateRemixSourceComboBox();
 			remixSourceComboBox.SelectedIndexChanged += RemixSourceComboBox_SelectedIndexChanged;
