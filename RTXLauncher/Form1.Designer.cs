@@ -320,7 +320,7 @@
             label17.Name = "label17";
             label17.Size = new Size(297, 15);
             label17.TabIndex = 14;
-            label17.Text = "You can head to the install tab if that's more your thing";
+            label17.Text = "You can head to the Advanced Install tab for more specific installation options";
             // 
             // label16
             // 
