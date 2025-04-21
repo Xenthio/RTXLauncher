@@ -222,14 +222,14 @@
 				// Determine if the installation is x64
 				string installType = GarrysModInstallSystem.GetInstallType(installDir);
 				bool isX64 = installType == "gmod_x86-64";
-				
+
 				// Choose the appropriate patches source based on architecture
-				string patchesSource = isX64 
+				string patchesSource = isX64
 					? "sambow23/SourceRTXTweaks"   // For x64 installations
 					: "BlueAmulet/SourceRTXTweaks"; // For x86 installations
-				
+
 				progressForm.UpdateProgress($"Detected {(isX64 ? "x64" : "x86")} installation, using {patchesSource} patches", 62);
-				
+
 				var (owner, repo, filePath) = _patchSources[patchesSource];
 
 				// Get the patch file content
