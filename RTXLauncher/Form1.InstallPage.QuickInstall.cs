@@ -107,6 +107,20 @@
 					throw new Exception("Failed to install fixes package.");
 				}
 
+				// Step 6: Process additional dependencies defined in the fixes package
+				progressForm.UpdateProgress("Processing additional launcher dependencies...", 90);
+				bool dependenciesSuccess = await ProcessLauncherDependenciesAsync(progressForm, installDir);
+				if (!dependenciesSuccess)
+				{
+					// Log or show a warning, but don't necessarily fail the whole install
+					// As these might be optional dependencies.
+					MessageBox.Show(
+						"Warning: Could not process all additional dependencies specified in the fixes package.",
+						"Dependency Warning",
+						MessageBoxButtons.OK,
+						MessageBoxIcon.Warning);
+				}
+
 				// Complete!
 				progressForm.UpdateProgress("Easy Install completed successfully! You can now close this window.", 100);
 
@@ -121,16 +135,9 @@
 			}
 			catch (Exception ex)
 			{
-				progressForm.UpdateProgress($"Error during Easy Install: {ex.Message}", 100);
-
-				MessageBox.Show(
-					$"Error during Easy Install: {ex.Message}\n\nYou may need to try the manual installation steps.",
-					"Easy Install Error",
-					MessageBoxButtons.OK,
-					MessageBoxIcon.Error);
-
-				success = false;
-				resultMessage = ex.Message;
+				// Clean up on error
+				try { Directory.Delete(tempDir, true); } catch { }
+				throw;
 			}
 
 			return success;
@@ -327,6 +334,194 @@
 				progressForm.UpdateProgress($"Error installing fixes package: {ex.Message}", 100);
 				return false;
 			}
+		}
+
+		// Process .launcherdependencies
+		private async Task<bool> ProcessLauncherDependenciesAsync(ProgressForm progressForm, string installDir)
+		{
+			string dependenciesFilePath = Path.Combine(installDir, ".launcherdependencies");
+			bool allSucceeded = true;
+
+			if (!File.Exists(dependenciesFilePath))
+			{
+				progressForm.UpdateProgress("No .launcherdependencies file found, skipping.", 95);
+				return true; // No dependencies file is not an error
+			}
+
+			progressForm.UpdateProgress("Found .launcherdependencies file. Processing...", 91);
+
+			try
+			{
+				string[] dependencyLines = await File.ReadAllLinesAsync(dependenciesFilePath);
+				int totalDependencies = dependencyLines.Length;
+				int dependenciesProcessed = 0;
+
+				foreach (string line in dependencyLines)
+				{
+					string trimmedLine = line.Trim();
+					if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith("#")) // Skip empty lines and comments
+						continue;
+
+					string[] parts = trimmedLine.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+					if (parts.Length != 2)
+					{
+						progressForm.UpdateProgress($"Skipping invalid dependency line: {trimmedLine}", -1); // Use -1 for messages without progress change
+						allSucceeded = false; // Mark as partial failure if format is wrong
+						continue;
+					}
+
+					string url = parts[0];
+					string relativeTargetPath = parts[1].Replace('\\', '/'); // Normalize path
+
+					try
+					{
+						progressForm.UpdateProgress($"Installing dependency from {url}...", -1);
+						await InstallDependencyAsync(url, installDir, relativeTargetPath, (message, progress) =>
+						{
+							// Remap progress within the 91-99% range for this step
+							int baseProgress = 91 + (int)((float)dependenciesProcessed / totalDependencies * 8); // Allocate 8% total for all dependencies
+							int remappedProgress = baseProgress + (int)(progress * (8.0f / totalDependencies)); // Scale sub-progress
+							progressForm.UpdateProgress($"Dependency ({dependenciesProcessed + 1}/{totalDependencies}): {message}", remappedProgress);
+						});
+						dependenciesProcessed++;
+					}
+					catch (Exception depEx)
+					{
+						progressForm.UpdateProgress($"Failed to install dependency {url}: {depEx.Message}", -1);
+						allSucceeded = false; // Mark as partial failure
+					}
+				}
+
+				progressForm.UpdateProgress("Finished processing dependencies.", 99);
+				return allSucceeded;
+			}
+			catch (Exception ex)
+			{
+				progressForm.UpdateProgress($"Error reading .launcherdependencies: {ex.Message}", 99);
+				return false; // Reading the file itself failed
+			}
+		}
+
+		// Install a single dependency
+		private async Task InstallDependencyAsync(string zipUrl, string installDir, string relativeTargetPath, Action<string, int> progressCallback)
+		{
+			progressCallback?.Invoke("Starting dependency installation...", 0);
+
+			// Create a temporary directory for downloading
+			string tempDir = Path.Combine(Path.GetTempPath(), $"RTXDepInstall_{Path.GetRandomFileName()}");
+			Directory.CreateDirectory(tempDir);
+
+			long lastReportedMB = 0;
+			int reportThresholdMB = 5; // Report every 5MB
+			string zipFileName = Path.GetFileName(new Uri(zipUrl).AbsolutePath); // Get a filename from URL
+
+			try
+			{
+				// Download the zip file
+				string zipPath = Path.Combine(tempDir, zipFileName);
+				progressCallback?.Invoke($"Downloading {zipFileName}...", 5);
+
+				using (var client = new HttpClient())
+				{
+					client.DefaultRequestHeaders.Add("User-Agent", "RTXLauncher"); // GitHub might require User-Agent
+					using (var response = await client.GetAsync(zipUrl, HttpCompletionOption.ResponseHeadersRead))
+					{
+						response.EnsureSuccessStatusCode(); // Throw exception if download failed
+
+						long totalBytes = response.Content.Headers.ContentLength ?? -1;
+						using (var downloadStream = await response.Content.ReadAsStreamAsync())
+						using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+						{
+							var buffer = new byte[8192];
+							long totalBytesRead = 0;
+							int bytesRead;
+
+							while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+							{
+								await fileStream.WriteAsync(buffer, 0, bytesRead);
+								totalBytesRead += bytesRead;
+
+								if (totalBytes > 0)
+								{
+									long currentMB = totalBytesRead / 1048576;
+									if (currentMB >= lastReportedMB + reportThresholdMB || totalBytesRead == totalBytes)
+									{
+										lastReportedMB = currentMB;
+										int percentComplete = 10 + (int)((float)totalBytesRead / totalBytes * 40); // Progress 10% to 50%
+										progressCallback?.Invoke($"Downloading: {currentMB} MB / {totalBytes / 1048576} MB", percentComplete);
+									}
+								}
+								else {
+									progressCallback?.Invoke($"Downloading: {totalBytesRead / 1048576} MB", 25); // Indeterminate progress
+								}
+							}
+						}
+					}
+				}
+
+				progressCallback?.Invoke("Download complete. Extracting...", 55);
+
+				string targetFullPath = Path.Combine(installDir, relativeTargetPath);
+				Directory.CreateDirectory(targetFullPath); // Ensure target directory exists
+
+				await Task.Run(() => // Run extraction in background thread
+				{
+					using (var archive = ZipFile.OpenRead(zipPath))
+					{
+						// Determine the root directory name within the zip
+						string rootDirPrefix = archive.Entries.FirstOrDefault()?.FullName.Split('/')[0] + "/";
+						if (string.IsNullOrEmpty(rootDirPrefix) || !rootDirPrefix.EndsWith("/")) {
+							rootDirPrefix = ""; // Handle zips without a single root folder
+						}
+
+						int totalEntries = archive.Entries.Count;
+						int entriesProcessed = 0;
+
+						foreach (var entry in archive.Entries)
+						{
+							// Skip directory entries explicitly - we create them as needed
+							if (entry.FullName.EndsWith("/")) continue;
+
+							// Construct the destination path
+							string relativeEntryPath = entry.FullName;
+							// Remove the root directory prefix if it exists
+							if (!string.IsNullOrEmpty(rootDirPrefix) && relativeEntryPath.StartsWith(rootDirPrefix))
+							{
+								relativeEntryPath = relativeEntryPath.Substring(rootDirPrefix.Length);
+							}
+
+							// Skip empty relative paths (e.g., the root folder entry itself if it wasn't filtered)
+							if (string.IsNullOrEmpty(relativeEntryPath)) continue;
+
+							string destinationPath = Path.Combine(targetFullPath, relativeEntryPath);
+
+							// Ensure the directory for the file exists
+							string destinationDir = Path.GetDirectoryName(destinationPath);
+							if (!Directory.Exists(destinationDir))
+							{
+								Directory.CreateDirectory(destinationDir);
+							}
+
+							// Extract the file, overwriting if it exists
+							entry.ExtractToFile(destinationPath, true);
+
+							entriesProcessed++;
+							int progressPercent = 55 + (int)((float)entriesProcessed / totalEntries * 40); // Progress 55% to 95%
+							progressCallback?.Invoke($"Extracting: {entriesProcessed} / {totalEntries}", progressPercent);
+						}
+					}
+				});
+
+
+				progressCallback?.Invoke("Extraction complete. Cleaning up...", 98);
+			}
+			finally
+			{
+				// Clean up temporary directory
+				try { Directory.Delete(tempDir, true); } catch { /* Ignore cleanup errors */ }
+			}
+
+			progressCallback?.Invoke("Dependency installed successfully!", 100);
 		}
 	}
 }
