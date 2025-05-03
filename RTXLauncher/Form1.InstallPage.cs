@@ -174,7 +174,7 @@ bin/win64/usd_ms.dll
 			}
 
 			// Select the default NVIDIA source
-			string defaultSource = "(OFFICIAL) NVIDIAGameWorks/rtx-remix";
+			string defaultSource = "sambow23/dxvk-remix-gmod";
 			int defaultIndex = remixSourceComboBox.Items.IndexOf(defaultSource);
 
 			if (defaultIndex >= 0)
@@ -708,8 +708,8 @@ bin/win64/usd_ms.dll
 				patchesSourceComboBox.Items.Add(source);
 			}
 
-			// Find and select "BlueAmulet/SourceRTXTweaks" as default if available
-			string defaultSource = "BlueAmulet/SourceRTXTweaks";
+			// Find and select "sambow23/SourceRTXTweaks" as default if available
+			string defaultSource = "sambow23/SourceRTXTweaks";
 			int defaultIndex = patchesSourceComboBox.Items.IndexOf(defaultSource);
 
 			if (defaultIndex >= 0)
