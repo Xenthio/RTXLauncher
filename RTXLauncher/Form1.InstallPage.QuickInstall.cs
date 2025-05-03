@@ -1,4 +1,6 @@
-﻿namespace RTXLauncher
+﻿using System.IO.Compression;
+
+namespace RTXLauncher
 {
 	public partial class Form1
 	{
@@ -135,9 +137,28 @@
 			}
 			catch (Exception ex)
 			{
-				// Clean up on error
-				try { Directory.Delete(tempDir, true); } catch { }
-				throw;
+				// Restore original error handling, remove incorrect tempDir cleanup
+				progressForm.UpdateProgress($"Error during Easy Install: {ex.Message}", 100);
+
+				MessageBox.Show(
+					$"Error during Easy Install: {ex.Message}\n\nYou may need to try the manual installation steps.",
+					"Easy Install Error",
+					MessageBoxButtons.OK,
+					MessageBoxIcon.Error);
+
+				// Optionally rethrow or handle as needed, but don't try to clean tempDir here
+				// For now, just log the error and return false to indicate failure
+				// throw; // Re-throwing might stop the progress form abruptly
+				success = false; // Ensure success is false
+				resultMessage = ex.Message; // Store message if needed elsewhere
+			}
+			finally
+			{
+				// Ensure the progress form is closed if it's still open
+				if (progressForm != null && !progressForm.IsDisposed)
+				{
+					progressForm.Close();
+				}
 			}
 
 			return success;
