@@ -10,6 +10,9 @@
     <Compile Update="Controls\LogReflectionControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="Controls\Warning.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form1.AboutPage.Updater.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -17,6 +20,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Form1.InstallPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form1.InstallPage.OptiScaler.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Form1.InstallPage.QuickInstall.cs">
