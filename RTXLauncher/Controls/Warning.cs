@@ -27,7 +27,7 @@ namespace RTXLauncher
             this.StartPosition = FormStartPosition.CenterParent;
             this.Icon = SystemIcons.Warning;
             this.SizeGripStyle = SizeGripStyle.Hide;
-            this.Padding = new Padding(20);
+            this.Padding = new Padding(10);
             
             // Create layout panel
             var mainPanel = new TableLayoutPanel
@@ -44,7 +44,7 @@ namespace RTXLauncher
             
             mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));  // Icon & Message
             mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));  // Link
-            mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));  // Spacing
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 15));  // Spacing
             mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));  // Buttons
 
             // Add warning icon
@@ -52,7 +52,7 @@ namespace RTXLauncher
             {
                 Image = SystemIcons.Warning.ToBitmap(),
                 SizeMode = PictureBoxSizeMode.AutoSize,
-                Margin = new Padding(0, 0, 10, 0)
+                Margin = new Padding(0, 0, 8, 0)
             };
             mainPanel.Controls.Add(warningIcon, 0, 0);
             mainPanel.SetRowSpan(warningIcon, 2);
@@ -63,8 +63,8 @@ namespace RTXLauncher
                 Text = message,
                 AutoSize = true,
                 Margin = new Padding(3),
-                MaximumSize = new Size(450, 0),  // Allow vertical auto-sizing with max width
-                MinimumSize = new Size(300, 0)
+                MaximumSize = new Size(380, 0),
+                MinimumSize = new Size(250, 0)
             };
             mainPanel.Controls.Add(messageLabel, 1, 0);
             
@@ -73,7 +73,7 @@ namespace RTXLauncher
             {
                 Text = linkText,
                 AutoSize = true,
-                Margin = new Padding(3, 10, 3, 10)
+                Margin = new Padding(3, 6, 3, 6)
             };
             linkLabel.LinkClicked += (s, e) => 
             {
@@ -103,7 +103,7 @@ namespace RTXLauncher
             };
             buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            buttonPanel.Margin = new Padding(3, 10, 3, 3);
+            buttonPanel.Margin = new Padding(3, 6, 3, 3);
 
             // Buttons
             yesButton = new Button
@@ -111,8 +111,8 @@ namespace RTXLauncher
                 Text = "Yes",
                 DialogResult = DialogResult.Yes,
                 AutoSize = true,
-                Padding = new Padding(10, 5, 10, 5),
-                MinimumSize = new Size(80, 0),
+                Padding = new Padding(8, 4, 8, 4),
+                MinimumSize = new Size(75, 0),
                 Margin = new Padding(3)
             };
             
@@ -121,8 +121,8 @@ namespace RTXLauncher
                 Text = "No",
                 DialogResult = DialogResult.No,
                 AutoSize = true,
-                Padding = new Padding(10, 5, 10, 5),
-                MinimumSize = new Size(80, 0),
+                Padding = new Padding(8, 4, 8, 4),
+                MinimumSize = new Size(75, 0),
                 Margin = new Padding(3)
             };
 
@@ -134,7 +134,7 @@ namespace RTXLauncher
             this.Controls.Add(mainPanel);
             
             // Set the size of the form based on the panel
-            this.ClientSize = new Size(530, 330);  // Increased initial height
+            this.ClientSize = new Size(450, 200);
             
             this.AcceptButton = yesButton;
             this.CancelButton = noButton;
@@ -145,11 +145,28 @@ namespace RTXLauncher
 
         private void CustomWarningDialog_Load(object sender, EventArgs e)
         {
-            // Add some extra padding to ensure everything fits
-            int width = Math.Max(messageLabel.Width + warningIcon.Width + 100, 530);
-            int height = Math.Max(messageLabel.Height + linkLabel.Height + buttonPanel.Height + 160, 300); // Increased padding
+            // Get current DPI scale factor
+            float dpiScaleFactor;
+            using (Graphics g = this.CreateGraphics())
+            {
+                dpiScaleFactor = g.DpiX / 96f;
+            }
             
-            // Ensure the form is wide enough
+            // Base sizes adjusted for 100% scaling
+            int baseWidth = 450;
+            int baseHeight = 230;
+            
+            // Calculate actual content width needed
+            int contentWidth = messageLabel.Width + warningIcon.Width + (int)(50 * dpiScaleFactor);
+            
+            // Take the larger of the base width or content width
+            int width = Math.Max(contentWidth, baseWidth);
+            
+            // Calculate height based on content
+            int contentHeight = messageLabel.Height + linkLabel.Height + buttonPanel.Height + (int)(100 * dpiScaleFactor);
+            int height = Math.Max(contentHeight, baseHeight);
+            
+            // Set the form size
             this.MinimumSize = new Size(width, height);
             this.Size = new Size(width, height);
             
