@@ -112,6 +112,8 @@ bin/win64/usd_ms.dll
 
 			// Initially populate the OptiScaler version combo box
 			await PopulateOptiScalerVersionComboBoxAsync();
+			
+			InstallRTXRemixButton.Click += InstallRTXRemixButton_Click;
 		}
 
 		private async void CreateInstallButton_ClickAsync(object sender, EventArgs e)
