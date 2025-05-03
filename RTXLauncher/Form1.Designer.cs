@@ -290,7 +290,7 @@
 			WidthHeightComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			WidthHeightComboBox.FlatStyle = FlatStyle.System;
 			WidthHeightComboBox.FormattingEnabled = true;
-			WidthHeightComboBox.Items.AddRange(new object[] { "Native Resolution", "1920x1080", "2560x1440", "3440x1440", "3480x2160", "1600x900", "1366x768", "1280x720", "1920x1200" });
+			WidthHeightComboBox.Items.AddRange(new object[] { "Native Resolution", "1920x1080", "2560x1440", "3440x1440", "3840x2160", "1600x900", "1366x768", "1280x720", "1920x1200" });
 			WidthHeightComboBox.Location = new Point(6, 22);
 			WidthHeightComboBox.Name = "WidthHeightComboBox";
 			WidthHeightComboBox.Size = new Size(419, 23);
