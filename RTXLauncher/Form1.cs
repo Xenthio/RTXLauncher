@@ -266,8 +266,9 @@ namespace RTXLauncher
 							"Success",
 							MessageBoxButtons.OK,
 							MessageBoxIcon.Information);
-						Refresh(); // Refresh the binding to update the UI
 					}
+					Refresh();
+					RefreshInstallInfo();
 				}
 			}
 		}
