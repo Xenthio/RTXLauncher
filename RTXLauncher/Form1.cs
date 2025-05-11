@@ -43,6 +43,7 @@ namespace RTXLauncher
 			}
 			if (settingsDataBindingSource.DataSource is SettingsData settings)
 			{
+				SteamLibrary.ManuallySpecifiedGameInstallPath = settings.ManuallySpecifiedInstallPath;
 				WidthHeightComboBox.Text = $"{settings.Width}x{settings.Height}";
 				if (settings.Width == 0 || settings.Height == 0)
 				{
@@ -220,6 +221,71 @@ namespace RTXLauncher
 		private void label21_Click(object sender, EventArgs e)
 		{
 
+		}
+
+		private void BrowseButton_Click(object sender, EventArgs e)
+		{
+			using (OpenFileDialog openFileDialog = new OpenFileDialog())
+			{
+				openFileDialog.Title = "Select gmod.exe or hl2.exe";
+				openFileDialog.Filter = "Game Executables|gmod.exe;hl2.exe|All Executable Files|*.exe";
+				openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+				openFileDialog.CheckFileExists = true;
+
+				if (openFileDialog.ShowDialog() == DialogResult.OK)
+				{
+					string selectedFilePath = openFileDialog.FileName;
+					string fileName = Path.GetFileName(selectedFilePath).ToLower();
+
+					// Make sure it's either gmod.exe or hl2.exe
+					if (fileName != "gmod.exe" && fileName != "hl2.exe")
+					{
+						MessageBox.Show("Please select either gmod.exe or hl2.exe", "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						return;
+					}
+
+					// Get the directory containing the executable
+					string installDir = Path.GetDirectoryName(selectedFilePath);
+
+					// Validate that it's a valid installation directory
+					if (!ValidateGameDirectory(installDir))
+					{
+						MessageBox.Show(
+							"The selected directory does not appear to be a valid game installation folder. Please select a valid installation.",
+							"Invalid Installation",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Warning);
+						return;
+					}
+					SteamLibrary.ManuallySpecifiedGameInstallPath = installDir;
+					if (settingsDataBindingSource.DataSource is SettingsData settings)
+					{
+						settings.ManuallySpecifiedInstallPath = installDir;
+						MessageBox.Show(
+							$"Install path set to: {installDir}",
+							"Success",
+							MessageBoxButtons.OK,
+							MessageBoxIcon.Information);
+						Refresh(); // Refresh the binding to update the UI
+					}
+				}
+			}
+		}
+
+		// Helper method to validate that the selected directory is a valid game installation
+		private bool ValidateGameDirectory(string directory)
+		{
+			// Simple validation to check for common game files/folders
+			bool hasGameFolder = Directory.Exists(Path.Combine(directory, "garrysmod")) ||
+								Directory.Exists(Path.Combine(directory, "hl2"));
+
+			bool hasBinFolder = Directory.Exists(Path.Combine(directory, "bin"));
+
+			// Check for Steam app ID which would indicate a Steam game
+			bool hasSteamAppID = File.Exists(Path.Combine(directory, "steam_appid.txt"));
+
+			// If it has either garrysmod or hl2 folder AND either bin folder or Steam App ID, consider it valid
+			return (hasGameFolder) && (hasBinFolder || hasSteamAppID);
 		}
 	}
 }

@@ -472,7 +472,8 @@ namespace RTXLauncher
 										progressCallback?.Invoke($"Downloading: {currentMB} MB / {totalBytes / 1048576} MB", percentComplete);
 									}
 								}
-								else {
+								else
+								{
 									progressCallback?.Invoke($"Downloading: {totalBytesRead / 1048576} MB", 25); // Indeterminate progress
 								}
 							}
@@ -491,7 +492,8 @@ namespace RTXLauncher
 					{
 						// Determine the root directory name within the zip
 						string rootDirPrefix = archive.Entries.FirstOrDefault()?.FullName.Split('/')[0] + "/";
-						if (string.IsNullOrEmpty(rootDirPrefix) || !rootDirPrefix.EndsWith("/")) {
+						if (string.IsNullOrEmpty(rootDirPrefix) || !rootDirPrefix.EndsWith("/"))
+						{
 							rootDirPrefix = ""; // Handle zips without a single root folder
 						}
 

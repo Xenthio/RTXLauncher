@@ -4,13 +4,19 @@ namespace RTXLauncher
 {
 	internal class SteamLibrary
 	{
-
+		public static string ManuallySpecifiedGameInstallPath = "";
 		/// <summary>
 		/// Checks all steam library paths for the install folder, should be like D:\SteamLibrary\steamapps\common\(installFolder), returns null if not installed/found
 		/// </summary>
 		/// <returns></returns>
 		public static string GetGameInstallFolder(string installFolder)
 		{
+			// Check if there's a manually specified install path in settings
+			if (!string.IsNullOrWhiteSpace(ManuallySpecifiedGameInstallPath) && Directory.Exists(ManuallySpecifiedGameInstallPath))
+			{
+				return ManuallySpecifiedGameInstallPath;
+			}
+
 			// Get the steam library paths
 			var steamLibraryPaths = GetSteamLibraryPaths();
 			foreach (var path in steamLibraryPaths)
@@ -23,6 +29,7 @@ namespace RTXLauncher
 			}
 			return null;
 		}
+
 		public static bool IsGameInstalled(string gameFolder, string installFolder, string remixModFolder)
 		{
 			// Check if the content is installed
