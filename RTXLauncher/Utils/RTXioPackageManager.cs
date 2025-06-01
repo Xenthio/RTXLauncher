@@ -683,7 +683,7 @@ namespace RTXLauncher
                 }
 
                 // Copy extracted content to the remix mod folder
-                LogProgress("Copying extracted content...", 95);
+                LogProgress("Copying extracted content... The application may appear to be frozen, please wait.", 95);
                 CopyDirectory(TempOutputFolder, remixModPath);
 
                 // Clean up temporary output folder
