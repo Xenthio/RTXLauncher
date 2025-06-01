@@ -70,22 +70,12 @@ namespace RTXLauncher
                     return true;
                 }
 
-                LogProgress("RTXIO extractor not found, searching for existing installations...", 10);
+                LogProgress("RTXIO extractor not found, downloading dxvk-remix...", 10);
 
                 // Create the RTXIO directory
                 Directory.CreateDirectory(RTXIOFolder);
 
-                // First, try to find an existing dxvk-remix installation
-                // This is more reliable than downloading and running dependency scripts
-                if (await TryFindExistingRTXIO())
-                {
-                    return true;
-                }
-
-                LogProgress("No existing RTXIO installation found, trying dxvk-remix download...", 20);
-                
-                // Fallback: try downloading dxvk-remix repository
-                // Note: This may not work reliably due to packman dependency issues
+                // Download dxvk-remix repository
                 if (!await DownloadDxvkRemixRepository())
                 {
                     LogProgress("Failed to download dxvk-remix repository", 0);
@@ -131,75 +121,6 @@ namespace RTXLauncher
                 CleanupTempRepository();
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Try to find an existing RTXIO installation (e.g., from an existing dxvk-remix installation)
-        /// </summary>
-        private static async Task<bool> TryFindExistingRTXIO()
-        {
-            LogProgress("Searching for existing RTXIO installation...", 20);
-
-            // Common locations where dxvk-remix might be installed
-            var searchPaths = new[]
-            {
-                // User profile locations
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "dxvk-remix"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents", "dxvk-remix"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "dxvk-remix"),
-                
-                // Common drive locations
-                Path.Combine("C:", "dxvk-remix"),
-                
-                // Program Files locations
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dxvk-remix"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "dxvk-remix"),
-                
-                // Current directory and relative paths
-                Path.Combine(".", "dxvk-remix"),
-                Path.Combine("..", "dxvk-remix"),
-                Path.Combine("..", "..", "dxvk-remix")
-            };
-
-            LogProgress($"Checking {searchPaths.Length} potential locations for existing dxvk-remix installations...", 25);
-
-            foreach (var searchPath in searchPaths)
-            {
-                try
-                {
-                    var rtxioExtractorPath = Path.Combine(searchPath, "external", "rtxio", "bin", "RtxIoResourceExtractor.exe");
-                    LogProgress($"Checking: {searchPath}", 30);
-                    
-                    if (File.Exists(rtxioExtractorPath))
-                    {
-                        LogProgress($"Found existing RTXIO at: {rtxioExtractorPath}", 35);
-                        
-                        try
-                        {
-                            // Copy the entire rtxio directory
-                            var sourceRtxioDir = Path.Combine(searchPath, "external", "rtxio");
-                            CopyDirectory(sourceRtxioDir, RTXIOFolder);
-                            
-                            LogProgress("Successfully copied existing RTXIO installation", 50);
-                            return true;
-                        }
-                        catch (Exception ex)
-                        {
-                            LogProgress($"Failed to copy existing RTXIO from {searchPath}: {ex.Message}", 0);
-                            // Continue searching other locations
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Ignore errors when checking paths (e.g., access denied, path too long, etc.)
-                    LogProgress($"Error checking path {searchPath}: {ex.Message}", 0);
-                }
-            }
-
-            LogProgress("No existing RTXIO installation found in common locations", 30);
-            LogProgress("Tip: If you have dxvk-remix installed elsewhere, copy the 'external/rtxio' folder to './launcherdeps/rtxio'", 30);
-            return false;
         }
 
         /// <summary>
@@ -270,15 +191,15 @@ namespace RTXLauncher
         {
             try
             {
-                // Find the extracted dxvk-remix directory (it will be named dxvk-remix-main)
-                var extractedDirs = Directory.GetDirectories(TempRepoFolder, "dxvk-remix-*");
-                if (extractedDirs.Length == 0)
+                // The extracted directory will be named dxvk-remix-main
+                var dxvkRemixDir = Path.Combine(TempRepoFolder, "dxvk-remix-main");
+                
+                if (!Directory.Exists(dxvkRemixDir))
                 {
-                    LogProgress("Could not find extracted dxvk-remix directory", 0);
+                    LogProgress($"Could not find extracted dxvk-remix directory at: {dxvkRemixDir}", 0);
                     return false;
                 }
 
-                var dxvkRemixDir = extractedDirs[0];
                 var updateDepsScript = Path.Combine(dxvkRemixDir, "scripts-common", "update-deps.cmd");
 
                 if (!File.Exists(updateDepsScript))
@@ -287,12 +208,29 @@ namespace RTXLauncher
                     return false;
                 }
 
+                // Convert to absolute paths to ensure proper resolution
+                var absoluteDxvkRemixDir = Path.GetFullPath(dxvkRemixDir);
+                var absoluteUpdateDepsScript = Path.GetFullPath(updateDepsScript);
+
                 LogProgress("Running dxvk-remix dependency update script...", 55);
+                LogProgress($"Script location: {absoluteUpdateDepsScript}", 56);
+                LogProgress($"Working directory: {absoluteDxvkRemixDir}", 57);
+
+                // Check if packman repository already exists
+                var packmanRepoPath = Path.Combine("C:", "packman-repo");
+                if (Directory.Exists(packmanRepoPath))
+                {
+                    LogProgress($"Packman repository already exists at: {packmanRepoPath}", 58);
+                }
+                else
+                {
+                    LogProgress("Packman repository not found, will be created during dependency update", 58);
+                }
 
                 var processInfo = new ProcessStartInfo
                 {
-                    FileName = updateDepsScript,
-                    WorkingDirectory = dxvkRemixDir,
+                    FileName = absoluteUpdateDepsScript,
+                    WorkingDirectory = absoluteDxvkRemixDir, // Use absolute path for working directory
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -307,15 +245,47 @@ namespace RTXLauncher
                         return false;
                     }
 
+                    LogProgress($"Dependency update script started with PID: {process.Id}", 58);
+
+                    // Create string builders to capture all output
+                    var outputBuilder = new System.Text.StringBuilder();
+                    var errorBuilder = new System.Text.StringBuilder();
+
+                    // Set up real-time output capture
+                    process.OutputDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            outputBuilder.AppendLine(e.Data);
+                            LogProgress($"Packman: {e.Data}", 60);
+                        }
+                    };
+
+                    process.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            errorBuilder.AppendLine(e.Data);
+                            LogProgress($"Packman Error: {e.Data}", 60);
+                        }
+                    };
+
+                    // Start reading output
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
                     // Set a reasonable timeout for the dependency update (15 minutes)
                     var timeoutTask = Task.Delay(TimeSpan.FromMinutes(15));
                     var processTask = process.WaitForExitAsync();
                     
+                    LogProgress("Waiting for packman to download dependencies...", 65);
                     var completedTask = await Task.WhenAny(processTask, timeoutTask);
                     
                     if (completedTask == timeoutTask)
                     {
-                        LogProgress("Dependency update script timed out", 0);
+                        LogProgress("Dependency update script timed out after 15 minutes", 0);
+                        LogProgress($"Final output: {outputBuilder.ToString()}", 0);
+                        LogProgress($"Final error: {errorBuilder.ToString()}", 0);
                         try
                         {
                             process.Kill();
@@ -324,19 +294,40 @@ namespace RTXLauncher
                         return false;
                     }
 
+                    // Wait a moment for any remaining output
+                    await Task.Delay(500);
+
+                    var finalOutput = outputBuilder.ToString();
+                    var finalError = errorBuilder.ToString();
+
+                    LogProgress($"Dependency update script finished with exit code: {process.ExitCode}", 70);
+                    
+                    if (!string.IsNullOrEmpty(finalOutput))
+                    {
+                        LogProgress($"Complete packman output: {finalOutput}", 71);
+                    }
+                    
+                    if (!string.IsNullOrEmpty(finalError))
+                    {
+                        LogProgress($"Complete packman error output: {finalError}", 72);
+                    }
+
                     if (process.ExitCode != 0)
                     {
-                        var error = await process.StandardError.ReadToEndAsync();
-                        var output = await process.StandardOutput.ReadToEndAsync();
                         LogProgress($"Dependency update failed: Exit code {process.ExitCode}", 0);
-                        LogProgress($"Error output: {error}", 0);
-                        LogProgress($"Standard output: {output}", 0);
-                        return false;
+                        LogProgress("This may be normal if packman needs to download dependencies for the first time", 0);
+                        
+                        // Don't immediately fail - packman might still have downloaded what we need
+                        // We'll check for RTXIO in the extraction step
+                        LogProgress("Continuing to check if RTXIO was downloaded despite exit code...", 73);
+                    }
+                    else
+                    {
+                        LogProgress("Dependency update completed successfully", 75);
                     }
                 }
 
-                LogProgress("Dependency update completed successfully", 75);
-                return true;
+                return true; // Always return true and let the extraction step determine if RTXIO is available
             }
             catch (Exception ex)
             {
@@ -352,34 +343,107 @@ namespace RTXLauncher
         {
             try
             {
-                // Find the extracted dxvk-remix directory
-                var extractedDirs = Directory.GetDirectories(TempRepoFolder, "dxvk-remix-*");
-                if (extractedDirs.Length == 0)
+                // The extracted directory will be named dxvk-remix-main
+                var dxvkRemixDir = Path.Combine(TempRepoFolder, "dxvk-remix-main");
+                
+                if (!Directory.Exists(dxvkRemixDir))
                 {
-                    LogProgress("Could not find extracted dxvk-remix directory", 0);
+                    LogProgress($"Could not find extracted dxvk-remix directory at: {dxvkRemixDir}", 0);
                     return false;
                 }
 
-                var dxvkRemixDir = extractedDirs[0];
-                var rtxioSourceDir = Path.Combine(dxvkRemixDir, "external", "rtxio");
-
-                if (!Directory.Exists(rtxioSourceDir))
+                // After running packman, RTXIO will be in the global packman repository
+                // Try multiple possible locations for RTXIO
+                var possibleRtxioLocations = new[]
                 {
-                    LogProgress($"RTXIO directory not found at: {rtxioSourceDir}", 0);
-                    return false;
+                    // Global packman repository location
+                    Path.Combine("C:", "packman-repo", "chk", "rtx-remix-rtxio", "7", "bin", "RtxIoResourceExtractor.exe"),
+                    
+                    // Alternative packman locations
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "packman-repo", "chk", "rtx-remix-rtxio", "7", "bin", "RtxIoResourceExtractor.exe"),
+                    
+                    // Symlinked location in dxvk-remix (if packman created symlinks)
+                    Path.Combine(dxvkRemixDir, "external", "rtxio", "bin", "RtxIoResourceExtractor.exe"),
+                    
+                    // Alternative symlink locations
+                    Path.Combine(dxvkRemixDir, "_build", "target-deps", "rtxio", "bin", "RtxIoResourceExtractor.exe"),
+                };
+
+                string rtxioExtractorSource = null;
+                string rtxioSourceDir = null;
+
+                LogProgress("Searching for RTXIO extractor in packman repository...", 85);
+
+                foreach (var location in possibleRtxioLocations)
+                {
+                    LogProgress($"Checking: {location}", 86);
+                    if (File.Exists(location))
+                    {
+                        rtxioExtractorSource = location;
+                        rtxioSourceDir = Path.GetDirectoryName(Path.GetDirectoryName(location)); // Go up two levels from bin/RtxIoResourceExtractor.exe
+                        LogProgress($"Found RTXIO extractor at: {rtxioExtractorSource}", 87);
+                        break;
+                    }
                 }
 
-                var rtxioExtractorSource = Path.Combine(rtxioSourceDir, "bin", "RtxIoResourceExtractor.exe");
-                if (!File.Exists(rtxioExtractorSource))
+                if (rtxioExtractorSource == null)
                 {
-                    LogProgress($"RTXIO extractor not found at: {rtxioExtractorSource}", 0);
+                    LogProgress("RTXIO extractor not found in any expected location", 0);
+                    LogProgress("Packman may have failed to download RTXIO, or it's in an unexpected location", 0);
+                    
+                    // Try to find any RtxIoResourceExtractor.exe on the system
+                    LogProgress("Searching for RtxIoResourceExtractor.exe in common locations...", 88);
+                    var searchPaths = new[]
+                    {
+                        "C:\\packman-repo",
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "packman-repo"),
+                        dxvkRemixDir
+                    };
+
+                    foreach (var searchPath in searchPaths)
+                    {
+                        if (Directory.Exists(searchPath))
+                        {
+                            try
+                            {
+                                var foundFiles = Directory.GetFiles(searchPath, "RtxIoResourceExtractor.exe", SearchOption.AllDirectories);
+                                if (foundFiles.Length > 0)
+                                {
+                                    rtxioExtractorSource = foundFiles[0];
+                                    rtxioSourceDir = Path.GetDirectoryName(Path.GetDirectoryName(rtxioExtractorSource));
+                                    LogProgress($"Found RTXIO extractor via search at: {rtxioExtractorSource}", 89);
+                                    break;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                LogProgress($"Error searching in {searchPath}: {ex.Message}", 0);
+                            }
+                        }
+                    }
+                }
+
+                if (rtxioExtractorSource == null)
+                {
+                    LogProgress("Could not find RTXIO extractor anywhere on the system", 0);
                     return false;
                 }
 
                 // Copy the entire rtxio directory to our target location
-                CopyDirectory(rtxioSourceDir, RTXIOFolder);
+                if (Directory.Exists(rtxioSourceDir))
+                {
+                    LogProgress($"Copying RTXIO from: {rtxioSourceDir}", 90);
+                    CopyDirectory(rtxioSourceDir, RTXIOFolder);
+                }
+                else
+                {
+                    // If we can't find the full directory, just copy the executable
+                    LogProgress($"Copying RTXIO executable only from: {rtxioExtractorSource}", 90);
+                    Directory.CreateDirectory(Path.GetDirectoryName(RTXIOExtractorPath));
+                    File.Copy(rtxioExtractorSource, RTXIOExtractorPath, true);
+                }
 
-                LogProgress("RTXIO extracted successfully from dxvk-remix", 90);
+                LogProgress("RTXIO extracted successfully from packman repository", 95);
                 return true;
             }
             catch (Exception ex)

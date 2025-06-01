@@ -124,9 +124,9 @@ namespace RTXLauncher
 								MessageBox.Show(
 									"Failed to extract RTXIO package files. The game may not work correctly without these assets.\n\n" +
 									"Common causes:\n" +
-									"• No existing dxvk-remix installation found\n" +
 									"• Automatic download failed (GitHub ZIP doesn't include packman tools)\n" +
-									"• Internet connection issues\n\n" +
+									"• Internet connection issues\n" +
+									"• Dependency update script failed\n\n" +
 									"Solutions:\n" +
 									"• Install dxvk-remix manually: git clone https://github.com/NVIDIAGameWorks/dxvk-remix.git\n" +
 									"• Copy RTXIO tools to: ./launcherdeps/rtxio/bin/RtxIoResourceExtractor.exe\n" +
