@@ -1,4 +1,6 @@
-﻿namespace RTXLauncher
+﻿using System.Diagnostics;
+
+namespace RTXLauncher
 {
 	public static class ContentMountingSystem
 	{
@@ -19,7 +21,19 @@
 
 		// However, for source side content, the folder itself shouldn't be linked, but the models, and maps folder should be linked instead, and for materials all folders inside should be linked except for the materials\vgui and materias\dev folders
 		// do this for the folder itself, aswell as all folders inside the custom folder
+
+		/// <summary>
+		/// Synchronous wrapper for MountGameAsync - for backward compatibility
+		/// </summary>
 		public static bool MountGame(string gameFolder, string installFolder, string remixModFolder)
+		{
+			return MountGameAsync(gameFolder, installFolder, remixModFolder).GetAwaiter().GetResult();
+		}
+
+		/// <summary>
+		/// Asynchronously mounts a game with RTXIO package preprocessing if needed
+		/// </summary>
+		public static async Task<bool> MountGameAsync(string gameFolder, string installFolder, string remixModFolder)
 		{
 			// Reset the flag at the start of a new mounting operation
 			_userAcceptedSymlinkFailures = false;
@@ -57,6 +71,171 @@
 
 					if (result == DialogResult.No)
 						return false;
+				}
+
+				// RTXIO Package Preprocessing - Check if the game has .pkg files that need extraction
+				if (Directory.Exists(remixModPath) && RTXIOPackageManager.HasRTXIOPackageFiles(installPath, remixModFolder))
+				{
+					LogMounting("RTXIO package files detected, preprocessing required...", false);
+					
+					// Show progress dialog for RTXIO extraction
+					using (var progressForm = new ProgressForm())
+					{
+						progressForm.Text = "RTXIO Package Extraction";
+						progressForm.Show();
+						
+						// Ensure the form handle is created
+						var handle = progressForm.Handle; // This forces handle creation
+						
+						// Create a proper event handler that can be unsubscribed
+						RTXIOPackageManager.ProgressUpdateHandler rtxioProgressHandler = (message, progress) =>
+						{
+							if (progressForm.IsHandleCreated && !progressForm.IsDisposed)
+							{
+								try
+								{
+									progressForm.Invoke(() =>
+									{
+										progressForm.UpdateProgress(message, progress);
+									});
+								}
+								catch (ObjectDisposedException)
+								{
+									// Form was disposed, ignore
+								}
+								catch (InvalidOperationException)
+								{
+									// Handle not created or form disposed, ignore
+								}
+							}
+						};
+						
+						// Subscribe to progress updates
+						RTXIOPackageManager.OnProgressUpdate += rtxioProgressHandler;
+
+						try
+						{
+							LogMounting("Starting RTXIO package extraction...", false);
+							bool extractionSuccess = await RTXIOPackageManager.ExtractPackageFilesAsync(installPath, remixModFolder);
+							
+							if (!extractionSuccess)
+							{
+								LogMounting("RTXIO package extraction failed", true);
+								MessageBox.Show(
+									"Failed to extract RTXIO package files. The game may not work correctly without these assets.\n\n" +
+									"Common causes:\n" +
+									"• No existing dxvk-remix installation found\n" +
+									"• Automatic download failed (GitHub ZIP doesn't include packman tools)\n" +
+									"• Internet connection issues\n\n" +
+									"Solutions:\n" +
+									"• Install dxvk-remix manually: git clone https://github.com/NVIDIAGameWorks/dxvk-remix.git\n" +
+									"• Copy RTXIO tools to: ./launcherdeps/rtxio/bin/RtxIoResourceExtractor.exe\n" +
+									"• Check README_RTXIO.md for detailed instructions",
+									"RTXIO Extraction Failed", 
+									MessageBoxButtons.OK, 
+									MessageBoxIcon.Warning);
+								
+								// Ask user if they want to continue anyway
+								var continueResult = MessageBox.Show(
+									"Do you want to continue mounting without extracting the RTXIO packages?\n\n" +
+									"Warning: The game may not display correctly or may crash.",
+									"Continue Without RTXIO?",
+									MessageBoxButtons.YesNo,
+									MessageBoxIcon.Question);
+								
+								if (continueResult == DialogResult.No)
+									return false;
+							}
+							else
+							{
+								LogMounting("RTXIO package extraction completed successfully", false);
+							}
+						}
+						finally
+						{
+							// Properly unsubscribe from progress updates
+							RTXIOPackageManager.OnProgressUpdate -= rtxioProgressHandler;
+						}
+					}
+				}
+
+				// USDA Fixes Application - Apply fixes for Half-Life 2: RTX
+				if (Directory.Exists(remixModPath) && remixModFolder == "hl2rtx")
+				{
+					LogMounting("Applying USDA fixes for Half-Life 2: RTX...", false);
+					
+					// Show progress dialog for USDA fixes
+					using (var progressForm = new ProgressForm())
+					{
+						progressForm.Text = "Applying USDA Fixes";
+						progressForm.Show();
+						
+						// Ensure the form handle is created
+						var handle = progressForm.Handle; // This forces handle creation
+						
+						// Create a proper event handler that can be unsubscribed
+						RTXIOPackageManager.ProgressUpdateHandler usdaProgressHandler = (message, progress) =>
+						{
+							if (progressForm.IsHandleCreated && !progressForm.IsDisposed)
+							{
+								try
+								{
+									progressForm.Invoke(() =>
+									{
+										progressForm.UpdateProgress(message, progress);
+									});
+								}
+								catch (ObjectDisposedException)
+								{
+									// Form was disposed, ignore
+								}
+								catch (InvalidOperationException)
+								{
+									// Handle not created or form disposed, ignore
+								}
+							}
+						};
+						
+						// Subscribe to progress updates
+						RTXIOPackageManager.OnProgressUpdate += usdaProgressHandler;
+
+						try
+						{
+							LogMounting("Starting USDA fixes application...", false);
+							bool usdaSuccess = await RTXIOPackageManager.ApplyUsdaFixesAsync(installPath, remixModFolder);
+							
+							if (!usdaSuccess)
+							{
+								LogMounting("USDA fixes application failed", true);
+								MessageBox.Show(
+									"Failed to apply USDA fixes. The game may have broken references in RTX mode.\n\n" +
+									"Please ensure you have an internet connection and try again.",
+									"USDA Fixes Failed", 
+									MessageBoxButtons.OK, 
+									MessageBoxIcon.Warning);
+								
+								// Ask user if they want to continue anyway
+								var continueResult = MessageBox.Show(
+									"Do you want to continue mounting without applying the USDA fixes?\n\n" +
+									"Warning: Some RTX features may not work correctly.",
+									"Continue Without USDA Fixes?",
+									MessageBoxButtons.YesNo,
+									MessageBoxIcon.Question);
+								
+								if (continueResult == DialogResult.No)
+									return false;
+							}
+							else
+							{
+								LogMounting("USDA fixes applied successfully", false);
+							}
+						}
+						finally
+						{
+							// Properly unsubscribe from progress updates
+							RTXIOPackageManager.OnProgressUpdate -= usdaProgressHandler;
+						}
+					}
 				}
 
 				// Create the mount folder structure
@@ -107,8 +286,6 @@
 				return false;
 			}
 		}
-
-
 
 		// Link the content of the source content/custom folder
 		private static void LinkSourceContent(string path, string destinationMountPath)
@@ -287,7 +464,6 @@
 			}
 		}
 
-
 		// Helper method to prompt the user about copying instead of symlink
 		private static bool PromptCopyInstead(string message)
 		{
@@ -432,7 +608,6 @@
 			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-" + gameFolder + "-" + remixModFolder);
 			return Directory.Exists(sourceContentMountPath) && Directory.Exists(remixModMountPath);
 		}
-
 
 		// Helper method to copy directories recursively
 		private static void CopyDirectory(string sourceDir, string destinationDir)
