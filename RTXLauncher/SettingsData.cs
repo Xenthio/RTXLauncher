@@ -29,6 +29,9 @@ namespace RTXLauncher
 		public int DXLevel { get; set; } = 90;
 		[XmlAttribute]
 		public string CustomLaunchOptions { get; set; } = "";
+
+		[XmlAttribute]
+		public string ManuallySpecifiedInstallPath { get; set; } = "";
 		public bool RTXInstalled => RemixSystem.Installed;
 		public bool RTXOn => RemixSystem.Enabled;
 

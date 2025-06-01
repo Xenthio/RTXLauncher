@@ -53,6 +53,7 @@
 			checkBox2 = new CheckBox();
 			MountingPage = new TabPage();
 			groupBox6 = new GroupBox();
+			gameMountCheckbox1 = new GameMountCheckbox();
 			label22 = new Label();
 			label21 = new Label();
 			MountP2RTXCheckBox = new GameMountCheckbox();
@@ -117,7 +118,7 @@
 			progressBar1 = new ProgressBar();
 			CheckForLauncherUpdatesButton = new Button();
 			OpenGameInstallFolderButton = new Button();
-			gameMountCheckbox1 = new GameMountCheckbox();
+			BrowseButton = new Button();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -128,6 +129,7 @@
 			groupBox2.SuspendLayout();
 			MountingPage.SuspendLayout();
 			groupBox6.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)gameMountCheckbox1).BeginInit();
 			((System.ComponentModel.ISupportInitialize)MountP2RTXCheckBox).BeginInit();
 			((System.ComponentModel.ISupportInitialize)MountPortalPreludeRTXCheckBox).BeginInit();
 			((System.ComponentModel.ISupportInitialize)MountPortalRTXCheckbox).BeginInit();
@@ -147,7 +149,6 @@
 			AboutPage.SuspendLayout();
 			groupBox8.SuspendLayout();
 			groupBox7.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)gameMountCheckbox1).BeginInit();
 			SuspendLayout();
 			// 
 			// settingsDataBindingSource
@@ -159,7 +160,7 @@
 			LaunchGameButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			LaunchGameButton.DialogResult = DialogResult.OK;
 			LaunchGameButton.FlatStyle = FlatStyle.System;
-			LaunchGameButton.Location = new Point(279, 517);
+			LaunchGameButton.Location = new Point(279, 557);
 			LaunchGameButton.Name = "LaunchGameButton";
 			LaunchGameButton.Size = new Size(93, 23);
 			LaunchGameButton.TabIndex = 0;
@@ -171,7 +172,7 @@
 			// 
 			CloseButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			CloseButton.DialogResult = DialogResult.Cancel;
-			CloseButton.Location = new Point(378, 517);
+			CloseButton.Location = new Point(378, 557);
 			CloseButton.Name = "CloseButton";
 			CloseButton.Size = new Size(75, 23);
 			CloseButton.TabIndex = 1;
@@ -190,7 +191,7 @@
 			tabControl1.Location = new Point(6, 6);
 			tabControl1.Name = "tabControl1";
 			tabControl1.SelectedIndex = 0;
-			tabControl1.Size = new Size(451, 505);
+			tabControl1.Size = new Size(451, 545);
 			tabControl1.TabIndex = 10;
 			tabControl1.SelectedIndexChanged += tabControl1_SelectedIndexChanged;
 			tabControl1.Selected += tabControl1_Selected;
@@ -204,7 +205,7 @@
 			SettingsPage.Location = new Point(4, 24);
 			SettingsPage.Name = "SettingsPage";
 			SettingsPage.Padding = new Padding(3);
-			SettingsPage.Size = new Size(443, 477);
+			SettingsPage.Size = new Size(443, 517);
 			SettingsPage.TabIndex = 0;
 			SettingsPage.Text = "Settings";
 			// 
@@ -416,7 +417,7 @@
 			MountingPage.Controls.Add(groupBox6);
 			MountingPage.Location = new Point(4, 24);
 			MountingPage.Name = "MountingPage";
-			MountingPage.Size = new Size(443, 477);
+			MountingPage.Size = new Size(443, 517);
 			MountingPage.TabIndex = 2;
 			MountingPage.Text = "Content Mounting";
 			// 
@@ -437,6 +438,21 @@
 			groupBox6.TabIndex = 1;
 			groupBox6.TabStop = false;
 			groupBox6.Text = "Mounted Remix Games";
+			// 
+			// gameMountCheckbox1
+			// 
+			gameMountCheckbox1.AutoSize = true;
+			gameMountCheckbox1.Enabled = false;
+			gameMountCheckbox1.FlatStyle = FlatStyle.System;
+			gameMountCheckbox1.GameFolder = "mm";
+			gameMountCheckbox1.InstallFolder = "Dark Messiah Might and Magic Single Player RTX";
+			gameMountCheckbox1.Location = new Point(6, 126);
+			gameMountCheckbox1.Name = "gameMountCheckbox1";
+			gameMountCheckbox1.RemixModFolder = "dmrtx";
+			gameMountCheckbox1.Size = new Size(124, 20);
+			gameMountCheckbox1.TabIndex = 8;
+			gameMountCheckbox1.Text = "Dark Messiah RTX";
+			gameMountCheckbox1.UseVisualStyleBackColor = true;
 			// 
 			// label22
 			// 
@@ -529,7 +545,7 @@
 			AdvancedPage.Location = new Point(4, 24);
 			AdvancedPage.Name = "AdvancedPage";
 			AdvancedPage.Padding = new Padding(3);
-			AdvancedPage.Size = new Size(443, 477);
+			AdvancedPage.Size = new Size(443, 517);
 			AdvancedPage.TabIndex = 1;
 			AdvancedPage.Text = "Miscellaneous";
 			// 
@@ -662,7 +678,7 @@
 			InstallPage.Controls.Add(groupBox10);
 			InstallPage.Location = new Point(4, 24);
 			InstallPage.Name = "InstallPage";
-			InstallPage.Size = new Size(443, 477);
+			InstallPage.Size = new Size(443, 517);
 			InstallPage.TabIndex = 4;
 			InstallPage.Text = "Advanced Install";
 			// 
@@ -680,7 +696,7 @@
 			groupBox13.Controls.Add(label15);
 			groupBox13.Controls.Add(groupBox14);
 			groupBox13.FlatStyle = FlatStyle.System;
-			groupBox13.Location = new Point(6, 70);
+			groupBox13.Location = new Point(6, 91);
 			groupBox13.Name = "groupBox13";
 			groupBox13.Size = new Size(434, 407);
 			groupBox13.TabIndex = 6;
@@ -1016,6 +1032,7 @@
 			// groupBox10
 			// 
 			groupBox10.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+			groupBox10.Controls.Add(BrowseButton);
 			groupBox10.Controls.Add(label7);
 			groupBox10.Controls.Add(VanillaInstallPath);
 			groupBox10.Controls.Add(VanillaInstallType);
@@ -1023,7 +1040,7 @@
 			groupBox10.FlatStyle = FlatStyle.System;
 			groupBox10.Location = new Point(6, 6);
 			groupBox10.Name = "groupBox10";
-			groupBox10.Size = new Size(434, 58);
+			groupBox10.Size = new Size(434, 79);
 			groupBox10.TabIndex = 5;
 			groupBox10.TabStop = false;
 			groupBox10.Text = "Your Vanilla Garry's Mod Install";
@@ -1076,7 +1093,7 @@
 			AboutPage.Controls.Add(groupBox7);
 			AboutPage.Location = new Point(4, 24);
 			AboutPage.Name = "AboutPage";
-			AboutPage.Size = new Size(443, 477);
+			AboutPage.Size = new Size(443, 517);
 			AboutPage.TabIndex = 3;
 			AboutPage.Text = "About";
 			// 
@@ -1195,7 +1212,7 @@
 			// OpenGameInstallFolderButton
 			// 
 			OpenGameInstallFolderButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-			OpenGameInstallFolderButton.Location = new Point(10, 517);
+			OpenGameInstallFolderButton.Location = new Point(10, 557);
 			OpenGameInstallFolderButton.Name = "OpenGameInstallFolderButton";
 			OpenGameInstallFolderButton.Size = new Size(120, 23);
 			OpenGameInstallFolderButton.TabIndex = 8;
@@ -1203,26 +1220,22 @@
 			OpenGameInstallFolderButton.UseVisualStyleBackColor = true;
 			OpenGameInstallFolderButton.Click += OpenGameInstallFolderButton_Click;
 			// 
-			// gameMountCheckbox1
+			// BrowseButton
 			// 
-			gameMountCheckbox1.AutoSize = true;
-			gameMountCheckbox1.Enabled = false;
-			gameMountCheckbox1.FlatStyle = FlatStyle.System;
-			gameMountCheckbox1.GameFolder = "mm";
-			gameMountCheckbox1.InstallFolder = "Dark Messiah Might and Magic Single Player RTX";
-			gameMountCheckbox1.Location = new Point(6, 126);
-			gameMountCheckbox1.Name = "gameMountCheckbox1";
-			gameMountCheckbox1.RemixModFolder = "dmrtx";
-			gameMountCheckbox1.Size = new Size(124, 20);
-			gameMountCheckbox1.TabIndex = 8;
-			gameMountCheckbox1.Text = "Dark Messiah RTX";
-			gameMountCheckbox1.UseVisualStyleBackColor = true;
+			BrowseButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			BrowseButton.Location = new Point(353, 52);
+			BrowseButton.Name = "BrowseButton";
+			BrowseButton.Size = new Size(75, 23);
+			BrowseButton.TabIndex = 5;
+			BrowseButton.Text = "Browse...";
+			BrowseButton.UseVisualStyleBackColor = true;
+			BrowseButton.Click += BrowseButton_Click;
 			// 
 			// Form1
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
 			AutoScaleMode = AutoScaleMode.Font;
-			ClientSize = new Size(463, 546);
+			ClientSize = new Size(463, 586);
 			Controls.Add(OpenGameInstallFolderButton);
 			Controls.Add(tabControl1);
 			Controls.Add(CloseButton);
@@ -1246,6 +1259,7 @@
 			MountingPage.ResumeLayout(false);
 			groupBox6.ResumeLayout(false);
 			groupBox6.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)gameMountCheckbox1).EndInit();
 			((System.ComponentModel.ISupportInitialize)MountP2RTXCheckBox).EndInit();
 			((System.ComponentModel.ISupportInitialize)MountPortalPreludeRTXCheckBox).EndInit();
 			((System.ComponentModel.ISupportInitialize)MountPortalRTXCheckbox).EndInit();
@@ -1275,7 +1289,6 @@
 			groupBox8.ResumeLayout(false);
 			groupBox8.PerformLayout();
 			groupBox7.ResumeLayout(false);
-			((System.ComponentModel.ISupportInitialize)gameMountCheckbox1).EndInit();
 			ResumeLayout(false);
 		}
 
@@ -1368,5 +1381,6 @@
 		private Label label21;
 		private Label label22;
 		private GameMountCheckbox gameMountCheckbox1;
+		private Button BrowseButton;
 	}
 }
