@@ -102,6 +102,7 @@
 			optiScalerSourceComboBox = new ComboBox();
 			InstallOptiScalerButton = new Button();
 			groupBox10 = new GroupBox();
+			BrowseButton = new Button();
 			label7 = new Label();
 			VanillaInstallPath = new Label();
 			VanillaInstallType = new Label();
@@ -118,7 +119,6 @@
 			progressBar1 = new ProgressBar();
 			CheckForLauncherUpdatesButton = new Button();
 			OpenGameInstallFolderButton = new Button();
-			BrowseButton = new Button();
 			((System.ComponentModel.ISupportInitialize)settingsDataBindingSource).BeginInit();
 			tabControl1.SuspendLayout();
 			SettingsPage.SuspendLayout();
@@ -172,6 +172,7 @@
 			// 
 			CloseButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 			CloseButton.DialogResult = DialogResult.Cancel;
+			CloseButton.FlatStyle = FlatStyle.System;
 			CloseButton.Location = new Point(378, 557);
 			CloseButton.Name = "CloseButton";
 			CloseButton.Size = new Size(75, 23);
@@ -1045,6 +1046,18 @@
 			groupBox10.TabStop = false;
 			groupBox10.Text = "Your Vanilla Garry's Mod Install";
 			// 
+			// BrowseButton
+			// 
+			BrowseButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			BrowseButton.FlatStyle = FlatStyle.System;
+			BrowseButton.Location = new Point(353, 52);
+			BrowseButton.Name = "BrowseButton";
+			BrowseButton.Size = new Size(75, 23);
+			BrowseButton.TabIndex = 5;
+			BrowseButton.Text = "Browse...";
+			BrowseButton.UseVisualStyleBackColor = true;
+			BrowseButton.Click += BrowseButton_Click;
+			// 
 			// label7
 			// 
 			label7.AutoSize = true;
@@ -1104,7 +1117,7 @@
 			groupBox8.Controls.Add(linkLabel1);
 			groupBox8.Controls.Add(label4);
 			groupBox8.FlatStyle = FlatStyle.System;
-			groupBox8.Location = new Point(6, 3);
+			groupBox8.Location = new Point(6, 6);
 			groupBox8.Name = "groupBox8";
 			groupBox8.Size = new Size(428, 88);
 			groupBox8.TabIndex = 3;
@@ -1153,7 +1166,7 @@
 			groupBox7.Controls.Add(InstallLauncherUpdateButton);
 			groupBox7.Controls.Add(progressBar1);
 			groupBox7.Controls.Add(CheckForLauncherUpdatesButton);
-			groupBox7.Location = new Point(6, 97);
+			groupBox7.Location = new Point(6, 100);
 			groupBox7.Name = "groupBox7";
 			groupBox7.Size = new Size(428, 377);
 			groupBox7.TabIndex = 2;
@@ -1212,6 +1225,7 @@
 			// OpenGameInstallFolderButton
 			// 
 			OpenGameInstallFolderButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+			OpenGameInstallFolderButton.FlatStyle = FlatStyle.System;
 			OpenGameInstallFolderButton.Location = new Point(10, 557);
 			OpenGameInstallFolderButton.Name = "OpenGameInstallFolderButton";
 			OpenGameInstallFolderButton.Size = new Size(120, 23);
@@ -1219,17 +1233,6 @@
 			OpenGameInstallFolderButton.Text = "Open Install Folder";
 			OpenGameInstallFolderButton.UseVisualStyleBackColor = true;
 			OpenGameInstallFolderButton.Click += OpenGameInstallFolderButton_Click;
-			// 
-			// BrowseButton
-			// 
-			BrowseButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			BrowseButton.Location = new Point(353, 52);
-			BrowseButton.Name = "BrowseButton";
-			BrowseButton.Size = new Size(75, 23);
-			BrowseButton.TabIndex = 5;
-			BrowseButton.Text = "Browse...";
-			BrowseButton.UseVisualStyleBackColor = true;
-			BrowseButton.Click += BrowseButton_Click;
 			// 
 			// Form1
 			// 
