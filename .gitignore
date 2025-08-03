@@ -58,3 +58,4 @@ RTXLauncher/bin/Release/net8.0-windows/win-x64/settings.xml
 RTXLauncher/bin/Release/net8.0-windows/RTXLauncher.runtimeconfig.json
 RTXLauncher/bin/Release/net8.0-windows/RTXLauncher.pdb
 RTXLauncher/bin/Release/net8.0-windows/RTXLauncher.deps.json
+/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish-packedfully
