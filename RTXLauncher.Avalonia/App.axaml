@@ -1,0 +1,21 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="RTXLauncher.Avalonia.App"
+             xmlns:local="using:RTXLauncher.Avalonia"
+             RequestedThemeVariant="Default">
+	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+	<Application.Resources>
+		<FluentTheme x:Key="Fluent"/>
+		<SimpleTheme x:Key="Simple"/>
+	</Application.Resources>
+
+	<Application.Styles>
+			<!-- The initial theme is loaded from code-behind -->
+		<SimpleTheme/>
+	</Application.Styles>
+
+	<Application.DataTemplates>
+		<local:ViewLocator/>
+	</Application.DataTemplates>
+</Application>

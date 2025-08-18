@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+             x:Class="RTXLauncher.Avalonia.Views.MountingView"
+             x:DataType="vm:MountingViewModel">
+	<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10" Margin="10">
+		<StackPanel Spacing="5">
+			<TextBlock Text="Mounted Remix Games" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+
+			<ItemsControl ItemsSource="{Binding MountableGames}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate x:DataType="vm:MountableGameViewModel">
+						<CheckBox Content="{Binding Name}"
+                                  IsChecked="{Binding IsMounted}"
+                                  IsEnabled="{Binding IsInstalled}"
+                                  Margin="0,5"/>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+
+		</StackPanel>
+	</Border>
+</UserControl>

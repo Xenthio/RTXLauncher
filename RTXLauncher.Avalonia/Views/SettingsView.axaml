@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+             x:Class="RTXLauncher.Avalonia.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+	<!-- This is the content you copied from the TabItem -->
+	<StackPanel Spacing="10" Margin="10">
+		<!-- "Resolution" GroupBox -->
+		<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
+			<Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+				<TextBlock Text="Resolution" FontWeight="Bold" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10"/>
+				<ComboBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" SelectedIndex="0">
+					<ComboBoxItem>Native Resolution</ComboBoxItem>
+					<ComboBoxItem>1920x1080</ComboBoxItem>
+				</ComboBox>
+				<CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                          Content="Use Custom Resolution"
+                          IsChecked="{Binding UseCustomResolution}"/>
+				<Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                      ColumnDefinitions="Auto,Auto,Auto"
+                      IsEnabled="{Binding UseCustomResolution}">
+					<NumericUpDown Grid.Column="0" Value="{Binding Width}" Minimum="0" Maximum="100000"/>
+					<TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="5,0"/>
+					<NumericUpDown Grid.Column="2" Value="{Binding Height}" Minimum="0" Maximum="100000"/>
+				</Grid>
+			</Grid>
+		</Border>
+		<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
+			<Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+				<TextBlock Text="Garry's Mod" FontWeight="Bold" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10"/>
+				
+				<CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                          Content="Load Workshop Addons"
+                          IsChecked="{Binding LoadWorkshopAddons}"/>
+				
+				<CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                          Content="RTX On"
+                          IsChecked="{Binding RtxInstalled}"/>
+			</Grid>
+		</Border>
+		<!-- In SettingsView.axaml, inside the main StackPanel -->
+		<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10"
+				IsVisible="{Binding IsQuickInstallVisible}" Margin="0,10,0,0">
+			<StackPanel Spacing="10">
+				<TextBlock Text="Quick Installer" FontWeight="Bold" FontSize="14"/>
+				<TextBlock Text="Hey! There's no Garry's Mod RTX Install here. You can make one by clicking the button below." TextWrapping="Wrap"/>
+				<TextBlock Text="It's that easy!" FontWeight="SemiBold"/>
+				<Button Content="Run Quick Install"
+						Command="{Binding RunQuickInstallCommand}"
+						IsEnabled="{Binding !IsBusy}"
+						HorizontalAlignment="Stretch"/>
+			</StackPanel>
+		</Border>
+	</StackPanel>
+</UserControl>

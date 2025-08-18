@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_LastSelectedProfileId>E:\RTXLauncher\RTXLauncher.WinForms\Properties\PublishProfiles\Windows.pubxml</_LastSelectedProfileId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="Controls\GameMountCheckbox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\LogReflectionControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Form1.AboutPage.Updater.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form1.InstallPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form1.InstallPage.QuickInstall.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="ProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+</Project>

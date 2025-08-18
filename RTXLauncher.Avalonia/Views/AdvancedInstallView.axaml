@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+             x:Class="RTXLauncher.Avalonia.Views.AdvancedInstallView"
+             x:DataType="vm:AdvancedInstallViewModel">
+    
+    <!-- Use a ScrollViewer for when many packages are added -->
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="10">
+
+            <!-- ============================================= -->
+            <!--            STATIC TOP SECTION                 -->
+            <!-- ============================================= -->
+
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
+                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Your Vanilla Garry's Mod Install" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Install Type:" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding VanillaInstallType}"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Install Path:"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding VanillaInstallPath}" TextWrapping="Wrap"/>
+                </Grid>
+            </Border>
+
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="This RTX Install" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Install Type:" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RtxInstallType}"/>
+                    
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Install Path:"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RtxInstallPath}" TextWrapping="Wrap"/>
+
+                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+                        <Button Content="Update Install" Command="{Binding UpdateInstallCommand}" IsEnabled="{Binding !IsBusy}"/>
+                        <Button Content="Create RTX Install Here" Command="{Binding CreateInstallCommand}" IsEnabled="{Binding !IsBusy}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ============================================= -->
+            <!--           DYNAMIC PACKAGE SECTION             -->
+            <!-- ============================================= -->
+            
+            <!-- This ItemsControl will generate a UI for each package in the ViewModel's list -->
+            <ItemsControl ItemsSource="{Binding Packages}">
+                <ItemsControl.ItemTemplate>
+                    <!-- This DataTemplate defines the UI for ONE package -->
+                    <DataTemplate x:DataType="vm:InstallablePackageViewModel">
+                        <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="5">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding Title}" FontWeight="Bold" Margin="0,0,0,5"/>
+
+                                <!-- Source Selection -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Source" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Row="1" Grid.Column="1" 
+                                          ItemsSource="{Binding Sources}" 
+                                          SelectedItem="{Binding SelectedSource}"/>
+
+                                <!-- Version Selection and Install Button -->
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Version" VerticalAlignment="Center"/>
+                                <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <ComboBox Grid.Column="0" 
+                                              ItemsSource="{Binding Releases}" 
+                                              SelectedItem="{Binding SelectedRelease}"
+                                              DisplayMemberBinding="{Binding Name}"/> <!-- Tell ComboBox to show the 'Name' property of the release object -->
+                                    <Button Grid.Column="1" 
+                                            Content="{Binding ButtonText}" 
+                                            Command="{Binding InstallCommand}" 
+                                            IsEnabled="{Binding IsNotBusy}"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="RTXLauncher.Avalonia.Views.LauncherSettingsView"
+             x:DataType="vm:LauncherSettingsViewModel">
+	<StackPanel Spacing="10" Margin="10">
+		<TextBlock Text="Launcher Settings" Classes="title"/>
+
+		<CheckBox IsChecked="{Binding CheckForUpdatesOnLaunch}">
+			Check for updates on launch
+		</CheckBox>
+
+		<TextBlock Text="Theme"/>
+		<ComboBox ItemsSource="{Binding Themes}"
+		          SelectedItem="{Binding Theme}"
+		          HorizontalAlignment="Left"
+		          Width="200"/>
+
+	</StackPanel>
+</UserControl>
