@@ -1,4 +1,6 @@
 ﻿// Services/GarrysModUtility.cs
+using System.Diagnostics;
+
 namespace RTXLauncher.Core.Utilities;
 
 public static class GarrysModUtility
@@ -8,7 +10,11 @@ public static class GarrysModUtility
 	/// </summary>
 	public static string GetThisInstallFolder()
 	{
-		return Path.GetDirectoryName(System.AppContext.BaseDirectory) ?? "N/A";
+		// Get the full path of the process executable (e.g., C:\MyFolder\RTXLauncher.WinForms.exe)
+		string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+
+		// Get the directory of that executable
+		return Path.GetDirectoryName(exePath) ?? "N/A";
 	}
 
 	/// <summary>
