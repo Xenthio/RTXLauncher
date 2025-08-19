@@ -1,0 +1,155 @@
+name: .NET Cross-Platform Publish
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  # ==========================================================
+  #      JOB 1: BUILD BOTH WINDOWS EXECUTABLES
+  # ==========================================================
+  build-windows:
+    runs-on: windows-latest
+    name: Build for Windows
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Install .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # --- Versioning for WinForms ---
+    - name: Setup WinForms Version
+      id: version-winforms
+      shell: pwsh
+      run: |
+        $csproj = [xml](Get-Content -Path ./RTXLauncher.WinForms/RTXLauncher.WinForms.csproj)
+        $versionNumber = $csproj.SelectSingleNode("//Version").InnerText
+        $commitHash = git rev-parse --short HEAD
+        $informationalVersion = "$versionNumber-winforms+${commitHash}"
+        echo "VERSION_INFO=$informationalVersion" >> $env:GITHUB_OUTPUT
+        echo "WinForms Version: $informationalVersion"
+
+    # --- Versioning for Avalonia ---
+    - name: Setup Avalonia Version
+      id: version-avalonia
+      shell: pwsh
+      run: |
+        $csproj = [xml](Get-Content -Path ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj)
+        $versionNumber = $csproj.SelectSingleNode("//Version").InnerText
+        $commitHash = git rev-parse --short HEAD
+        $informationalVersion = "$versionNumber-avalonia+${commitHash}"
+        echo "VERSION_INFO=$informationalVersion" >> $env:GITHUB_OUTPUT
+        echo "Avalonia Version: $informationalVersion"
+
+    - name: Restore Dependencies
+      run: dotnet restore RTXLauncher.sln
+
+    - name: Build Solution
+      run: dotnet build RTXLauncher.sln --configuration Release --no-restore
+
+    # --- Publish WinForms using its Profile ---
+    - name: Publish WinForms App
+      run: >
+        dotnet publish ./RTXLauncher.WinForms/RTXLauncher.WinForms.csproj 
+        --configuration Release
+        /p:PublishProfile=Windows.pubxml 
+        /p:InformationalVersion="${{ steps.version-winforms.outputs.VERSION_INFO }}"
+
+    # --- Publish Avalonia for Windows using its Profile ---
+    - name: Publish Avalonia App (Windows)
+      run: >
+        dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj 
+        --configuration Release
+        /p:PublishProfile=Windows.pubxml 
+        /p:InformationalVersion="${{ steps.version-avalonia.outputs.VERSION_INFO }}"
+        
+    # --- Upload all Windows builds ---
+    - name: Upload Windows Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: RTXLauncher-Windows-Builds
+        path: |
+          ./RTXLauncher.WinForms/bin/publish/win-x64/
+          ./RTXLauncher.Avalonia/bin/publish/win-x64-aot-static/
+        retention-days: 30
+
+  # ==========================================================
+  #      JOB 2: BUILD THE NATIVE LINUX EXECUTABLE
+  # ==========================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Build for Linux (Native AOT)
+    
+    # This job will run in parallel with the Windows job
+    needs: build-windows # Optional: Run after Windows job if you prefer sequential builds
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Install .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # --- Install prerequisites for Native AOT on Linux ---
+    - name: Install AOT Dependencies
+      run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+    - name: Setup Avalonia Version
+      id: version-avalonia
+      shell: bash
+      run: |
+        commitHash=$(git rev-parse --short HEAD)
+        # We need to parse the version from the csproj file using a tool available on Linux
+        versionNumber=$(grep '<Version>' ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj | sed -e 's/.*<Version>\(.*\)<\/Version>.*/\1/')
+        informationalVersion="$versionNumber-avalonia+${commitHash}"
+        echo "VERSION_INFO=$informationalVersion" >> $GITHUB_OUTPUT
+        echo "Avalonia (Linux) Version: $informationalVersion"
+
+    - name: Restore Dependencies
+      run: dotnet restore RTXLauncher.sln
+
+    - name: Build Solution
+      run: dotnet build RTXLauncher.sln --configuration Release --no-restore
+
+    # --- Publish Avalonia for Linux using its Profile ---
+    - name: Publish Avalonia App (Linux)
+      run: >
+        dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj
+        --configuration Release
+        /p:PublishProfile=Linux.pubxml
+        /p:InformationalVersion="${{ steps.version-avalonia.outputs.VERSION_INFO }}"
+    
+    - name: Upload Linux Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RTXLauncher-Linux-Build
+        path: ./RTXLauncher.Avalonia/bin/publish/linux-x64-aot-static/
+        retention-days: 30
