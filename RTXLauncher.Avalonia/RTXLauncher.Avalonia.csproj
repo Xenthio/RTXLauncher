@@ -37,4 +37,8 @@
   <ItemGroup>
     <ProjectReference Include="..\RTXLauncher.Core\RTXLauncher.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="rd.xml" />
+  </ItemGroup>
 </Project>
