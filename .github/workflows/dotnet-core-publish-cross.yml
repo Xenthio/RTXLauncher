@@ -60,9 +60,6 @@ jobs:
     - name: Restore Dependencies
       run: dotnet restore RTXLauncher.sln
 
-    - name: Build Solution
-      run: dotnet build RTXLauncher.sln --configuration Release --no-restore
-
     # --- Publish WinForms using its Profile ---
     - name: Publish WinForms App
       run: >
