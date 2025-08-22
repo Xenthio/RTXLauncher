@@ -70,6 +70,7 @@ public partial class MainWindowViewModel : ViewModelBase
 		var patchingService = new PatchingService();
 		var mountingService = new MountingService();
 		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService);
+		var modBrowserService = new ModBrowserService();
 
 
 
@@ -80,6 +81,7 @@ public partial class MainWindowViewModel : ViewModelBase
 			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService),
 			new AboutViewModel(_messenger, gitHubService),
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
+			new ModsViewModel(modBrowserService),
 		};
 		_selectedPage = Pages.FirstOrDefault();
 	}
