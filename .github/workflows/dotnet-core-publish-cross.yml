@@ -69,17 +69,17 @@ jobs:
         dotnet publish ./RTXLauncher.WinForms/RTXLauncher.WinForms.csproj 
         --configuration Release
         /p:PublishProfile=Windows.pubxml 
-        /p:PublishDir=../../publish/winforms/
+        /p:PublishDir="${{ github.workspace }}/publish/winforms/"
         /p:InformationalVersion="${{ steps.version-winforms.outputs.VERSION_INFO }}"
 
-    # --- Publish Avalonia for Windows using its Profile ---
     - name: Publish Avalonia App (Windows)
       run: >
         dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj 
         --configuration Release
         /p:PublishProfile=Windows.pubxml 
-        /p:PublishDir=../../publish/avalonia/
+        /p:PublishDir="${{ github.workspace }}/publish/avalonia/"
         /p:InformationalVersion="${{ steps.version-avalonia.outputs.VERSION_INFO }}"
+        
         
     # --- Upload all Windows builds from our predictable 'publish' directory ---
     - name: Upload Windows Artifacts
@@ -142,11 +142,12 @@ jobs:
         dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj
         --configuration Release
         /p:PublishProfile=Linux.pubxml
+        /p:PublishDir="${{ github.workspace }}/publish/linux/"
         /p:InformationalVersion="${{ steps.version-avalonia.outputs.VERSION_INFO }}"
     
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v4
       with:
         name: RTXLauncher-Linux-${{ steps.version-avalonia.outputs.VERSION_INFO }}
-        path: ./RTXLauncher.Avalonia/bin/publish/linux-x64-aot-static/
+        path: ${{ github.workspace }}/publish/linux/
         retention-days: 30
