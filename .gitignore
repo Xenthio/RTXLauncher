@@ -67,3 +67,4 @@ RTXLauncher.WinForms/bin/Publish/win-x64/settings.xml
 /RTXLauncher.Core/bin/Release
 /RTXLauncher.Core/bin
 /RTXLauncher.Avalonia/bin
+*.user

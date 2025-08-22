@@ -1,0 +1,5 @@
+﻿<linker>
+	<assembly fullname="RTXLauncher.Avalonia">
+		<type fullname="RTXLauncher.Avalonia.Views.*" preserve="all"/>
+	</assembly>
+</linker>
