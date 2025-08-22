@@ -57,8 +57,11 @@ jobs:
         echo "VERSION_INFO=$informationalVersion" >> $env:GITHUB_OUTPUT
         echo "Avalonia Version: $informationalVersion"
 
-    - name: Restore Dependencies
+    - name: Restore Solution Dependencies
       run: dotnet restore RTXLauncher.sln
+
+    - name: Build Solution
+      run: dotnet build RTXLauncher.sln --configuration Release --no-restore
 
     # --- Publish WinForms using its Profile ---
     - name: Publish WinForms App
@@ -66,6 +69,7 @@ jobs:
         dotnet publish ./RTXLauncher.WinForms/RTXLauncher.WinForms.csproj 
         --configuration Release
         /p:PublishProfile=Windows.pubxml 
+        /p:PublishDir=../../publish/winforms/
         /p:InformationalVersion="${{ steps.version-winforms.outputs.VERSION_INFO }}"
 
     # --- Publish Avalonia for Windows using its Profile ---
@@ -74,16 +78,15 @@ jobs:
         dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj 
         --configuration Release
         /p:PublishProfile=Windows.pubxml 
+        /p:PublishDir=../../publish/avalonia/
         /p:InformationalVersion="${{ steps.version-avalonia.outputs.VERSION_INFO }}"
         
-    # --- Upload all Windows builds ---
+    # --- Upload all Windows builds from our predictable 'publish' directory ---
     - name: Upload Windows Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: RTXLauncher-Windows-Builds
-        path: |
-          ./RTXLauncher.WinForms/bin/publish/win-x64/
-          ./RTXLauncher.Avalonia/bin/publish/win-x64-aot-static/
+        name: RTXLauncher-Windows-${{ steps.version-avalonia.outputs.VERSION_INFO }}
+        path: ./publish/ # This single path now contains both the 'avalonia' and 'winforms' subdirectories
         retention-days: 30
 
   # ==========================================================
@@ -93,9 +96,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Build for Linux (Native AOT)
     
-    # This job will run in parallel with the Windows job
-    needs: build-windows # Optional: Run after Windows job if you prefer sequential builds
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -115,7 +115,6 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    # --- Install prerequisites for Native AOT on Linux ---
     - name: Install AOT Dependencies
       run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
 
@@ -124,17 +123,18 @@ jobs:
       shell: bash
       run: |
         commitHash=$(git rev-parse --short HEAD)
-        # We need to parse the version from the csproj file using a tool available on Linux
         versionNumber=$(grep '<Version>' ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj | sed -e 's/.*<Version>\(.*\)<\/Version>.*/\1/')
         informationalVersion="$versionNumber-avalonia+${commitHash}"
         echo "VERSION_INFO=$informationalVersion" >> $GITHUB_OUTPUT
         echo "Avalonia (Linux) Version: $informationalVersion"
 
+    # --- ** FIX **: Restore ONLY the projects that are compatible with Linux ---
     - name: Restore Dependencies
-      run: dotnet restore RTXLauncher.sln
+      run: dotnet restore ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj
 
-    - name: Build Solution
-      run: dotnet build RTXLauncher.sln --configuration Release --no-restore
+    # --- ** FIX **: Build ONLY the projects that are compatible with Linux ---
+    - name: Build Project
+      run: dotnet build ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj --configuration Release --no-restore
 
     # --- Publish Avalonia for Linux using its Profile ---
     - name: Publish Avalonia App (Linux)
@@ -147,6 +147,6 @@ jobs:
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: RTXLauncher-Linux-Build
+        name: RTXLauncher-Linux-${{ steps.version-avalonia.outputs.VERSION_INFO }}
         path: ./RTXLauncher.Avalonia/bin/publish/linux-x64-aot-static/
         retention-days: 30
