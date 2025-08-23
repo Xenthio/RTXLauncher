@@ -8,6 +8,7 @@
 	<Application.Resources>
 		<FluentTheme x:Key="Fluent"/>
 		<SimpleTheme x:Key="Simple"/>
+		<StyleInclude x:Key="VGUI" Source="avares://RTXLauncher.Avalonia/Themes/VGUI/VGUITheme.axaml"/>
 	</Application.Resources>
 
 	<Application.Styles>

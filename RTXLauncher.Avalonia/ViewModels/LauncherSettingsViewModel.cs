@@ -19,7 +19,7 @@ public partial class LauncherSettingsViewModel : PageViewModel
 		_settingsService = settingsService;
 	}
 
-	public List<string> Themes { get; } = new() { "Fluent", "Simple" };
+	public List<string> Themes { get; } = new() { "Fluent", "Simple", "VGUI" };
 
 	public bool CheckForUpdatesOnLaunch
 	{
