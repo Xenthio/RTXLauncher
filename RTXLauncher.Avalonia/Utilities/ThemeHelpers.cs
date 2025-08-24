@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using System;
 
 namespace RTXLauncher.Avalonia.Utilities;
 
@@ -27,6 +28,12 @@ public class ThemeHelpers : AvaloniaObject
 
 	private static void OnDisableFontSmoothingChanged(Control control, AvaloniaPropertyChangedEventArgs e)
 	{
+		// if linux, do nothing
+		if (OperatingSystem.IsLinux())
+		{
+			return;
+		}
+
 		// 3. When the property is set to True in a style, this code runs.
 		// It sets the NON-STYLEABLE RenderOptions property on the control.
 		if (e.NewValue is true)
