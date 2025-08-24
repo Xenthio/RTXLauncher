@@ -71,6 +71,11 @@
 					<ListBoxItem Content="List Item 3"/>
 					<ListBoxItem Content="List Item 4"/>
 				</ListBox>
+				<ComboBox>
+					<ComboBoxItem Content="Option 1"/>
+					<ComboBoxItem Content="Option 2"/>
+					<ComboBoxItem Content="Option 3"/>
+				</ComboBox>
 			</StackPanel>
 		</Border>
 	</Design.PreviewWith>
@@ -328,8 +333,83 @@
 	<Style Selector="ListBoxItem:focus /template/ Border#FocusBorder">
 		<Setter Property="IsVisible" Value="True"/>
 	</Style>
-	
-	
+
+	<!-- ========================================================== -->
+	<!--                      COMBOBOX STYLE                        -->
+	<!-- ========================================================== -->
+
+	<!-- Style for the items INSIDE the dropdown list -->
+	<Style Selector="ComboBoxItem">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="MinHeight" Value="20"/>
+		<Setter Property="Padding" Value="7,2"/>
+	</Style>
+	<Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="{StaticResource VguiActiveBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+	</Style>
+
+
+	<!-- Main style for the ComboBox itself -->
+	<Style Selector="ComboBox">
+		<Setter Property="MinHeight" Value="24"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+
+					<Grid Margin="1" ColumnDefinitions="*,Auto">
+						<Border Grid.Column="0" Grid.ColumnSpan="2" Background="{TemplateBinding Background}"/>
+						<ContentPresenter Name="PART_ContentPresenter"
+										  Content="{TemplateBinding SelectionBoxItem}"
+										  Padding="5,0"
+										  VerticalAlignment="Center"/>
+						<ToggleButton Name="PART_DropDownButton" Grid.Column="1" Focusable="False" Width="17">
+							<ToggleButton.Template>
+								<ControlTemplate>
+									<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_down.png" Width="9" Height="8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+								</ControlTemplate>
+							</ToggleButton.Template>
+						</ToggleButton>
+					</Grid>
+
+
+					<Popup Name="PART_Popup"
+						   IsLightDismissEnabled="True"
+						   PlacementTarget="{TemplateBinding}"
+						   IsOpen="{TemplateBinding IsDropDownOpen, Mode=TwoWay}">
+						
+						<!-- Wrap the ScrollViewer and the border Panel in a Grid -->
+						<Grid MinWidth="{Binding $parent[ComboBox].Bounds.Width}">
+							<!-- Layer 0: The background and the list of items -->
+							<Border Background="{StaticResource VguiBackgroundBrush}">
+								<ScrollViewer RenderOptions.TextRenderingMode="Alias">
+									<ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+								</ScrollViewer>
+							</Border>
+
+							<!-- Layer 1: The border effect, drawn on top -->
+							<!-- IsHitTestVisible="False" allows clicks to pass through to the items below -->
+							<Panel IsHitTestVisible="False">
+								<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+								<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="0,0,1,1"/>
+							</Panel>
+						</Grid>
+
+					</Popup>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- Style for when the ComboBox is focused -->
+	<Style Selector="ComboBox:focus /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="{StaticResource VguiActiveBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+	</Style>
 
 	<!-- ========================================================== -->
 	<!--                    LAYOUT STYLE CLASSES                    -->

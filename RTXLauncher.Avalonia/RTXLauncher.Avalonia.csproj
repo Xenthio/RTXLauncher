@@ -11,9 +11,11 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\gmodrtx.png" />
+    <None Remove="Assets\icon_down.png" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\gmodrtx.png" />
+    <AvaloniaResource Include="Assets\icon_down.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Icon.ico" />
