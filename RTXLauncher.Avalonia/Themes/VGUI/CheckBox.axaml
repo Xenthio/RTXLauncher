@@ -1,0 +1,85 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<CheckBox Content="Enabled CheckBox"/>
+				<CheckBox Content="Disabled CheckBox" IsEnabled="False"/>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<Style Selector="CheckBox">
+		<Setter Property="Cursor" Value="Hand"/>
+
+		<Setter Property="Template">
+			<ControlTemplate>
+				<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+
+					<!-- The CheckBox square (now a single, flat border) -->
+					<Border Name="PART_CheckSquare"
+							Width="15" Height="15"
+							Background="{StaticResource VguiBackgroundBrush}"
+							BorderBrush="{StaticResource VguiCheckBorderBrush}"
+							BorderThickness="1"
+							CornerRadius="1">
+						<!-- Added the corner radius from your SCSS -->
+
+						<!-- The Check Mark -->
+						<TextBlock Name="PART_CheckMark"
+								   Text="a"
+								   FontFamily="Webdings"
+								   FontSize="21"
+								   Foreground="{StaticResource VguiTextColor}"
+								   ClipToBounds="False"
+								   HorizontalAlignment="Center"
+								   VerticalAlignment="Center"
+								   IsVisible="False">
+							<TextBlock.RenderTransform>
+								<TranslateTransform X="-3" Y="0"/>
+							</TextBlock.RenderTransform>
+						</TextBlock>
+					</Border>
+
+					<!-- The Content (Text Label) -->
+					<ContentPresenter Name="PART_ContentPresenter"
+									  Content="{TemplateBinding Content}"
+									  VerticalAlignment="Center"/>
+				</StackPanel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+
+	<!-- 2. Style the TextBlock that is a child of the CheckBox for its DEFAULT state -->
+	<!-- This selector is MORE SPECIFIC than the global "TextBlock" selector, so it wins. -->
+	<Style Selector="CheckBox TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
+	</Style>
+
+	<!-- 3. Style the TextBlock that is a child of a CHECKED CheckBox -->
+	<!-- This is even more specific, so it overrides the default CheckBox TextBlock style. -->
+	<Style Selector="CheckBox:checked TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextActiveBrush}"/>
+	</Style>
+
+	<!-- 4. Style the TextBlock that is a child of a DISABLED CheckBox -->
+	<Style Selector="CheckBox:disabled TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledBrush}"/>
+	</Style>
+	<!-- ** END OF FIX ** -->
+
+
+	<!-- These styles for the visual parts of the template remain the same -->
+	<Style Selector="CheckBox:checked /template/ TextBlock#PART_CheckMark">
+		<Setter Property="Foreground" Value="#F2F2F2"/>
+		<Setter Property="IsVisible" Value="True"/>
+	</Style>
+	<Style Selector="CheckBox:disabled /template/ Border#PART_CheckSquare">
+		<Setter Property="Opacity" Value="0.5"/>
+	</Style>
+</Styles>

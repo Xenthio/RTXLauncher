@@ -1,0 +1,60 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<TextBox Text="Editable Text"/>
+				<TextBox Text="Disabled Text" IsEnabled="False"/>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+	
+	<Style Selector="TextBox">
+		<!-- Base Properties -->
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundColor}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+		<Setter Property="CaretBrush" Value="{StaticResource VguiTextColor}"/>
+		<Setter Property="Padding" Value="5"/>
+		<Setter Property="MinHeight" Value="24"/>
+		<!-- Sets the default height -->
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+
+		<!-- VGUI Inset Border Effect -->
+		<!-- We redefine the template to add the 3D inset border -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel Background="{TemplateBinding Background}">
+					<!-- Inset Bevel: Dark top/left border -->
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<!-- Inset Bevel: Light bottom/right border -->
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<!-- The actual text entry area (ScrollViewer) sits inside the border -->
+					<TextPresenter Name="PART_TextPresenter"
+								   Margin="{TemplateBinding Padding}"
+								   CaretBrush="{TemplateBinding CaretBrush}"
+								   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- Style for a multi-line TextBox -->
+	<Style Selector="TextBox.is-multiline">
+		<!-- This class would be applied in your View XAML like: <TextBox Classes="is-multiline"/> -->
+		<Setter Property="AcceptsReturn" Value="True"/>
+		<Setter Property="TextWrapping" Value="Wrap"/>
+		<Setter Property="MinHeight" Value="72"/>
+		<!-- A larger default height for multi-line -->
+		<Setter Property="VerticalContentAlignment" Value="Top"/>
+	</Style>
+
+	<!-- Style for when a TextBox is disabled -->
+	<Style Selector="TextBox:disabled">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextFadedBrush}"/>
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+	</Style>
+</Styles>

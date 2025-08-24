@@ -13,7 +13,6 @@
 
 	<Application.Styles>
 			<!-- The initial theme is loaded from code-behind -->
-		<SimpleTheme/>
 	</Application.Styles>
 
 	<Application.DataTemplates>

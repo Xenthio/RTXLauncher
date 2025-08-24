@@ -1,0 +1,69 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<ListBox>
+					<ListBoxItem Content="List Item 1"/>
+					<ListBoxItem Content="List Item 2"/>
+					<ListBoxItem Content="List Item 3"/>
+					<ListBoxItem Content="List Item 4"/>
+				</ListBox>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<!-- Style for the ListBox itself (the sidebar) -->
+	<Style Selector="ListBox">
+		<Setter Property="Padding" Value="6,3"/>
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+		<!-- Redefine the template to add the 3D inset border -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<!-- Inset Bevel: Dark top/left border -->
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<!-- Inset Bevel: Light bottom/right border -->
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<!-- The ScrollViewer that holds the items -->
+					<ScrollViewer Name="PART_ScrollViewer"
+								  Background="{TemplateBinding Background}"
+								  Padding="{TemplateBinding Padding}"
+								  Margin="1">
+
+						<ItemsPresenter Name="PART_ItemsPresenter"
+										ItemsPanel="{TemplateBinding ItemsPanel}" />
+					</ScrollViewer>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="ListBoxItem">
+		<Setter Property="Padding" Value="5"/>
+		<Setter Property="MinHeight" Value="20"/>
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="ListBoxItem TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+		<!-- Use the bright white for default text -->
+	</Style>
+
+	<!-- This style for the SELECTED item now correctly overrides the new default -->
+	<Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="{StaticResource VguiActiveBrush}"/>
+	</Style>
+	<Style Selector="ListBoxItem:selected TextBlock">
+		<!-- Set a different color for the selected text for contrast against the active background -->
+	</Style>
+
+	<!-- The focus style remains the same -->
+	<Style Selector="ListBoxItem:focus /template/ Border#FocusBorder">
+		<Setter Property="IsVisible" Value="True"/>
+	</Style>
+</Styles>

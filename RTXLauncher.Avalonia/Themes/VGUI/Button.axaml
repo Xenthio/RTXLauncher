@@ -1,0 +1,73 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<Button Content="Standard Button"/>
+				<Button Content="Disabled Button" IsEnabled="False"/>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+	
+	<Style Selector="Button">
+		<Setter Property="Padding" Value="10,4"/>
+		<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<!-- Bevel Effect: Dark bottom/right border -->
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<!-- Bevel Effect: Light top/left border -->
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<!-- Main background area -->
+					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
+					<!-- Content (Text) -->
+					<ContentPresenter Name="PART_ContentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      Margin="{TemplateBinding Padding}">
+
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="-1" Y="-1" />
+							<!-- Move content to simulate a misalignment quirk in vgui -->
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+	<Style Selector="Button:pressed">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<!-- Inset Bevel: Dark top/left border -->
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<!-- Inset Bevel: Light bottom/right border -->
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
+					<!-- Move content to simulate being pressed -->
+					<ContentPresenter Name="PART_ContentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      Margin="{TemplateBinding Padding}">
+
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="0" Y="0" />
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+	<Style Selector="Button:disabled">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledBrush}"/>
+	</Style>
+</Styles>

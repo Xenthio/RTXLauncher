@@ -1,0 +1,45 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<Styles.Resources>
+		<!-- VGUI Olive Green Color Palette (from OliveGreen.scss) -->
+		<Color x:Key="VguiBaseColor">#4C5844</Color>
+		<!-- rgb(76,88,68) -->
+		<Color x:Key="VguiInsetBackgroundColor">#3E4637</Color>
+		<Color x:Key="VguiActiveColor">#958831</Color>
+
+		<!-- Outset (Normal) Border Colors -->
+		<Color x:Key="VguiBorderTopColor">#889180</Color>
+		<Color x:Key="VguiBorderBottomColor">#282E22</Color>
+
+		<!-- Inset (Pressed) Border Colors -->
+		<Color x:Key="VguiBorderTopInsetColor">#282E22</Color>
+		<Color x:Key="VguiBorderBottomInsetColor">#889180</Color>
+
+		<!-- Text Colors -->
+		<Color x:Key="VguiTextColor">#FFFFFF</Color>
+		<Color x:Key="VguiTextLabelColor">#CFD6CA</Color>
+		<Color x:Key="VguiTextActiveColor">#C4B550</Color>
+		<Color x:Key="VguiTextDisabledColor">#282E22</Color>
+		<Color x:Key="VguiTextDisabledShadowColor">#889180</Color>
+		<Color x:Key="VguiTextFadedColor">#A0AA95</Color>
+
+		<!-- Misc -->
+		<Color x:Key="VguiCheckBorderColor">#676458</Color>
+
+		<!-- Brushes (These are what you apply to controls) -->
+		<SolidColorBrush x:Key="VguiBackgroundBrush" Color="{StaticResource VguiBaseColor}"/>
+		<SolidColorBrush x:Key="VguiInsetBackgroundBrush" Color="{StaticResource VguiInsetBackgroundColor}"/>
+		<SolidColorBrush x:Key="VguiActiveBrush" Color="{StaticResource VguiActiveColor}"/>
+		<SolidColorBrush x:Key="VguiForegroundBrush" Color="{StaticResource VguiTextColor}"/>
+		<SolidColorBrush x:Key="VguiCheckBorderBrush" Color="{StaticResource VguiCheckBorderColor}"/>
+		<SolidColorBrush x:Key="VguiTextBrush" Color="{StaticResource VguiTextColor}"/>
+		<SolidColorBrush x:Key="VguiTextActiveBrush" Color="{StaticResource VguiTextActiveColor}"/>
+		<SolidColorBrush x:Key="VguiTextLabelBrush" Color="{StaticResource VguiTextLabelColor}"/>
+		<SolidColorBrush x:Key="VguiTextDisabledBrush" Color="{StaticResource VguiTextDisabledColor}"/>
+		<SolidColorBrush x:Key="VguiTextFadedBrush" Color="{StaticResource VguiTextFadedColor}"/>
+		<SolidColorBrush x:Key="VguiBorderTopBrush" Color="{StaticResource VguiBorderTopColor}"/>
+		<SolidColorBrush x:Key="VguiBorderBottomBrush" Color="{StaticResource VguiBorderBottomColor}"/>
+		<SolidColorBrush x:Key="VguiBorderTopInsetBrush" Color="{StaticResource VguiBorderTopInsetColor}"/>
+		<SolidColorBrush x:Key="VguiBorderBottomInsetBrush" Color="{StaticResource VguiBorderBottomInsetColor}"/>
+	</Styles.Resources>
+</Styles>

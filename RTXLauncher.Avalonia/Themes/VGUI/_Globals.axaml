@@ -1,0 +1,62 @@
+<Styles xmlns="https://github.com/avaloniaui"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:utils="using:RTXLauncher.Avalonia.Utilities">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+
+	<Style Selector="Window">
+		<Setter Property="utils:ThemeHelpers.DisableFontSmoothing" Value="True"/>
+
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiForegroundBrush}"/>
+		<Setter Property="FontFamily" Value="Tahoma, Verdana, Segoe UI"/>
+		<Setter Property="FontSize" Value="13"/>
+
+	</Style>
+
+	<Style Selector="TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiForegroundBrush}"/>
+	</Style>
+
+	<!-- This provides a necessary base style for all ItemsControls (including ListBox) -->
+	<Style Selector="ItemsControl">
+		<!-- 1. Provide a default panel to arrange items vertically. -->
+		<Setter Property="ItemsPanel">
+			<ItemsPanelTemplate>
+				<StackPanel/>
+			</ItemsPanelTemplate>
+		</Setter>
+		<!-- 2. Provide a default template to actually display the items. -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<!-- A Border is a good root for inheriting properties like Background -->
+				<Border BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						Background="{TemplateBinding Background}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<!-- It's good practice to wrap the presenter in a ScrollViewer -->
+					<ScrollViewer>
+						<ItemsPresenter Name="PART_ItemsPresenter"
+										ItemsPanel="{TemplateBinding ItemsPanel}"/>
+					</ScrollViewer>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+
+	<Style Selector="Border.vgui-inset">
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource VguiBorderTopInsetBrush}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="0"/>
+	</Style>
+
+	<Style Selector="Border.vgui-seperator">
+		<Setter Property="Height" Value="2"/>
+		<Setter Property="Margin" Value="0,5"/>
+		<Setter Property="Background" Value="{StaticResource VguiBorderTopInsetBrush}"/>
+		<Setter Property="BorderBrush" Value="{StaticResource VguiBorderBottomInsetBrush}"/>
+		<Setter Property="BorderThickness" Value="0,0,0,1"/>
+	</Style>
+</Styles>
