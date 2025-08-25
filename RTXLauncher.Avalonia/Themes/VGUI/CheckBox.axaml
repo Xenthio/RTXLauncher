@@ -50,7 +50,7 @@
 	<!-- 3. Show the checkmark when checked -->
 	<Style Selector="CheckBox:checked /template/ TextBlock#PART_CheckMark">
 		<Setter Property="IsVisible" Value="True"/>
-		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextBrush}"/>
 
 	</Style>
 

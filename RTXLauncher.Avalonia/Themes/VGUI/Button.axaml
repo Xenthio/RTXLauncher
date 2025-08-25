@@ -18,6 +18,7 @@
 		<Setter Property="HorizontalContentAlignment" Value="Left"/>
 		<Setter Property="VerticalContentAlignment" Value="Center"/>
 		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextBrush}"/>
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Panel>
@@ -42,7 +43,8 @@
 				</Panel>
 			</ControlTemplate>
 		</Setter>
-	</Style>
+	</Style> 
+
 	<Style Selector="Button:pressed">
 		<Setter Property="Template">
 			<ControlTemplate>

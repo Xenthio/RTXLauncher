@@ -22,6 +22,7 @@
 	<Style Selector="RepeatButton.nupd-spinner">
 		<Setter Property="Width" Value="15"/>
 		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Panel>
@@ -100,7 +101,7 @@
 	<!--              ** MAIN NUMERICUPDOWN STYLE **                -->
 	<!-- ========================================================== -->
 	<Style Selector="NumericUpDown">
-		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelColor}"/>
 		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
 		<Setter Property="MinHeight" Value="24"/>
 		<Setter Property="MinWidth" Value="64"/>

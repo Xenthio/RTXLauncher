@@ -7,15 +7,12 @@
 		<Setter Property="utils:ThemeHelpers.DisableFontSmoothing" Value="True"/>
 
 		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
-		<Setter Property="Foreground" Value="{StaticResource VguiForegroundBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
 		<Setter Property="FontFamily" Value="Tahoma, Verdana, Segoe UI"/>
 		<Setter Property="FontSize" Value="13"/>
 
 	</Style>
-
-	<Style Selector="TextBlock">
-		<Setter Property="Foreground" Value="{StaticResource VguiForegroundBrush}"/>
-	</Style>
+ 
 
 	<!-- This provides a necessary base style for all ItemsControls (including ListBox) -->
 	<Style Selector="ItemsControl">

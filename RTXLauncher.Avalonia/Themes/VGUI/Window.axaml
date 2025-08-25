@@ -80,7 +80,9 @@
 							<!-- Icon and Title -->
 							<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
 								<Image Name="PART_Icon" Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Width="16" Height="16"/>
-								<TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+								<TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" 
+										   VerticalAlignment="Center"
+										   Foreground="{StaticResource VguiTextBrush}"/>
 							</StackPanel>
 
 							<!-- Min/Max/Close Buttons -->
