@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using System;
 using System.Runtime.InteropServices;
 
@@ -88,7 +89,7 @@ public class ThemeHelpers : AvaloniaObject
 	{
 		if (sender is Window window)
 		{
-			ApplyCustomChrome(window);
+			Dispatcher.UIThread.Post(() => ApplyCustomChrome(window), DispatcherPriority.Loaded);
 		}
 	}
 
@@ -99,7 +100,8 @@ public class ThemeHelpers : AvaloniaObject
 			// Re-apply the attributes when the window is restored.
 			if (window.WindowState != WindowState.Minimized)
 			{
-				ApplyCustomChrome(window);
+				// Post the action to the dispatcher to run after the OS has finished its own styling.
+				Dispatcher.UIThread.Post(() => ApplyCustomChrome(window), DispatcherPriority.Loaded);
 			}
 		}
 	}

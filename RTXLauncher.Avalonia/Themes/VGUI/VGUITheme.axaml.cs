@@ -2,7 +2,7 @@
 using Avalonia.Styling;
 using System;
 
-namespace RTXLauncher.Avalonia.Themes.VGUI;
+namespace RTXLauncher.Avalonia.Themes;
 
 public class VGUITheme : Styles
 {

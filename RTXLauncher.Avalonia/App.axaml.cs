@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Themes.Simple;
+using RTXLauncher.Avalonia.Themes;
 using RTXLauncher.Avalonia.ViewModels;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
@@ -83,7 +84,7 @@ public partial class App : Application
 		}
 
 		// Find the current theme style that's loaded in the application
-		var currentTheme = Application.Current.Styles.FirstOrDefault(s => s is FluentTheme || s is SimpleTheme);
+		var currentTheme = Application.Current.Styles.FirstOrDefault(s => s is FluentTheme || s is SimpleTheme || s is VGUITheme);
 		if (currentTheme != null)
 		{
 			// Replace the old theme with the new one.
