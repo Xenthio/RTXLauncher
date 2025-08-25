@@ -67,14 +67,16 @@
 		<!--                 CUSTOM TITLEBAR STYLE                      -->
 		<!-- ========================================================== -->
 		<ControlTheme x:Key="{x:Type TitleBar}" TargetType="TitleBar">
-			<Setter Property="Height" Value="28"/>
-			<Setter Property="Margin" Value="4,4,4,1"/>
+			<Setter Property="MinHeight" Value="28"/>
 			<Setter Property="Template">
 				<ControlTemplate>
 					<Panel Name="PART_TitleBar"
 					       Background="Transparent"
 					       IsHitTestVisible="True">
-						<Grid ColumnDefinitions="Auto,*,Auto">
+						<!-- This Border provides the draggable area -->
+						<Border Background="Transparent"
+						        Win32Properties.NonClientHitTestResult="Caption" />
+						<Grid ColumnDefinitions="Auto,*,Auto" Margin="4,4,4,1">
 							<!-- Icon and Title -->
 							<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
 								<Image Name="PART_Icon" Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Width="16" Height="16"/>
@@ -82,7 +84,9 @@
 							</StackPanel>
 
 							<!-- Min/Max/Close Buttons -->
-							<CaptionButtons Name="PART_CaptionButtons" Grid.Column="2"/>
+							<!-- This ensures the buttons are clickable -->
+							<CaptionButtons Name="PART_CaptionButtons" Grid.Column="2"
+							                Win32Properties.NonClientHitTestResult="Client" />
 						</Grid>
 					</Panel>
 				</ControlTemplate>

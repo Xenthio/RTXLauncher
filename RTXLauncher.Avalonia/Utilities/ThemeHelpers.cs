@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
 using System;
+using System.Runtime.InteropServices;
 
 namespace RTXLauncher.Avalonia.Utilities;
 
@@ -54,6 +55,10 @@ public class ThemeHelpers : AvaloniaObject
 	public static bool GetUseCustomDecorations(Window w) => w.GetValue(UseCustomDecorationsProperty);
 	public static void SetUseCustomDecorations(Window w, bool v) => w.SetValue(UseCustomDecorationsProperty, v);
 
+	// P/Invoke signature for the native DWM function
+	[DllImport("dwmapi.dll", SetLastError = true)]
+	private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
 	private static void OnUseCustomDecorationsChanged(Window window, AvaloniaPropertyChangedEventArgs e)
 	{
 		if (e.NewValue is true)
@@ -61,7 +66,11 @@ public class ThemeHelpers : AvaloniaObject
 			window.SystemDecorations = SystemDecorations.None;
 			window.ExtendClientAreaToDecorationsHint = true;
 			window.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.Default;
-			window.ExtendClientAreaTitleBarHeightHint = 24;
+			window.ExtendClientAreaTitleBarHeightHint = 32;
+
+			// Subscribe to events to apply DWM changes.
+			window.Opened += OnWindowOpened;
+			window.PropertyChanged += OnWindowPropertyChanged;
 		}
 		else
 		{
@@ -69,7 +78,49 @@ public class ThemeHelpers : AvaloniaObject
 			window.SystemDecorations = SystemDecorations.Full;
 			window.ExtendClientAreaToDecorationsHint = false;
 			window.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.Default;
-			window.ExtendClientAreaTitleBarHeightHint = 24;
+			window.ExtendClientAreaTitleBarHeightHint = -1;
+			window.Opened -= OnWindowOpened;
+			window.PropertyChanged -= OnWindowPropertyChanged;
 		}
+	}
+
+	private static void OnWindowOpened(object? sender, EventArgs e)
+	{
+		if (sender is Window window)
+		{
+			ApplyCustomChrome(window);
+		}
+	}
+
+	private static void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+	{
+		if (e.Property == Window.WindowStateProperty && sender is Window window)
+		{
+			// Re-apply the attributes when the window is restored.
+			if (window.WindowState != WindowState.Minimized)
+			{
+				ApplyCustomChrome(window);
+			}
+		}
+	}
+
+	private static void ApplyCustomChrome(Window window)
+	{
+		if (!OperatingSystem.IsWindows() || window.TryGetPlatformHandle() is not { } platformHandle)
+		{
+			return;
+		}
+
+		var hwnd = platformHandle.Handle;
+
+		// DWMWA_WINDOW_CORNER_PREFERENCE = 33
+		// DWMWCP_DONOTROUND = 1
+		int cornerPreference = 1;
+		DwmSetWindowAttribute(hwnd, 33, ref cornerPreference, sizeof(int));
+
+		// DWMWA_SYSTEMBACKDROP_TYPE = 38
+		// DWMSBT_NONE = 1
+		int backdropType = 1;
+		DwmSetWindowAttribute(hwnd, 38, ref backdropType, sizeof(int));
 	}
 }
