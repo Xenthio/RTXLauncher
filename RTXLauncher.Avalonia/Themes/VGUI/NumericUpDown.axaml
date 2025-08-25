@@ -56,13 +56,14 @@
 		<Setter Property="BorderThickness" Value="0"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Padding" Value="5,0"/>
-		<!-- This template is just the bare-minimum text renderer, with no border -->
 		<Setter Property="Template">
 			<ControlTemplate>
+				<!-- ** THE CRUCIAL FIX IS ON THIS LINE ** -->
 				<TextPresenter Name="PART_TextPresenter"
-                               Background="{TemplateBinding Background}"
-                               CaretBrush="{TemplateBinding CaretBrush}"
-                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+							   Text="{TemplateBinding Text}"
+							   Background="{TemplateBinding Background}"
+							   CaretBrush="{TemplateBinding CaretBrush}"
+							   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 			</ControlTemplate>
 		</Setter>
 	</Style>
