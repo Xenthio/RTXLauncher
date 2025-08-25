@@ -14,6 +14,12 @@
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/Window.axaml"/>
 
 
+	<Styles.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Styles.Resources>
 
 	<!-- ========================================================== -->
 	<!--                   DESIGN-TIME PREVIEW                      -->

@@ -8,7 +8,7 @@
 	<!-- ========================================================== -->
 
 	<!-- Style for the Min/Max/Close buttons -->
-	<Style Selector="Window /template/ Button.TitleBarButton">
+	<Style Selector="Button.TitleBarButton">
 		<Setter Property="Width" Value="18"/>
 		<Setter Property="Height" Value="18"/>
 		<Setter Property="Margin" Value="2"/>
@@ -24,7 +24,7 @@
 			</ControlTemplate>
 		</Setter>
 	</Style>
-	<Style Selector="Window /template/ Button.TitleBarButton:pressed">
+	<Style Selector="Button.TitleBarButton:pressed">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Panel>
@@ -40,6 +40,56 @@
 			</ControlTemplate>
 		</Setter>
 	</Style>
+
+	<Styles.Resources>
+		<!-- ========================================================== -->
+		<!--               CUSTOM CAPTIONBUTTONS STYLE                  -->
+		<!-- ========================================================== -->
+		<ControlTheme x:Key="{x:Type CaptionButtons}" TargetType="CaptionButtons">
+			<Setter Property="Template">
+				<ControlTemplate>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+						<Button Name="PART_MinimizeButton" Classes="TitleBarButton">
+							<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_minimize.png" Width="15" Height="15"/>
+						</Button>
+						<Button Name="PART_MaximizeButton" Classes="TitleBarButton">
+							<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_maximize.png" Width="15" Height="15"/>
+						</Button>
+						<Button Name="PART_CloseButton" Classes="TitleBarButton">
+							<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_close.png" Width="16" Height="16"/>
+						</Button>
+					</StackPanel>
+				</ControlTemplate>
+			</Setter>
+		</ControlTheme>
+
+		<!-- ========================================================== -->
+		<!--                 CUSTOM TITLEBAR STYLE                      -->
+		<!-- ========================================================== -->
+		<ControlTheme x:Key="{x:Type TitleBar}" TargetType="TitleBar">
+			<Setter Property="Height" Value="28"/>
+			<Setter Property="Margin" Value="4,4,4,1"/>
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Panel Name="PART_TitleBar"
+					       Background="Transparent"
+					       IsHitTestVisible="True">
+						<Grid ColumnDefinitions="Auto,*,Auto">
+							<!-- Icon and Title -->
+							<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+								<Image Name="PART_Icon" Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Width="16" Height="16"/>
+								<TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+							</StackPanel>
+
+							<!-- Min/Max/Close Buttons -->
+							<CaptionButtons Name="PART_CaptionButtons" Grid.Column="2"/>
+						</Grid>
+					</Panel>
+				</ControlTemplate>
+			</Setter>
+		</ControlTheme>
+	</Styles.Resources>
+
 
 	<!-- ========================================================== -->
 	<!--                 MAIN CUSTOM WINDOW STYLE                   -->
@@ -57,35 +107,14 @@
 					<!-- Main background and layout grid -->
 					<Grid RowDefinitions="Auto,*,Auto" Background="{StaticResource VguiBackgroundBrush}" Margin="1">
 
-						<!-- 1. THE CUSTOM TITLE BAR (PART_TitleBar is required for dragging) -->
-						<Panel Name="PART_TitleBar" Grid.Row="0" Height="28" Margin="4,4,4,1">
-							<Grid ColumnDefinitions="Auto,*,Auto">
-								<!-- Icon and Title -->
-								<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-									<Image Name="PART_Icon" Source="{TemplateBinding Icon}" Width="16" Height="16"/>
-									<TextBlock Text="{TemplateBinding Title}" VerticalAlignment="Center"/>
-								</StackPanel>
-
-								<!-- Min/Max/Close Buttons -->
-								<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-									<Button Name="PART_MinimizeButton" Classes="TitleBarButton">
-										<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_minimize.png" Width="15" Height="15"/>
-									</Button>
-									<Button Name="PART_MaximizeButton" Classes="TitleBarButton">
-										<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_maximize.png" Width="15" Height="15"/>
-									</Button>
-									<Button Name="PART_CloseButton" Classes="TitleBarButton">
-										<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_close.png" Width="16" Height="16"/>
-									</Button>
-								</StackPanel>
-							</Grid>
-						</Panel>
+						<!-- 1. THE CUSTOM TITLE BAR (using the TitleBar control) -->
+						<TitleBar Grid.Row="0"/>
 
 						<!-- 2. THE MAIN CONTENT (where your sidebar layout will go) -->
 						<ContentPresenter Name="PART_ContentPresenter"
-                                          Grid.Row="1"
-                                          Content="{TemplateBinding Content}"
-                                          Margin="4,0,4,4"/>
+						                  Grid.Row="1"
+						                  Content="{TemplateBinding Content}"
+						                  Margin="4,0,4,4"/>
 
 						<!-- 3. THE RESIZE GRIP (optional, but good to have) -->
 						<Panel Name="PART_ResizeGrip" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Bottom">

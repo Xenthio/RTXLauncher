@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Platform;
 using System;
 
 namespace RTXLauncher.Avalonia.Utilities;
@@ -58,14 +59,17 @@ public class ThemeHelpers : AvaloniaObject
 		if (e.NewValue is true)
 		{
 			window.SystemDecorations = SystemDecorations.None;
-			window.ExtendClientAreaToDecorationsHint = false;
-
+			window.ExtendClientAreaToDecorationsHint = true;
+			window.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.Default;
+			window.ExtendClientAreaTitleBarHeightHint = 24;
 		}
 		else
 		{
 			// Revert to default OS decorations
 			window.SystemDecorations = SystemDecorations.Full;
 			window.ExtendClientAreaToDecorationsHint = false;
+			window.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.Default;
+			window.ExtendClientAreaTitleBarHeightHint = 24;
 		}
 	}
 }
