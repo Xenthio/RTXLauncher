@@ -18,7 +18,7 @@
 	<!--          STYLES FOR PARTS (USING STYLE CLASSES)            -->
 	<!-- ========================================================== -->
 
-	<!-- ** FIX #1: Style for the Spinner Buttons using a CLASS ** -->
+	<!-- Style for the Spinner Buttons using a CLASS -->
 	<Style Selector="RepeatButton.nupd-spinner">
 		<Setter Property="Width" Value="15"/>
 		<Setter Property="Padding" Value="0"/>
@@ -51,47 +51,38 @@
 		</Setter>
 	</Style>
 
-	<!-- ** FIX #2: Style for the Inner TextBox using a CLASS ** -->
+	<!-- Style for the Inner TextBox using a CLASS -->
 	<Style Selector="TextBox.nupd-textbox">
 		<Setter Property="BorderThickness" Value="0"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Padding" Value="5,0"/>
 		<Setter Property="Template">
 			<ControlTemplate>
-				<!-- ** THE CRUCIAL FIX IS ON THIS LINE ** -->
 				<TextPresenter Name="PART_TextPresenter"
-							   Text="{TemplateBinding Text}"
-							   Background="{TemplateBinding Background}"
-							   CaretBrush="{TemplateBinding CaretBrush}"
-							   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                               Text="{TemplateBinding Text}"
+                               Background="{TemplateBinding Background}"
+                               CaretBrush="{TemplateBinding CaretBrush}"
+                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 			</ControlTemplate>
 		</Setter>
 	</Style>
 
-
 	<!-- ========================================================== -->
-	<!--                  MAIN NUMERICUPDOWN STYLE                  -->
+	<!--         ** CORRECTED BUTTON SPINNER STYLE **               -->
 	<!-- ========================================================== -->
-	<Style Selector="NumericUpDown">
+	<Style Selector="ButtonSpinner">
 		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
-		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
-		<Setter Property="MinHeight" Value="24"/>
-		<Setter Property="MinWidth" Value="64"/>
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Panel Background="{TemplateBinding Background}">
-					<!-- The main VGUI Inset Border for the whole control -->
 					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
 					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
 
+					<!-- This Grid now correctly contains the buttons -->
 					<Grid Margin="1" ColumnDefinitions="*,Auto">
-						<!-- The TextBox now explicitly uses our borderless class -->
-						<TextBox Name="PART_TextBox" Grid.Column="0" Classes="nupd-textbox"
-                                 Text="{TemplateBinding Text, Mode=TwoWay}"
-                                 VerticalContentAlignment="Center"/>
-
+						<ContentPresenter Name="PART_ContentPresenter" Grid.Column="0" Content="{TemplateBinding Content}"/>
 						<Grid Grid.Column="1" IsVisible="{TemplateBinding ShowButtonSpinner}" RowDefinitions="*,*">
-							<!-- The buttons now explicitly use our spinner class -->
+							<!-- The required button parts are now INSIDE the ButtonSpinner template -->
 							<RepeatButton Name="PART_IncreaseButton" Grid.Row="0" Classes="nupd-spinner">
 								<TextBlock Text="5" FontFamily="Marlett" FontSize="9" VerticalAlignment="Center"/>
 							</RepeatButton>
@@ -105,6 +96,31 @@
 		</Setter>
 	</Style>
 
+	<!-- ========================================================== -->
+	<!--              ** MAIN NUMERICUPDOWN STYLE **                -->
+	<!-- ========================================================== -->
+	<Style Selector="NumericUpDown">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+		<Setter Property="MinHeight" Value="24"/>
+		<Setter Property="MinWidth" Value="64"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<DataValidationErrors>
+					<!-- The NUD template is now simple: it just contains the spinner -->
+					<ButtonSpinner Name="PART_Spinner"
+                                   ShowButtonSpinner="{TemplateBinding ShowButtonSpinner}"
+                                   Background="{TemplateBinding Background}">
+						<!-- And the spinner's content is the required TextBox -->
+						<TextBox Name="PART_TextBox" Classes="nupd-textbox"
+                                 Text="{TemplateBinding Text, Mode=TwoWay}"
+                                 VerticalContentAlignment="Center"/>
+					</ButtonSpinner>
+				</DataValidationErrors>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
 	<!-- Disabled State -->
 	<Style Selector="NumericUpDown:disabled">
 		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
@@ -112,5 +128,4 @@
 	<Style Selector="NumericUpDown:disabled /template/ TextBox#PART_TextBox">
 		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledBrush}"/>
 	</Style>
-
 </Styles>
