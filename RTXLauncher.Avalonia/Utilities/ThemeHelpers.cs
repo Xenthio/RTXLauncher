@@ -4,13 +4,105 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using RTXLauncher.Core.Utilities;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace RTXLauncher.Avalonia.Utilities;
 
 public class ThemeHelpers : AvaloniaObject
 {
+	// ==========================================================
+	//                  VGUI FONT INITIALIZATION
+	// ==========================================================
+
+	// Static properties to hold the loaded font and glyph
+	public static FontFamily VguiMarlettFont { get; private set; } = new("avares://invalid"); // Default to an invalid font
+	public static string VguiCheckBoxGlyph { get; private set; } = "a"; // Default Marlett glyph for a checkmark
+	public static string VguiUpArrowGlyph { get; private set; } = "5";   // Default Marlett glyph for up arrow
+	public static string VguiDownArrowGlyph { get; private set; } = "6"; // Default Marlett glyph for down arrow
+
+
+	/// <summary>
+	/// Initializes the fonts required by the VGUI theme.
+	/// On Linux, it searches for Marlett in common Steam games.
+	/// If not found, it falls back to a standard Unicode checkmark.
+	/// </summary>
+	public static void InitializeVguiFonts()
+	{
+		// On Windows, we assume Marlett is installed and just use it by name.
+		if (OperatingSystem.IsWindows())
+		{
+			VguiMarlettFont = new FontFamily("Marlett");
+			VguiCheckBoxGlyph = "a";
+			VguiUpArrowGlyph = "5";
+			VguiDownArrowGlyph = "6";
+			return;
+		}
+
+		// On Linux, try to find the font file.
+		var marlettPath = FindVguiFontOnLinux("marlett.ttf");
+
+		if (marlettPath != null)
+		{
+			// If found, create a FontFamily pointing to the absolute file path.
+			VguiMarlettFont = new FontFamily($"file://{marlettPath}");
+			VguiCheckBoxGlyph = "a"; // Use the 'a' character from Marlett
+			VguiUpArrowGlyph = "5";
+			VguiDownArrowGlyph = "6";
+		}
+		else
+		{
+			// If not found, fallback to the default system UI font and a Unicode glyph.
+			VguiMarlettFont = FontFamily.Default;
+			VguiCheckBoxGlyph = "✔"; // Unicode checkmark
+			VguiUpArrowGlyph = "▲";   // Unicode up arrow
+			VguiDownArrowGlyph = "▼"; // Unicode down arrow
+		}
+	}
+
+	/// <summary>
+	/// Searches for a given font file in common Source Engine game directories.
+	/// </summary>
+	/// <param name="fontFileName">The name of the font file to find (e.g., "marlett.ttf").</param>
+	/// <returns>The full path to the font file if found; otherwise, null.</returns>
+	private static string? FindVguiFontOnLinux(string fontFileName)
+	{
+		// Game directories in steamapps/common to search within.
+		var gameFolders = new[] { "Half-Life 2", "GarrysMod", "Half-Life" };
+
+		// Relative paths inside a game folder where fonts are typically stored.
+		var fontSubPaths = new[]
+		{
+			"hl2/resource",         // HL2
+			"sourceengine/resource",// GMod
+			"garrysmod/resource",   // GMod (older version)
+			"valve/resource",       // HL1
+			"platform/resource"     // Source SDK Base
+		};
+
+		foreach (var gameFolder in gameFolders)
+		{
+			var installPath = SteamLibraryUtility.GetGameInstallFolder(gameFolder);
+			if (string.IsNullOrEmpty(installPath))
+			{
+				continue;
+			}
+
+			foreach (var subPath in fontSubPaths)
+			{
+				var fontFilePath = Path.Combine(installPath, subPath, fontFileName);
+				if (File.Exists(fontFilePath))
+				{
+					return fontFilePath;
+				}
+			}
+		}
+
+		return null; // Font not found
+	}
+
 	// 1. Define the attached property.
 	// This makes "DisableFontSmoothing" available in XAML.
 	public static readonly AttachedProperty<bool> DisableFontSmoothingProperty =
@@ -62,6 +154,12 @@ public class ThemeHelpers : AvaloniaObject
 
 	private static void OnUseCustomDecorationsChanged(Window window, AvaloniaPropertyChangedEventArgs e)
 	{
+		if (OperatingSystem.IsLinux())
+		{
+			// Doesn't work :(
+			return;
+		}
+
 		if (e.NewValue is true)
 		{
 			window.SystemDecorations = SystemDecorations.None;

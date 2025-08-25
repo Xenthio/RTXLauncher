@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Themes.Simple;
 using RTXLauncher.Avalonia.Themes;
+using RTXLauncher.Avalonia.Utilities;
 using RTXLauncher.Avalonia.ViewModels;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
@@ -33,6 +34,13 @@ public partial class App : Application
 
 	public override void OnFrameworkInitializationCompleted()
 	{
+		ThemeHelpers.InitializeVguiFonts();
+
+		Resources.Add("VguiMarlettFont", ThemeHelpers.VguiMarlettFont);
+		Resources.Add("VguiCheckBoxGlyph", ThemeHelpers.VguiCheckBoxGlyph);
+		Resources.Add("VguiUpArrowGlyph", ThemeHelpers.VguiUpArrowGlyph);
+		Resources.Add("VguiDownArrowGlyph", ThemeHelpers.VguiDownArrowGlyph);
+
 		if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
 		{
 

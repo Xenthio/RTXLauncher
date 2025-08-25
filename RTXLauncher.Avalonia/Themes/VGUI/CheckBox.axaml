@@ -25,7 +25,7 @@
                             Background="{StaticResource VguiBackgroundBrush}"
                             BorderBrush="{StaticResource VguiCheckBorderBrush}"
                             BorderThickness="1">
-						<TextBlock Name="PART_CheckMark" Text="a" FontFamily="Webdings" FontSize="21" ClipToBounds="False"
+						<TextBlock Name="PART_CheckMark" Text="{DynamicResource VguiCheckBoxGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="21" ClipToBounds="False"
                                    Foreground="{StaticResource VguiTextColor}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    IsVisible="False">
 							<TextBlock.RenderTransform>
@@ -68,7 +68,7 @@
                             Background="{StaticResource VguiBackgroundBrush}"
                             BorderBrush="{StaticResource VguiCheckBorderBrush}"
                             BorderThickness="1">
-						<TextBlock Name="PART_CheckMark" Text="a" FontFamily="Webdings" FontSize="21" ClipToBounds="False"
+						<TextBlock Name="PART_CheckMark" Text="{DynamicResource VguiCheckBoxGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="21" ClipToBounds="False"
                                    Foreground="{StaticResource VguiTextColor}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    IsVisible="False">
 							<TextBlock.RenderTransform>

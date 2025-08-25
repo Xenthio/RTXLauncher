@@ -85,10 +85,10 @@
 						<Grid Grid.Column="1" IsVisible="{TemplateBinding ShowButtonSpinner}" RowDefinitions="*,*">
 							<!-- The required button parts are now INSIDE the ButtonSpinner template -->
 							<RepeatButton Name="PART_IncreaseButton" Grid.Row="0" Classes="nupd-spinner">
-								<TextBlock Text="5" FontFamily="Marlett" FontSize="9" VerticalAlignment="Center"/>
+								<TextBlock Text="{DynamicResource VguiUpArrowGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="9" VerticalAlignment="Center"/>
 							</RepeatButton>
 							<RepeatButton Name="PART_DecreaseButton" Grid.Row="1" Classes="nupd-spinner">
-								<TextBlock Text="6" FontFamily="Marlett" FontSize="9" VerticalAlignment="Center"/>
+								<TextBlock Text="{DynamicResource VguiDownArrowGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="9" VerticalAlignment="Center"/>
 							</RepeatButton>
 						</Grid>
 					</Grid>
