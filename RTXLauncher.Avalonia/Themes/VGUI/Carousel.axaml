@@ -1,0 +1,42 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<Carousel Width="250" Height="100">
+				<Carousel.Items>
+					<Border Background="LightBlue" Width="200" Height="100">
+						<TextBlock Text="Page 1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					</Border>
+					<Border Background="LightCoral" Width="200" Height="100">
+						<TextBlock Text="Page 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					</Border>
+					<Border Background="LightSeaGreen" Width="200" Height="100">
+						<TextBlock Text="Page 3" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					</Border>
+				</Carousel.Items>
+			</Carousel>
+		</Border>
+	</Design.PreviewWith>
+
+	<Style Selector="Carousel">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<ScrollViewer Name="PART_ScrollViewer"
+							  Background="{TemplateBinding Background}"
+							  BorderBrush="{TemplateBinding BorderBrush}"
+							  BorderThickness="{TemplateBinding BorderThickness}"
+							  BringIntoViewOnFocusChange="False"
+							  HorizontalScrollBarVisibility="Hidden"
+							  VerticalScrollBarVisibility="Hidden">
+					<ItemsPresenter Name="PART_ItemsPresenter"
+									ItemsPanel="{TemplateBinding ItemsPanel}"
+									Margin="{TemplateBinding Padding}"/>
+				</ScrollViewer>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>

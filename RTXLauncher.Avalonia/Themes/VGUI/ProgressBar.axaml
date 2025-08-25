@@ -1,0 +1,67 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:utils="using:RTXLauncher.Avalonia.Utilities">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<ProgressBar Value="0" />
+				<ProgressBar Value="50" />
+				<ProgressBar Value="55.5" />
+				<ProgressBar Value="100" />
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<Style Selector="ProgressBar">
+		<Style.Resources>
+			<!-- This brush creates a repeating pattern of 8x16 rectangles spaced by 4px -->
+			<DrawingBrush x:Key="ProgressBarIndicatorBrush"
+			              TileMode="Tile"
+			              SourceRect="0,0,12,16"
+			              DestinationRect="0,0,12,16">
+				<DrawingBrush.Drawing>
+					<GeometryDrawing Brush="{StaticResource VguiTextActiveColor}"
+					                 Geometry="M0,0 H8 V16 H0 Z" />
+				</DrawingBrush.Drawing>
+			</DrawingBrush>
+			<utils:ProgressBarWidthConverter x:Key="ProgressBarWidthConverter" />
+		</Style.Resources>
+
+		<!-- Base Properties -->
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundColor}"/>
+		<Setter Property="MinHeight" Value="24"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+
+		<!-- VGUI Inset Border Effect -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel Background="{TemplateBinding Background}">
+					<!-- Inset Bevel: Dark top/left border -->
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<!-- Inset Bevel: Light bottom/right border -->
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+
+					<!-- Container for the indicator, provides padding and clipping -->
+					<Panel Name="PART_Track" Margin="4" ClipToBounds="True">
+						<Border Name="PART_Indicator"
+						        HorizontalAlignment="Left"
+						        Background="{StaticResource ProgressBarIndicatorBrush}">
+							<Border.Width>
+								<MultiBinding Converter="{StaticResource ProgressBarWidthConverter}">
+									<Binding Path="Value" RelativeSource="{RelativeSource TemplatedParent}"/>
+									<Binding Path="Minimum" RelativeSource="{RelativeSource TemplatedParent}"/>
+									<Binding Path="Maximum" RelativeSource="{RelativeSource TemplatedParent}"/>
+									<Binding Path="Bounds.Width" RelativeSource="{RelativeSource AncestorType=Panel, AncestorLevel=1}"/>
+								</MultiBinding>
+							</Border.Width>
+						</Border>
+					</Panel>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>

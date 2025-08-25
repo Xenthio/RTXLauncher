@@ -1,0 +1,73 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+		        Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<ToggleButton Content="Toggle Button"/>
+				<ToggleButton Content="Checked" IsChecked="True"/>
+				<ToggleButton Content="Disabled" IsEnabled="False"/>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<Style Selector="ToggleButton">
+		<Setter Property="Padding" Value="10,4"/>
+		<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextBrush}"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<!-- Bevel Effect: Dark bottom/right border -->
+					<Border Name="PART_BottomBorder" BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<!-- Bevel Effect: Light top/left border -->
+					<Border Name="PART_TopBorder" BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<!-- Main background area -->
+					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
+					<!-- Content (Text) -->
+					<ContentPresenter Name="PART_ContentPresenter"
+					                  Content="{TemplateBinding Content}"
+					                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+					                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+					                  Margin="{TemplateBinding Padding}">
+
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="-1" Y="-1" />
+							<!-- Move content to simulate a misalignment quirk in vgui -->
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="ToggleButton:checked, ToggleButton:pressed">
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundColor}"/>
+	</Style>
+
+	<Style Selector="ToggleButton:checked > Panel > Border#PART_TopBorder,
+                 ToggleButton:pressed > Panel > Border#PART_TopBorder">
+		<Setter Property="BorderBrush" Value="{StaticResource VguiBorderTopInsetBrush}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+	</Style>
+
+	<Style Selector="ToggleButton:checked > Panel > Border#PART_BottomBorder,
+                 ToggleButton:pressed > Panel > Border#PART_BottomBorder">
+		<Setter Property="BorderBrush" Value="{StaticResource VguiBorderBottomInsetBrush}"/>
+		<Setter Property="BorderThickness" Value="0,0,1,1"/>
+	</Style>
+
+	<Style Selector="ToggleButton:checked > Panel > ContentPresenter,
+                 ToggleButton:pressed > Panel > ContentPresenter">
+		<Setter Property="RenderTransform" Value="none"/>
+	</Style>
+
+	<Style Selector="ToggleButton:disabled">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextFadedBrush}"/>
+	</Style>
+</Styles>

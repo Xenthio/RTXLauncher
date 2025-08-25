@@ -13,6 +13,10 @@
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/ComboBox.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/NumericUpDown.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/Window.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/ProgressBar.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/Carousel.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/ToggleButton.axaml"/>
+
 
 
 	<Styles.Resources>
