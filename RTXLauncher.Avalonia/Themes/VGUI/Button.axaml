@@ -1,5 +1,5 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
 
@@ -29,10 +29,10 @@
 					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
 					<!-- Content (Text) -->
 					<ContentPresenter Name="PART_ContentPresenter"
-                                      Content="{TemplateBinding Content}"
-                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                      Margin="{TemplateBinding Padding}">
+									  Content="{TemplateBinding Content}"
+									  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+									  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+									  Margin="{TemplateBinding Padding}">
 
 						<ContentPresenter.RenderTransform>
 							<TranslateTransform X="-1" Y="-1" />
@@ -54,10 +54,10 @@
 					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
 					<!-- Move content to simulate being pressed -->
 					<ContentPresenter Name="PART_ContentPresenter"
-                                      Content="{TemplateBinding Content}"
-                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                      Margin="{TemplateBinding Padding}">
+									  Content="{TemplateBinding Content}"
+									  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+									  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+									  Margin="{TemplateBinding Padding}">
 
 						<ContentPresenter.RenderTransform>
 							<TranslateTransform X="0" Y="0" />
@@ -68,6 +68,44 @@
 		</Setter>
 	</Style>
 	<Style Selector="Button:disabled">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
+
+					<!-- This Grid is crucial for layering the two text blocks -->
+					<Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                          Margin="{TemplateBinding Padding}">
+
+						<!-- The Shadow Text (behind). We give it a Style Class. -->
+						<ContentPresenter Name="ShadowText"
+                                          Content="{TemplateBinding Content}"
+                                          Classes="vgui-disabled-shadow"/>
+
+						<!-- The Main Text (in front). -->
+						<ContentPresenter Content="{TemplateBinding Content}">
+							<ContentPresenter.RenderTransform>
+								<TranslateTransform X="-1" Y="-1" />
+							</ContentPresenter.RenderTransform>
+						</ContentPresenter>
+					</Grid>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- 2. Create highly specific styles for the TextBlocks inside the disabled button -->
+
+	<!-- This targets the MAIN text of a disabled button -->
+	<Style Selector="Button:disabled TextBlock">
 		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledBrush}"/>
+	</Style>
+
+	<!-- This targets ONLY the SHADOW text, using the Style Class we added -->
+	<Style Selector="Button:disabled ContentPresenter.vgui-disabled-shadow TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledShadowBrush}"/>
 	</Style>
 </Styles>

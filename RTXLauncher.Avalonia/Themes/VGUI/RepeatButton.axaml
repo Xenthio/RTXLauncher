@@ -1,0 +1,45 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<!-- Whatever you're styling goes here for preview -->
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+	
+	<Style Selector="RepeatButton">
+		<!-- We can borrow the exact template from our main Button -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<Border Name="PART_Background" Background="{StaticResource VguiBackgroundBrush}" Margin="1"/>
+					<ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+	<Style Selector="RepeatButton:pressed">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<Border Background="{StaticResource VguiBackgroundBrush}" Margin="1"/>
+					<ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center">
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="1" Y="1"/>
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>

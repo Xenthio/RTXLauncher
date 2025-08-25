@@ -1,0 +1,32 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<!-- Whatever you're styling goes here for preview -->
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<Style Selector="ButtonSpinner">
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel Background="{TemplateBinding Background}">
+					<!-- The VGUI Inset Border -->
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+
+					<!-- The ContentPresenter is where the TextBox will go -->
+					<ContentPresenter Name="PART_ContentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      Margin="1"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>

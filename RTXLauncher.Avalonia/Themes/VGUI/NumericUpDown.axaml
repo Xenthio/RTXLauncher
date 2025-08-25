@@ -1,0 +1,115 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20" Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="150">
+				<TextBlock Text="Numeric Up/Down"/>
+				<NumericUpDown Value="1920"/>
+				<TextBlock Text="Disabled State"/>
+				<NumericUpDown Value="1080" IsEnabled="False"/>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<!-- ========================================================== -->
+	<!--          STYLES FOR PARTS (USING STYLE CLASSES)            -->
+	<!-- ========================================================== -->
+
+	<!-- ** FIX #1: Style for the Spinner Buttons using a CLASS ** -->
+	<Style Selector="RepeatButton.nupd-spinner">
+		<Setter Property="Width" Value="15"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<Border Name="PART_Background" Background="{StaticResource VguiBackgroundBrush}" Margin="1"/>
+					<ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+	<Style Selector="RepeatButton.nupd-spinner:pressed">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<Border Background="{StaticResource VguiBackgroundBrush}" Margin="1"/>
+					<ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center">
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="1" Y="1"/>
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- ** FIX #2: Style for the Inner TextBox using a CLASS ** -->
+	<Style Selector="TextBox.nupd-textbox">
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Padding" Value="5,0"/>
+		<!-- This template is just the bare-minimum text renderer, with no border -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<TextPresenter Name="PART_TextPresenter"
+                               Background="{TemplateBinding Background}"
+                               CaretBrush="{TemplateBinding CaretBrush}"
+                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+
+	<!-- ========================================================== -->
+	<!--                  MAIN NUMERICUPDOWN STYLE                  -->
+	<!-- ========================================================== -->
+	<Style Selector="NumericUpDown">
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextColor}"/>
+		<Setter Property="MinHeight" Value="24"/>
+		<Setter Property="MinWidth" Value="64"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel Background="{TemplateBinding Background}">
+					<!-- The main VGUI Inset Border for the whole control -->
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+
+					<Grid Margin="1" ColumnDefinitions="*,Auto">
+						<!-- The TextBox now explicitly uses our borderless class -->
+						<TextBox Name="PART_TextBox" Grid.Column="0" Classes="nupd-textbox"
+                                 Text="{TemplateBinding Text, Mode=TwoWay}"
+                                 VerticalContentAlignment="Center"/>
+
+						<Grid Grid.Column="1" IsVisible="{TemplateBinding ShowButtonSpinner}" RowDefinitions="*,*">
+							<!-- The buttons now explicitly use our spinner class -->
+							<RepeatButton Name="PART_IncreaseButton" Grid.Row="0" Classes="nupd-spinner">
+								<TextBlock Text="5" FontFamily="Marlett" FontSize="9" VerticalAlignment="Center"/>
+							</RepeatButton>
+							<RepeatButton Name="PART_DecreaseButton" Grid.Row="1" Classes="nupd-spinner">
+								<TextBlock Text="6" FontFamily="Marlett" FontSize="9" VerticalAlignment="Center"/>
+							</RepeatButton>
+						</Grid>
+					</Grid>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- Disabled State -->
+	<Style Selector="NumericUpDown:disabled">
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+	</Style>
+	<Style Selector="NumericUpDown:disabled /template/ TextBox#PART_TextBox">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledBrush}"/>
+	</Style>
+
+</Styles>

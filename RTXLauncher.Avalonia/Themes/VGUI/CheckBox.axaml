@@ -8,78 +8,98 @@
 				Background="{StaticResource VguiBackgroundBrush}">
 			<StackPanel Spacing="10" Width="250">
 				<CheckBox Content="Enabled CheckBox"/>
+				<CheckBox Content="Enabled Checked" IsChecked="True"/>
 				<CheckBox Content="Disabled CheckBox" IsEnabled="False"/>
+				<CheckBox Content="Disabled Checked" IsEnabled="False" IsChecked="True"/>
 			</StackPanel>
 		</Border>
 	</Design.PreviewWith>
 
+	<!-- 1. Base style for the CheckBox, defines the default template -->
 	<Style Selector="CheckBox">
 		<Setter Property="Cursor" Value="Hand"/>
-
 		<Setter Property="Template">
 			<ControlTemplate>
 				<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+					<Border Name="PART_CheckSquare" Width="15" Height="15" CornerRadius="1"
+                            Background="{StaticResource VguiBackgroundBrush}"
+                            BorderBrush="{StaticResource VguiCheckBorderBrush}"
+                            BorderThickness="1">
+						<TextBlock Name="PART_CheckMark" Text="a" FontFamily="Webdings" FontSize="21" ClipToBounds="False"
+                                   Foreground="{StaticResource VguiTextColor}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsVisible="False">
+							<TextBlock.RenderTransform>
+								<TranslateTransform X="-3" Y="0"/>
+							</TextBlock.RenderTransform>
+						</TextBlock>
+					</Border>
+					<ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+				</StackPanel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
 
-					<!-- The CheckBox square (now a single, flat border) -->
-					<Border Name="PART_CheckSquare"
-							Width="15" Height="15"
-							Background="{StaticResource VguiBackgroundBrush}"
-							BorderBrush="{StaticResource VguiCheckBorderBrush}"
-							BorderThickness="1"
-							CornerRadius="1">
-						<!-- Added the corner radius from your SCSS -->
+	<!-- 2. Default and :checked styles for the text label -->
+	<Style Selector="CheckBox TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
+	</Style>
+	<Style Selector="CheckBox:checked TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextActiveBrush}"/>
+	</Style>
 
-						<!-- The Check Mark -->
-						<TextBlock Name="PART_CheckMark"
-								   Text="a"
-								   FontFamily="Webdings"
-								   FontSize="21"
-								   Foreground="{StaticResource VguiTextColor}"
-								   ClipToBounds="False"
-								   HorizontalAlignment="Center"
-								   VerticalAlignment="Center"
-								   IsVisible="False">
+	<!-- 3. Show the checkmark when checked -->
+	<Style Selector="CheckBox:checked /template/ TextBlock#PART_CheckMark">
+		<Setter Property="IsVisible" Value="True"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
+
+	</Style>
+
+	<!-- ==================================================================== -->
+	<!--                REDEFINE THE TEMPLATE FOR DISABLED STATE              -->
+	<!-- ==================================================================== -->
+
+	<!-- 4. Redefine the entire template for the DISABLED state to add the shadow effect -->
+	<Style Selector="CheckBox:disabled">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+					<!-- The check square remains the same but the whole panel is semi-transparent -->
+					<Border Name="PART_CheckSquare" Width="15" Height="15" CornerRadius="1"
+                            Background="{StaticResource VguiBackgroundBrush}"
+                            BorderBrush="{StaticResource VguiCheckBorderBrush}"
+                            BorderThickness="1">
+						<TextBlock Name="PART_CheckMark" Text="a" FontFamily="Webdings" FontSize="21" ClipToBounds="False"
+                                   Foreground="{StaticResource VguiTextColor}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsVisible="False">
 							<TextBlock.RenderTransform>
 								<TranslateTransform X="-3" Y="0"/>
 							</TextBlock.RenderTransform>
 						</TextBlock>
 					</Border>
 
-					<!-- The Content (Text Label) -->
-					<ContentPresenter Name="PART_ContentPresenter"
-									  Content="{TemplateBinding Content}"
-									  VerticalAlignment="Center"/>
+					<!-- Replace the single ContentPresenter with a Grid for layering -->
+					<Grid VerticalAlignment="Center">
+						<!-- The Shadow Text (behind) -->
+						<ContentPresenter Content="{TemplateBinding Content}" Classes="vgui-disabled-shadow"/>
+						<!-- The Main Text (in front) -->
+						<ContentPresenter Content="{TemplateBinding Content}"/>
+					</Grid>
 				</StackPanel>
 			</ControlTemplate>
 		</Setter>
 	</Style>
 
-
-	<!-- 2. Style the TextBlock that is a child of the CheckBox for its DEFAULT state -->
-	<!-- This selector is MORE SPECIFIC than the global "TextBlock" selector, so it wins. -->
-	<Style Selector="CheckBox TextBlock">
-		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
-	</Style>
-
-	<!-- 3. Style the TextBlock that is a child of a CHECKED CheckBox -->
-	<!-- This is even more specific, so it overrides the default CheckBox TextBlock style. -->
-	<Style Selector="CheckBox:checked TextBlock">
-		<Setter Property="Foreground" Value="{StaticResource VguiTextActiveBrush}"/>
-	</Style>
-
-	<!-- 4. Style the TextBlock that is a child of a DISABLED CheckBox -->
-	<Style Selector="CheckBox:disabled TextBlock">
+	<!-- 5. Create highly specific styles for the TextBlocks inside the DISABLED checkbox -->
+	<Style Selector="CheckBox:disabled ContentPresenter TextBlock">
 		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledBrush}"/>
 	</Style>
-	<!-- ** END OF FIX ** -->
-
-
-	<!-- These styles for the visual parts of the template remain the same -->
-	<Style Selector="CheckBox:checked /template/ TextBlock#PART_CheckMark">
-		<Setter Property="Foreground" Value="#F2F2F2"/>
-		<Setter Property="IsVisible" Value="True"/>
+	<Style Selector="CheckBox:disabled ContentPresenter.vgui-disabled-shadow TextBlock">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextDisabledShadowBrush}"/>
 	</Style>
-	<Style Selector="CheckBox:disabled /template/ Border#PART_CheckSquare">
-		<Setter Property="Opacity" Value="0.5"/>
+
+	<Style Selector="CheckBox:disabled ContentPresenter.vgui-disabled-shadow">
+		<Setter Property="RenderTransform">
+			<TranslateTransform X="1" Y="1"/>
+		</Setter>
 	</Style>
 </Styles>

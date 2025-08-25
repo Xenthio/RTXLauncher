@@ -36,6 +36,7 @@
 		<SolidColorBrush x:Key="VguiTextActiveBrush" Color="{StaticResource VguiTextActiveColor}"/>
 		<SolidColorBrush x:Key="VguiTextLabelBrush" Color="{StaticResource VguiTextLabelColor}"/>
 		<SolidColorBrush x:Key="VguiTextDisabledBrush" Color="{StaticResource VguiTextDisabledColor}"/>
+		<SolidColorBrush x:Key="VguiTextDisabledShadowBrush" Color="{StaticResource VguiTextDisabledShadowColor}"/>
 		<SolidColorBrush x:Key="VguiTextFadedBrush" Color="{StaticResource VguiTextFadedColor}"/>
 		<SolidColorBrush x:Key="VguiBorderTopBrush" Color="{StaticResource VguiBorderTopColor}"/>
 		<SolidColorBrush x:Key="VguiBorderBottomBrush" Color="{StaticResource VguiBorderBottomColor}"/>
