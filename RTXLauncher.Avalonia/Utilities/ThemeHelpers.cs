@@ -24,6 +24,7 @@ public class ThemeHelpers : AvaloniaObject
 	static ThemeHelpers()
 	{
 		DisableFontSmoothingProperty.Changed.AddClassHandler<Control>(OnDisableFontSmoothingChanged);
+		UseCustomDecorationsProperty.Changed.AddClassHandler<Window>(OnUseCustomDecorationsChanged);
 	}
 
 	private static void OnDisableFontSmoothingChanged(Control control, AvaloniaPropertyChangedEventArgs e)
@@ -43,6 +44,28 @@ public class ThemeHelpers : AvaloniaObject
 		else
 		{
 			RenderOptions.SetTextRenderingMode(control, TextRenderingMode.SubpixelAntialias); // Revert to default
+		}
+	}
+
+	public static readonly AttachedProperty<bool> UseCustomDecorationsProperty =
+		AvaloniaProperty.RegisterAttached<ThemeHelpers, Window, bool>("UseCustomDecorations");
+
+	public static bool GetUseCustomDecorations(Window w) => w.GetValue(UseCustomDecorationsProperty);
+	public static void SetUseCustomDecorations(Window w, bool v) => w.SetValue(UseCustomDecorationsProperty, v);
+
+	private static void OnUseCustomDecorationsChanged(Window window, AvaloniaPropertyChangedEventArgs e)
+	{
+		if (e.NewValue is true)
+		{
+			window.SystemDecorations = SystemDecorations.None;
+			window.ExtendClientAreaToDecorationsHint = false;
+
+		}
+		else
+		{
+			// Revert to default OS decorations
+			window.SystemDecorations = SystemDecorations.Full;
+			window.ExtendClientAreaToDecorationsHint = false;
 		}
 	}
 }

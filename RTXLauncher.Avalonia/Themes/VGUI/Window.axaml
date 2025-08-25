@@ -1,0 +1,100 @@
+<!-- Themes/VguiTheme/Window.axaml -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:utils="using:RTXLauncher.Avalonia.Utilities">
+
+	<!-- ========================================================== -->
+	<!--          STYLES FOR THE PARTS OF OUR CUSTOM WINDOW         -->
+	<!-- ========================================================== -->
+
+	<!-- Style for the Min/Max/Close buttons -->
+	<Style Selector="Window /template/ Button.TitleBarButton">
+		<Setter Property="Width" Value="18"/>
+		<Setter Property="Height" Value="18"/>
+		<Setter Property="Margin" Value="2"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<!-- We use the standard VGUI Button template -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<ContentPresenter Content="{TemplateBinding Content}"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+	<Style Selector="Window /template/ Button.TitleBarButton:pressed">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<!-- Move content to simulate being pressed -->
+					<ContentPresenter Content="{TemplateBinding Content}">
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="1" Y="1"/>
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- ========================================================== -->
+	<!--                 MAIN CUSTOM WINDOW STYLE                   -->
+	<!-- ========================================================== -->
+	<Style Selector="Window">
+		<!-- This is the main template that redefines the entire window structure -->
+		<Setter Property="utils:ThemeHelpers.UseCustomDecorations" Value="True"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<!-- Bevel Border for the entire window -->
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+
+					<!-- Main background and layout grid -->
+					<Grid RowDefinitions="Auto,*,Auto" Background="{StaticResource VguiBackgroundBrush}" Margin="1">
+
+						<!-- 1. THE CUSTOM TITLE BAR (PART_TitleBar is required for dragging) -->
+						<Panel Name="PART_TitleBar" Grid.Row="0" Height="28" Margin="4,4,4,1">
+							<Grid ColumnDefinitions="Auto,*,Auto">
+								<!-- Icon and Title -->
+								<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+									<Image Name="PART_Icon" Source="{TemplateBinding Icon}" Width="16" Height="16"/>
+									<TextBlock Text="{TemplateBinding Title}" VerticalAlignment="Center"/>
+								</StackPanel>
+
+								<!-- Min/Max/Close Buttons -->
+								<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+									<Button Name="PART_MinimizeButton" Classes="TitleBarButton">
+										<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_minimize.png" Width="15" Height="15"/>
+									</Button>
+									<Button Name="PART_MaximizeButton" Classes="TitleBarButton">
+										<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_maximize.png" Width="15" Height="15"/>
+									</Button>
+									<Button Name="PART_CloseButton" Classes="TitleBarButton">
+										<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_close.png" Width="16" Height="16"/>
+									</Button>
+								</StackPanel>
+							</Grid>
+						</Panel>
+
+						<!-- 2. THE MAIN CONTENT (where your sidebar layout will go) -->
+						<ContentPresenter Name="PART_ContentPresenter"
+                                          Grid.Row="1"
+                                          Content="{TemplateBinding Content}"
+                                          Margin="4,0,4,4"/>
+
+						<!-- 3. THE RESIZE GRIP (optional, but good to have) -->
+						<Panel Name="PART_ResizeGrip" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+							<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_resizer.png" Width="16" Height="16"/>
+						</Panel>
+					</Grid>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+</Styles>

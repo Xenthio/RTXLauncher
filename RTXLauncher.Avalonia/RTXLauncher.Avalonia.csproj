@@ -11,11 +11,23 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\gmodrtx.png" />
+    <None Remove="Assets\icon_close.png" />
     <None Remove="Assets\icon_down.png" />
+    <None Remove="Assets\icon_maximize.png" />
+    <None Remove="Assets\icon_minimize.png" />
+    <None Remove="Assets\icon_resizer.png" />
+    <None Remove="Assets\icon_steam.png" />
+    <None Remove="Assets\icon_steam_disabled.png" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\gmodrtx.png" />
+    <AvaloniaResource Include="Assets\icon_close.png" />
     <AvaloniaResource Include="Assets\icon_down.png" />
+    <AvaloniaResource Include="Assets\icon_maximize.png" />
+    <AvaloniaResource Include="Assets\icon_minimize.png" />
+    <AvaloniaResource Include="Assets\icon_resizer.png" />
+    <AvaloniaResource Include="Assets\icon_steam.png" />
+    <AvaloniaResource Include="Assets\icon_steam_disabled.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Icon.ico" />

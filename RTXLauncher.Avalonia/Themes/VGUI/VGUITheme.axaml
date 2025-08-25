@@ -11,7 +11,10 @@
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/ListBox.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/ComboBox.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/NumericUpDown.axaml"/>
-	
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/Window.axaml"/>
+
+
+
 	<!-- ========================================================== -->
 	<!--                   DESIGN-TIME PREVIEW                      -->
 	<!-- ========================================================== -->
