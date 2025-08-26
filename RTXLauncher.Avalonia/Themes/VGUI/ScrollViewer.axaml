@@ -1,0 +1,175 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20" Background="{StaticResource VguiBackgroundBrush}">
+			<ScrollViewer Width="200" Height="150"
+						  HorizontalScrollBarVisibility="Auto"
+						  VerticalScrollBarVisibility="Auto">
+				<StackPanel Spacing="5">
+					<TextBlock Text="This is some scrollable content."/>
+					<TextBlock Text="The VGUI theme provides a retro look and feel."/>
+					<Rectangle Height="100" Width="250" Fill="{StaticResource VguiInsetBackgroundBrush}"/>
+					<TextBlock Text="End of content."/>
+				</StackPanel>
+			</ScrollViewer>
+		</Border>
+	</Design.PreviewWith>
+
+	<!-- ========================================================== -->
+	<!--                SCROLLBAR REPEATBUTTON STYLE                -->
+	<!-- ========================================================== -->
+	<Style Selector="ScrollBar /template/ RepeatButton">
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+		<Setter Property="Foreground" Value="{StaticResource VguiTextBrush}"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
+					<ContentPresenter Name="PART_ContentPresenter"
+									  Content="{TemplateBinding Content}"
+									  HorizontalAlignment="Center"
+									  VerticalAlignment="Center"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="ScrollBar /template/ RepeatButton:pressed">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderBottomInsetBrush}" BorderThickness="0,0,1,1"/>
+					<Border Background="{TemplateBinding Background}" Margin="1"/>
+					<ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center">
+						<ContentPresenter.RenderTransform>
+							<TranslateTransform X="1" Y="1"/>
+						</ContentPresenter.RenderTransform>
+					</ContentPresenter>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- ========================================================== -->
+	<!--                    SCROLLBAR THUMB STYLE                   -->
+	<!-- ========================================================== -->
+	<Style Selector="ScrollBar /template/ Thumb">
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Panel>
+					<Border BorderBrush="{StaticResource VguiBorderBottomBrush}" BorderThickness="1"/>
+					<Border BorderBrush="{StaticResource VguiBorderTopBrush}" BorderThickness="1,1,0,0"/>
+					<Border Name="PART_Background" Background="{TemplateBinding Background}" Margin="1"/>
+				</Panel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="ScrollBar /template/ Thumb:pointerover">
+		<Setter Property="Background" Value="{StaticResource VguiBackgroundBrush}"/>
+	</Style>
+
+	<!-- ========================================================== -->
+	<!--                      SCROLLBAR STYLE                       -->
+	<!-- ========================================================== -->
+	<Style Selector="ScrollBar">
+		<Setter Property="Background" Value="{StaticResource VguiInsetBackgroundBrush}"/>
+	</Style>
+
+	<!-- Vertical ScrollBar -->
+	<Style Selector="ScrollBar[Orientation=Vertical]">
+		<Setter Property="Width" Value="16"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Grid RowDefinitions="Auto, *, Auto">
+					<Border Grid.Row="1" Background="{TemplateBinding Background}">
+						<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					</Border>
+					<Track Name="PART_Track" Grid.Row="1" IsDirectionReversed="True" Orientation="Vertical">
+						<Track.DecreaseButton>
+							<RepeatButton Name="PART_PageUpButton" Interval="100" IsEnabled="False" Opacity="0"/>
+						</Track.DecreaseButton>
+						<Track.IncreaseButton>
+							<RepeatButton Name="PART_PageDownButton" Interval="100" IsEnabled="False" Opacity="0"/>
+						</Track.IncreaseButton>
+						<Thumb Name="PART_Thumb"/>
+					</Track>
+					<RepeatButton Name="PART_LineUpButton" Grid.Row="0" Height="17">
+						<TextBlock Text="{DynamicResource VguiUpArrowGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="9" VerticalAlignment="Center"/>
+					</RepeatButton>
+					<RepeatButton Name="PART_LineDownButton" Grid.Row="2" Height="17">
+						<TextBlock Text="{DynamicResource VguiDownArrowGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="9" VerticalAlignment="Center"/>
+					</RepeatButton>
+				</Grid>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- Horizontal ScrollBar -->
+	<Style Selector="ScrollBar[Orientation=Horizontal]">
+		<Setter Property="Height" Value="16"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Grid ColumnDefinitions="Auto, *, Auto">
+					<Border Grid.Column="1" Background="{TemplateBinding Background}">
+						<Border BorderBrush="{StaticResource VguiBorderTopInsetBrush}" BorderThickness="1"/>
+					</Border>
+					<Track Name="PART_Track" Grid.Column="1" IsDirectionReversed="False" Orientation="Horizontal">
+						<Track.DecreaseButton>
+							<RepeatButton Name="PART_PageUpButton" Interval="100" IsEnabled="False" Opacity="0"/>
+						</Track.DecreaseButton>
+						<Track.IncreaseButton>
+							<RepeatButton Name="PART_PageDownButton" Interval="100" IsEnabled="False" Opacity="0"/>
+						</Track.IncreaseButton>
+						<Thumb Name="PART_Thumb"/>
+					</Track>
+					<RepeatButton Name="PART_LineUpButton" Grid.Column="0" Width="17">
+						<TextBlock Text="{DynamicResource VguiLeftArrowGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="9" VerticalAlignment="Center"/>
+					</RepeatButton>
+					<RepeatButton Name="PART_LineDownButton" Grid.Column="2" Width="17">
+						<TextBlock Text="{DynamicResource VguiRightArrowGlyph}" FontFamily="{DynamicResource VguiMarlettFont}" FontSize="9" VerticalAlignment="Center"/>
+					</RepeatButton>
+				</Grid>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- ========================================================== -->
+	<!--                     SCROLLVIEWER STYLE                     -->
+	<!-- ========================================================== -->
+	<Style Selector="ScrollViewer">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+					<ScrollContentPresenter Name="PART_ContentPresenter"
+											Background="{TemplateBinding Background}"
+											Grid.Row="0" Grid.Column="0"
+											Grid.RowSpan="2" Grid.ColumnSpan="2"
+											Content="{TemplateBinding Content}"
+											Padding="{TemplateBinding Padding}"/>
+
+					<ScrollBar Name="PART_VerticalScrollBar"
+							   Grid.Row="0" Grid.Column="1"
+							   Orientation="Vertical"/>
+
+					<ScrollBar Name="PART_HorizontalScrollBar"
+							   Grid.Row="1" Grid.Column="0"
+							   Orientation="Horizontal"/>
+
+					<!-- Corner where scrollbars meet -->
+					<Rectangle Name="PART_ScrollBarsSeparator"
+							   Grid.Row="1" Grid.Column="1"
+							   Fill="{StaticResource VguiBackgroundBrush}"/>
+				</Grid>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+</Styles>
