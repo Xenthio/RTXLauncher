@@ -80,7 +80,7 @@
 							<!-- Icon and Title -->
 							<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
 								<Image Name="PART_Icon" Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Width="16" Height="16"/>
-								<TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" 
+								<TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
 										   VerticalAlignment="Center"
 										   Foreground="{StaticResource VguiTextBrush}"/>
 							</StackPanel>
@@ -123,9 +123,23 @@
 						                  Margin="4,0,4,4"/>
 
 						<!-- 3. THE RESIZE GRIP (optional, but good to have) -->
-						<Panel Name="PART_ResizeGrip" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+						<Panel Name="PART_ResizeGrip" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+						       Win32Properties.NonClientHitTestResult="BottomRight">
 							<Image Source="avares://RTXLauncher.Avalonia/Assets/icon_resizer.png" Width="16" Height="16"/>
 						</Panel>
+					</Grid>
+
+					<!-- Invisible overlay for window resizing -->
+					<Grid ColumnDefinitions="5,*,5" RowDefinitions="5,*,5">
+						<Border Grid.Row="0" Grid.Column="0" Background="Transparent" Win32Properties.NonClientHitTestResult="TopLeft" />
+						<Border Grid.Row="0" Grid.Column="2" Background="Transparent" Win32Properties.NonClientHitTestResult="TopRight" />
+						<Border Grid.Row="2" Grid.Column="0" Background="Transparent" Win32Properties.NonClientHitTestResult="BottomLeft" />
+						<Border Grid.Row="2" Grid.Column="2" Background="Transparent" Win32Properties.NonClientHitTestResult="BottomRight" />
+
+						<Border Grid.Row="0" Grid.Column="1" Background="Transparent" Win32Properties.NonClientHitTestResult="Top" />
+						<Border Grid.Row="2" Grid.Column="1" Background="Transparent" Win32Properties.NonClientHitTestResult="Bottom" />
+						<Border Grid.Row="1" Grid.Column="0" Background="Transparent" Win32Properties.NonClientHitTestResult="Left" />
+						<Border Grid.Row="1" Grid.Column="2" Background="Transparent" Win32Properties.NonClientHitTestResult="Right" />
 					</Grid>
 				</Panel>
 			</ControlTemplate>
