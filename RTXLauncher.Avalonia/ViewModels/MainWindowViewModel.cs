@@ -17,7 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
 	private readonly IMessenger _messenger;
 	private readonly IModService _modBrowserService; // Keep a reference to the service
-	private readonly PageViewModel _modsPageInstance; // Store the ModsViewModel instance
+	private readonly ModsViewModel _modsPageInstance; // Store the ModsViewModel instance
 	private readonly AddonInstallService _addonInstallService; // Store the ModsViewModel instance
 
 	// --- NEW: Properties for the Top Progress Bar ---
@@ -105,13 +105,17 @@ public partial class MainWindowViewModel : ViewModelBase
 		_selectedSidebarItem = Pages.FirstOrDefault();
 		_currentPage = _selectedSidebarItem;
 	}
-	private void ShowModDetails(ModInfo mod)
+	private void ShowModDetails(ModItemViewModel modItem)
 	{
-		Debug.WriteLine($"[MainWindowViewModel] ShowModDetails called for: '{mod.Title}'.");
+		Debug.WriteLine($"[MainWindowViewModel] ShowModDetails called for: '{modItem.Title}'.");
 
-		var detailsViewModel = new ModDetailsViewModel(mod, _modBrowserService, _addonInstallService, _messenger);
-		detailsViewModel.OnNavigateBackRequested = ShowModsList;
-
+		var detailsViewModel = new ModDetailsViewModel(modItem.Model, _modBrowserService, _addonInstallService, _messenger);
+		detailsViewModel.OnNavigateBackRequested = () =>
+		{
+			// When we navigate back, refresh the item in the main list
+			_modsPageInstance.RefreshModItem(modItem);
+			ShowModsList();
+		};
 		Debug.WriteLine("[MainWindowViewModel] New ModDetailsViewModel created. Now setting SelectedPage...");
 
 		// This is the most critical line.

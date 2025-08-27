@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ public partial class ModsViewModel : PageViewModel
 	private bool _modsLoaded;
 
 	// This Action is the key to communication. The MainWindowViewModel will subscribe to it.
-	public Action<ModInfo>? OnViewDetailsRequested { get; set; }
+	public Action<ModItemViewModel>? OnViewDetailsRequested { get; set; }
 
 	[ObservableProperty] private string? _searchText;
 	[ObservableProperty] private bool _isBusy;
@@ -61,7 +60,7 @@ public partial class ModsViewModel : PageViewModel
 			Debug.WriteLine("[ModsViewModel] Invoking OnViewDetailsRequested Action...");
 
 			// Invoke the action
-			OnViewDetailsRequested?.Invoke(modItem.Model);
+			OnViewDetailsRequested?.Invoke(modItem);
 
 			Debug.WriteLine("[ModsViewModel] OnViewDetailsRequested Action was invoked.");
 		}
@@ -69,6 +68,16 @@ public partial class ModsViewModel : PageViewModel
 		{
 			Debug.WriteLine("[ModsViewModel] ViewDetailsCommand executed but modItem was null.");
 		}
+	}
+
+	/// <summary>
+	/// Refreshes the properties of a ModItemViewModel from its underlying model.
+	/// This is useful for updating the UI after changes are made in a details view.
+	/// </summary>
+	public void RefreshModItem(ModItemViewModel? item)
+	{
+		if (item is null) return;
+		item.IsInstalled = item.Model.IsInstalled;
 	}
 
 	async partial void OnSearchTextChanged(string? value)

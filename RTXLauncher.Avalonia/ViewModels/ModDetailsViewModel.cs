@@ -83,6 +83,9 @@ public partial class ModDetailsViewModel : PageViewModel
 			};
 
 			await _modService.InstallModFileAsync(_mod, file, confirmationProvider, progress);
+
+			// Refresh installed status
+			await LoadFilesAsync();
 		}
 		catch (Exception ex)
 		{

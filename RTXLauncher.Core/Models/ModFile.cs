@@ -8,6 +8,7 @@ public class ModFile
 	public string Title { get; set; } = string.Empty;
 	public string FilePageUrl { get; set; } = string.Empty;
 	public DateTime PublishDate { get; set; }
+	public bool IsInstalled { get; set; }
 
 	// Information scraped from the FilePageUrl
 	public string? Filename { get; set; }

@@ -104,6 +104,12 @@ public class ModDBModService : IModService
 	{
 		var files = new List<ModFile>();
 		if (string.IsNullOrEmpty(mod.ModPageUrl)) return files;
+
+		var installedMods = await _installedModsService.GetInstalledModsAsync();
+		var installedFileForThisMod = installedMods
+			.FirstOrDefault(m => m.ModPageUrl.Equals(mod.ModPageUrl, StringComparison.OrdinalIgnoreCase))?
+			.FilePageUrl;
+
 		var modSlug = mod.ModPageUrl.Split('/').LastOrDefault();
 		if (string.IsNullOrEmpty(modSlug)) return files;
 		var rssUrl = $"https://rss.moddb.com/mods/{modSlug}/downloads/feed/rss.xml";
@@ -115,11 +121,13 @@ public class ModDBModService : IModService
 			var doc = XDocument.Parse(xmlString);
 			foreach (var item in doc.Descendants("item"))
 			{
+				var filePageUrl = item.Element("link")?.Value ?? string.Empty;
 				files.Add(new ModFile
 				{
 					Title = item.Element("title")?.Value ?? "N/A",
-					FilePageUrl = item.Element("link")?.Value ?? string.Empty,
-					PublishDate = DateTime.TryParse(item.Element("pubDate")?.Value, out var date) ? date : DateTime.MinValue
+					FilePageUrl = filePageUrl,
+					PublishDate = DateTime.TryParse(item.Element("pubDate")?.Value, out var date) ? date : DateTime.MinValue,
+					IsInstalled = !string.IsNullOrEmpty(installedFileForThisMod) && filePageUrl.Equals(installedFileForThisMod, StringComparison.OrdinalIgnoreCase)
 				});
 			}
 		}

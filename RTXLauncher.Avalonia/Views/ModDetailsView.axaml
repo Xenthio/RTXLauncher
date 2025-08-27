@@ -41,25 +41,33 @@
 		</StackPanel>
 
 		<!-- Files List and Progress -->
-		<Grid Grid.Row="1" RowDefinitions="*,Auto" Margin="0,20,0,0">
-			<TextBlock Text="Available Files" FontSize="16" FontWeight="Bold"/>
-			<ScrollViewer Grid.Row="0" Margin="0,30,0,0">
+		<Grid Grid.Row="1" RowDefinitions="Auto,*,Auto" Margin="0,20,0,0">
+			<TextBlock Grid.Row="0" Text="Available Files" FontSize="16" FontWeight="Bold"/>
+			<ScrollViewer Grid.Row="1" Margin="0,10,0,0">
 				<ItemsControl ItemsSource="{Binding Files}">
 					<ItemsControl.ItemTemplate>
 						<DataTemplate x:DataType="models:ModFile">
 							<Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="10">
-								<Grid ColumnDefinitions="*,Auto,Auto">
-									<StackPanel Grid.Column="0">
+								<Grid ColumnDefinitions="*,Auto">
+									<StackPanel Grid.Column="0" VerticalAlignment="Center">
 										<TextBlock Text="{Binding Title}" FontWeight="Bold"/>
 										<TextBlock Text="{Binding PublishDate, StringFormat='Published on {0:D}'}" FontSize="11" Foreground="Gray"/>
 									</StackPanel>
 
-									<!-- This button's DataContext is a ModFile object -->
-									<Button Grid.Column="2"
-                                            Content="Install"
-                                            IsEnabled="{Binding !$parent[UserControl].DataContext.IsBusy}"
-                                            Command="{Binding $parent[UserControl].DataContext.InstallFileCommand}"
-                                            CommandParameter="{Binding}"/>
+									<Panel Grid.Column="1" VerticalAlignment="Center">
+										<!-- This button's DataContext is a ModFile object -->
+										<Button Content="Install"
+                                                IsEnabled="{Binding !$parent[UserControl].DataContext.IsBusy}"
+                                                Command="{Binding $parent[UserControl].DataContext.InstallFileCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsVisible="{Binding !IsInstalled}"/>
+
+										<TextBlock Text="✔ Installed"
+                                                   Foreground="LawnGreen"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsInstalled}"/>
+									</Panel>
 								</Grid>
 							</Border>
 						</DataTemplate>
@@ -68,7 +76,7 @@
 			</ScrollViewer>
 
 			<!-- Progress Bar for Downloads -->
-			<ProgressBar Grid.Row="1"
+			<ProgressBar Grid.Row="2"
                          Value="{Binding DownloadProgress}"
                          IsVisible="{Binding IsBusy}"
                          Height="10"
