@@ -45,4 +45,23 @@ public static class GarrysModUtility
 
 		return "unknown";
 	}
+
+	/// <summary>
+	/// Get the path to the game executable (gmod.exe or hl2.exe) within the current installation.
+	/// </summary>
+	/// <returns>The full path to the executable, or null if not found.</returns>
+	public static string? FindGameExecutable()
+	{
+		// Get the launcher's current directory from the centralized utility.
+		var execPath = GarrysModUtility.GetThisInstallFolder();
+		var candidates = new[]
+		{
+			Path.Combine(execPath, "patcherlauncher.exe"),
+			Path.Combine(execPath, "bin", "win64", "gmod.exe"),
+			Path.Combine(execPath, "bin", "gmod.exe"),
+			Path.Combine(execPath, "gmod.exe"),
+			Path.Combine(execPath, "hl2.exe")
+		};
+		return candidates.FirstOrDefault(File.Exists);
+	}
 }

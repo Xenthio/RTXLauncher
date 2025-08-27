@@ -107,6 +107,19 @@ public static class SteamLibraryUtility
 		return paths;
 	}
 
+	public static string? GetSteamRoot()
+	{
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			return GetWindowsSteamInstallPathFromRegistry();
+		}
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			return GetLinuxSteamRoot();
+		}
+		return null;
+	}
+
 	/// <summary>
 	/// Finds the root Steam directory on Linux by checking common locations.
 	/// </summary>
