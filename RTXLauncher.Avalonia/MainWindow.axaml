@@ -14,7 +14,13 @@
 		<Border Grid.Row="0" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="0,0,0,10">
 			<Grid ColumnDefinitions="200,*" ColumnSpacing="0">
 				<!-- Logo Area (Width is hardcoded to match sidebar for now) -->
-				<Image Grid.Column="0" Source="/Assets/gmodrtx.png" Height="64" Stretch="Uniform" VerticalAlignment="Center"/>
+				<Image Grid.Column="0" 
+					   Source="/Assets/gmodrtx.png" 
+					   Height="64" 
+					   Stretch="Uniform" 
+					   VerticalAlignment="Center"
+					   RenderOptions.BitmapInterpolationMode="HighQuality"
+					   />
 
 				<!-- Progress Area -->
 				<Grid Grid.Column="1" RowDefinitions="Auto,Auto" VerticalAlignment="Center">
