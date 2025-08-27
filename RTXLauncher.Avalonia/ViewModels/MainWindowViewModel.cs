@@ -139,6 +139,7 @@ public partial class MainWindowViewModel : ViewModelBase
 		try
 		{
 			_settingsService.SaveSettings(_settingsData);
+			(_modBrowserService as IDisposable)?.Dispose();
 		}
 		catch (IOException ex)
 		{

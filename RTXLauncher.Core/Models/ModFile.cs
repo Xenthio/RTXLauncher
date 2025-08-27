@@ -1,4 +1,6 @@
-﻿namespace RTXLauncher.Core.Models;
+﻿using System.Net;
+
+namespace RTXLauncher.Core.Models;
 
 public class ModFile
 {
@@ -15,4 +17,6 @@ public class ModFile
 
 	// The final goal
 	public string? DirectDownloadUrl { get; set; }
+	public Cookie[]? Cookies { get; set; }
+
 }

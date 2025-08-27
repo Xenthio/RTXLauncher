@@ -2,7 +2,7 @@
 
 namespace RTXLauncher.Core.Services;
 
-public interface IModService
+public interface IModService : IDisposable
 {
 	Task<List<ModInfo>> GetAllModsAsync();
 
