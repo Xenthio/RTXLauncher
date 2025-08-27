@@ -70,7 +70,7 @@ public partial class MainWindowViewModel : ViewModelBase
 		var patchingService = new PatchingService();
 		var mountingService = new MountingService();
 		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService);
-		var modBrowserService = new ModBrowserService();
+		var modBrowserService = new ModDBModService();
 
 
 
@@ -85,6 +85,15 @@ public partial class MainWindowViewModel : ViewModelBase
 		};
 		_selectedPage = Pages.FirstOrDefault();
 	}
+
+	async partial void OnSelectedPageChanged(PageViewModel? value)
+	{
+		if (value is ModsViewModel modsViewModel)
+		{
+			await modsViewModel.LoadModsAsync();
+		}
+	}
+
 	public void OnWindowClosing()
 	{
 		try

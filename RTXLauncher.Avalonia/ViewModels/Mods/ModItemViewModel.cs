@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RTXLauncher.Core.Models; // <-- Reference the Core model
+using RTXLauncher.Core.Models;
+using System; // Add this for DateTime
 using System.Threading.Tasks;
 
 namespace RTXLauncher.Avalonia.ViewModels;
@@ -13,6 +14,11 @@ public partial class ModItemViewModel : ViewModelBase
 	[ObservableProperty] private string? _thumbnailUrl;
 	[ObservableProperty] private bool _isInstalled;
 	[ObservableProperty] private bool _isBusy;
+	[ObservableProperty] private int? _totalVisits;
+	[ObservableProperty] private DateTime? _releaseDate;
+	[ObservableProperty] private string? _genre;
+	[ObservableProperty] private int? _modId;
+	[ObservableProperty] private int? _rank;
 
 	public bool IsNotBusy => !IsBusy;
 
@@ -23,6 +29,11 @@ public partial class ModItemViewModel : ViewModelBase
 		_summary = model.Summary;
 		_thumbnailUrl = model.ThumbnailUrl;
 		_isInstalled = model.IsInstalled;
+		_totalVisits = model.TotalVisits;
+		_releaseDate = model.ReleaseDate;
+		_genre = model.Genre;
+		_modId = model.ModId;
+		_rank = model.Rank;
 	}
 
 	[RelayCommand(CanExecute = nameof(IsNotBusy))]

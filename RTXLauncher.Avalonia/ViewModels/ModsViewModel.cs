@@ -11,8 +11,9 @@ namespace RTXLauncher.Avalonia.ViewModels;
 
 public partial class ModsViewModel : PageViewModel
 {
-	private readonly ModBrowserService _modBrowserService;
+	private readonly IModService _modBrowserService;
 	private List<ModItemViewModel> _allMods = new();
+	private bool _modsLoaded;
 
 	[ObservableProperty] private string? _searchText;
 	[ObservableProperty] private bool _isBusy;
@@ -20,15 +21,16 @@ public partial class ModsViewModel : PageViewModel
 	public ObservableCollection<ModItemViewModel> Mods { get; } = new();
 
 	// The service from the Core project is passed in here.
-	public ModsViewModel(ModBrowserService modBrowserService)
+	public ModsViewModel(IModService modBrowserService)
 	{
 		Header = "Mods";
 		_modBrowserService = modBrowserService;
-		_ = LoadModsAsync();
 	}
 
-	private async Task LoadModsAsync()
+	public async Task LoadModsAsync()
 	{
+		if (_modsLoaded) return;
+
 		IsBusy = true;
 		Mods.Clear();
 		_allMods.Clear();
@@ -45,6 +47,7 @@ public partial class ModsViewModel : PageViewModel
 		}
 
 		IsBusy = false;
+		_modsLoaded = true;
 	}
 
 	// This method is called automatically when the SearchText property changes in the UI
