@@ -8,6 +8,7 @@ using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Utilities;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace RTXLauncher.Avalonia.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
 	private readonly IMessenger _messenger;
+	private readonly IModService _modBrowserService; // Keep a reference to the service
+	private readonly PageViewModel _modsPageInstance; // Store the ModsViewModel instance
 
 	// --- NEW: Properties for the Top Progress Bar ---
 
@@ -33,7 +36,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
 	public ObservableCollection<PageViewModel> Pages { get; }
 	[ObservableProperty]
-	private PageViewModel? _selectedPage;
+	private PageViewModel? _currentPage; // This will drive the ContentControl
+
+	[ObservableProperty]
+	private PageViewModel? _selectedSidebarItem; // This is for the ListBox ONLY
 
 	private readonly SettingsService _settingsService;
 	private readonly SettingsData _settingsData;
@@ -70,7 +76,17 @@ public partial class MainWindowViewModel : ViewModelBase
 		var patchingService = new PatchingService();
 		var mountingService = new MountingService();
 		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService);
-		var modBrowserService = new ModDBModService();
+		_modBrowserService = new ModDBModService();
+
+		// 1. Create the instance of ModsViewModel
+		var modsViewModel = new ModsViewModel(_modBrowserService);
+
+		// 2. ** CONNECT THE WIRE **: Subscribe to the child's request event.
+		//    When modsViewModel invokes OnViewDetailsRequested, our ShowModDetails method will run.
+		modsViewModel.OnViewDetailsRequested = ShowModDetails;
+
+		// 3. Save the instance so we can navigate back to it.
+		_modsPageInstance = modsViewModel;
 
 
 
@@ -81,16 +97,40 @@ public partial class MainWindowViewModel : ViewModelBase
 			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService),
 			new AboutViewModel(_messenger, gitHubService),
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
-			new ModsViewModel(modBrowserService),
+			modsViewModel,
 		};
-		_selectedPage = Pages.FirstOrDefault();
+		_selectedSidebarItem = Pages.FirstOrDefault();
+		_currentPage = _selectedSidebarItem;
 	}
-
-	async partial void OnSelectedPageChanged(PageViewModel? value)
+	private void ShowModDetails(ModInfo mod)
 	{
-		if (value is ModsViewModel modsViewModel)
+		Debug.WriteLine($"[MainWindowViewModel] ShowModDetails called for: '{mod.Title}'.");
+
+		var detailsViewModel = new ModDetailsViewModel(mod, _modBrowserService, _messenger);
+		detailsViewModel.OnNavigateBackRequested = ShowModsList;
+
+		Debug.WriteLine("[MainWindowViewModel] New ModDetailsViewModel created. Now setting SelectedPage...");
+
+		// This is the most critical line.
+		CurrentPage = detailsViewModel;
+
+		Debug.WriteLine($"[MainWindowViewModel] SelectedPage has been set to '{CurrentPage?.GetType().FullName}'.");
+	}
+	private void ShowModsList()
+	{
+		CurrentPage = _modsPageInstance;
+	}
+	async partial void OnSelectedSidebarItemChanged(PageViewModel? value)
+	{
+		if (value != null)
 		{
-			await modsViewModel.LoadModsAsync();
+			CurrentPage = value; // Change the content to match the sidebar selection
+
+			// mod s
+			if (value is ModsViewModel modsViewModel)
+			{
+				await modsViewModel.LoadModsAsync();
+			}
 		}
 	}
 

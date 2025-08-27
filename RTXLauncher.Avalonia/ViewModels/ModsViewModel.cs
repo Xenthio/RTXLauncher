@@ -1,9 +1,11 @@
-﻿// Avalonia/ViewModels/ModsViewModel.cs
-using CommunityToolkit.Mvvm.ComponentModel;
-using RTXLauncher.Core.Services; // <-- Reference the Core service
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using RTXLauncher.Core.Models;
+using RTXLauncher.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -15,12 +17,14 @@ public partial class ModsViewModel : PageViewModel
 	private List<ModItemViewModel> _allMods = new();
 	private bool _modsLoaded;
 
+	// This Action is the key to communication. The MainWindowViewModel will subscribe to it.
+	public Action<ModInfo>? OnViewDetailsRequested { get; set; }
+
 	[ObservableProperty] private string? _searchText;
 	[ObservableProperty] private bool _isBusy;
 
 	public ObservableCollection<ModItemViewModel> Mods { get; } = new();
 
-	// The service from the Core project is passed in here.
 	public ModsViewModel(IModService modBrowserService)
 	{
 		Header = "Mods";
@@ -30,15 +34,12 @@ public partial class ModsViewModel : PageViewModel
 	public async Task LoadModsAsync()
 	{
 		if (_modsLoaded) return;
-
 		IsBusy = true;
 		Mods.Clear();
 		_allMods.Clear();
 
-		// Call the service in the Core project to get pure data
 		var modInfos = await _modBrowserService.GetAllModsAsync();
 
-		// Convert the data Models into UI ViewModels
 		foreach (var info in modInfos)
 		{
 			var vm = new ModItemViewModel(info);
@@ -50,12 +51,30 @@ public partial class ModsViewModel : PageViewModel
 		_modsLoaded = true;
 	}
 
-	// This method is called automatically when the SearchText property changes in the UI
+	// This command is called from the "View Details" button in the View.
+	[RelayCommand]
+	private void ViewDetails(ModItemViewModel? modItem)
+	{
+		if (modItem != null)
+		{
+			Debug.WriteLine($"[ModsViewModel] ViewDetailsCommand executed for: '{modItem.Title}'.");
+			Debug.WriteLine("[ModsViewModel] Invoking OnViewDetailsRequested Action...");
+
+			// Invoke the action
+			OnViewDetailsRequested?.Invoke(modItem.Model);
+
+			Debug.WriteLine("[ModsViewModel] OnViewDetailsRequested Action was invoked.");
+		}
+		else
+		{
+			Debug.WriteLine("[ModsViewModel] ViewDetailsCommand executed but modItem was null.");
+		}
+	}
+
 	async partial void OnSearchTextChanged(string? value)
 	{
-		// This provides live, as-you-type searching
 		IsBusy = true;
-		await Task.Delay(300); // Debounce: wait a moment before searching to avoid spamming
+		await Task.Delay(300); // Debounce
 
 		Mods.Clear();
 		if (string.IsNullOrWhiteSpace(value))
