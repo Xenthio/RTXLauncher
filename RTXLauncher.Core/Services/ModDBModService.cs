@@ -10,11 +10,19 @@ namespace RTXLauncher.Core.Services;
 
 public class ModDBModService : IModService
 {
+	private readonly AddonInstallService _addonInstallService;
+	private readonly InstalledModsService _installedModsService;
 	private IBrowser? _browser;
 	private bool _isDisposed;
 
 	// Use a full browser User-Agent string consistently.
 	public readonly static string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 (RTXLauncher/1.0)";
+
+	public ModDBModService(AddonInstallService addonInstallService, InstalledModsService installedModsService)
+	{
+		_addonInstallService = addonInstallService;
+		_installedModsService = installedModsService;
+	}
 
 	private async Task EnsureBrowserAsync()
 	{
@@ -30,6 +38,9 @@ public class ModDBModService : IModService
 	{
 		await EnsureBrowserAsync();
 		var modList = new List<ModInfo>();
+		var installedMods = await _installedModsService.GetInstalledModsAsync();
+		var installedModsDict = installedMods.ToDictionary(m => m.ModPageUrl, m => m.FilePageUrl, StringComparer.OrdinalIgnoreCase);
+
 		try
 		{
 			await using var page = await _browser!.NewPageAsync();
@@ -53,15 +64,17 @@ public class ModDBModService : IModService
 					var timeNode = node.SelectSingleNode(".//span[@class='subheading']/time");
 					var genreText = timeNode?.NextSibling?.InnerText.Trim();
 					var thumbnailUrl = thumbnailNode?.GetAttributeValue("src", string.Empty);
+					var modPageUrl = "https://www.moddb.com" + titleNode?.GetAttributeValue("href", string.Empty);
 
 					var modInfo = new ModInfo
 					{
 						Title = titleNode?.InnerText.Trim() ?? "N/A",
 						Summary = summaryNode?.InnerText.Trim() ?? "N/A",
-						ModPageUrl = "https://www.moddb.com" + titleNode?.GetAttributeValue("href", string.Empty),
+						ModPageUrl = modPageUrl,
 						Author = "N/A",
 						Genre = string.IsNullOrEmpty(genreText) ? null : genreText,
-						ThumbnailUrl = thumbnailUrl
+						ThumbnailUrl = thumbnailUrl,
+						IsInstalled = installedModsDict.ContainsKey(modPageUrl)
 					};
 
 					if (int.TryParse(rankNode?.InnerText, out int rank)) modInfo.Rank = rank;
@@ -181,8 +194,11 @@ public class ModDBModService : IModService
 
 		await EnsureBrowserAsync();
 
-		var tempDownloadPath = Path.Combine(destinationPath, "temp", Guid.NewGuid().ToString());
-		Directory.CreateDirectory(tempDownloadPath);
+		var tempDownloadPath = Path.GetDirectoryName(destinationPath);
+		var finalFileName = Path.GetFileName(destinationPath);
+
+		// Puppeteer needs a directory to download to, not a file path.
+		Directory.CreateDirectory(tempDownloadPath!);
 
 		try
 		{
@@ -195,9 +211,8 @@ public class ModDBModService : IModService
 			var client = page.Client;
 			var downloadCompletionSource = new TaskCompletionSource<string>();
 			string? downloadGuid = null;
-			string? finalFilename = null; // Variable to store the real filename
+			string? suggestedFilename = null;
 
-			// Step 1: Set up the raw message handler.
 			void MessageReceivedHandler(object? sender, MessageEventArgs e)
 			{
 				try
@@ -209,8 +224,8 @@ public class ModDBModService : IModService
 							if (beginData != null)
 							{
 								downloadGuid = beginData.Guid;
-								finalFilename = beginData.SuggestedFilename; // Capture the real filename!
-								Debug.WriteLine($"[ModDBModService] Browser.downloadWillBegin: guid={downloadGuid}, filename={finalFilename}");
+								suggestedFilename = beginData.SuggestedFilename;
+								Debug.WriteLine($"[ModDBModService] Browser.downloadWillBegin: guid={downloadGuid}, filename={suggestedFilename}");
 							}
 							break;
 
@@ -221,19 +236,23 @@ public class ModDBModService : IModService
 								if (progressData.State == "completed")
 								{
 									Debug.WriteLine($"[ModDBModService] Browser.downloadProgress: COMPLETED guid={progressData.Guid}");
-									if (string.IsNullOrEmpty(finalFilename))
+									if (string.IsNullOrEmpty(suggestedFilename))
 									{
 										downloadCompletionSource.TrySetException(new Exception("Download completed but the final filename was not captured."));
 									}
 									else
 									{
-										// Complete the task with the CORRECT file path
-										downloadCompletionSource.TrySetResult(Path.Combine(tempDownloadPath, finalFilename));
+										downloadCompletionSource.TrySetResult(Path.Combine(tempDownloadPath!, suggestedFilename));
 									}
 								}
 								else if (progressData.State == "canceled")
 								{
 									downloadCompletionSource.TrySetException(new Exception("Browser download was canceled."));
+								}
+								else if (progressData.TotalBytes > 0)
+								{
+									var percentage = (double)progressData.ReceivedBytes / progressData.TotalBytes * 100;
+									progress.Report(percentage);
 								}
 							}
 							break;
@@ -243,7 +262,6 @@ public class ModDBModService : IModService
 			}
 
 			client.MessageReceived += MessageReceivedHandler;
-			progress.Report(10);
 
 			try
 			{
@@ -267,12 +285,14 @@ public class ModDBModService : IModService
 				Debug.WriteLine("[ModDBModService] Waiting for the browser download to complete...");
 				var downloadedFilePath = await downloadCompletionSource.Task.WaitAsync(TimeSpan.FromMinutes(30));
 
-				progress.Report(90);
 				Debug.WriteLine($"[ModDBModService] Download complete. File located at: {downloadedFilePath}");
 
-				File.Move(downloadedFilePath, destinationPath, true);
-
-				Debug.WriteLine($"[ModDBModService] File successfully moved to: {destinationPath}");
+				// If the downloaded file doesn't have the name we expect, rename it.
+				if (!string.Equals(Path.GetFileName(downloadedFilePath), finalFileName, StringComparison.Ordinal))
+				{
+					File.Move(downloadedFilePath, destinationPath, true);
+					Debug.WriteLine($"[ModDBModService] File successfully moved to: {destinationPath}");
+				}
 				progress.Report(100);
 			}
 			finally
@@ -287,14 +307,68 @@ public class ModDBModService : IModService
 			progress.Report(100);
 			throw;
 		}
+	}
+
+	public async Task InstallModFileAsync(ModInfo mod, ModFile file, Func<string, Task<bool>> confirmationProvider, IProgress<InstallProgressReport> progress)
+	{
+		var tempFilePath = string.Empty;
+		try
+		{
+			// Step 1: Get File Details
+			progress.Report(new InstallProgressReport { Message = "Fetching file details...", Percentage = 2 });
+			var detailedFile = await GetFileDetailsAndUrlAsync(file);
+			if (string.IsNullOrEmpty(detailedFile.DirectDownloadUrl) || string.IsNullOrEmpty(detailedFile.Filename))
+			{
+				throw new Exception("Could not retrieve file details or download URL.");
+			}
+
+			// Step 2: Download
+			tempFilePath = Path.Combine(Path.GetTempPath(), detailedFile.Filename);
+			var downloadProgress = new Progress<double>(percentage =>
+			{
+				var scaled = 5 + (percentage * 0.85); // Scale download to 5%-90%
+				progress.Report(new InstallProgressReport { Message = $"Downloading... {percentage:F1}%", Percentage = (int)scaled });
+			});
+			await DownloadFileAsync(detailedFile, tempFilePath, downloadProgress);
+			progress.Report(new InstallProgressReport { Message = "Download complete!", Percentage = 90 });
+
+			// Step 3: Install
+			var installProgress = new Progress<string>(message =>
+			{
+				progress.Report(new InstallProgressReport { Message = message, Percentage = 95 });
+			});
+			await _addonInstallService.InstallAddonAsync(tempFilePath, file.Title, confirmationProvider, installProgress);
+			progress.Report(new InstallProgressReport { Message = "Finalizing installation...", Percentage = 98 });
+
+			// Step 4: Record Installation
+			var installedInfo = new InstalledModInfo
+			{
+				ModPageUrl = mod.ModPageUrl ?? string.Empty,
+				FilePageUrl = file.FilePageUrl,
+				InstallDate = DateTime.UtcNow
+			};
+			await _installedModsService.AddInstalledModAsync(installedInfo);
+
+			mod.IsInstalled = true;
+			progress.Report(new InstallProgressReport { Message = "Installation successful!", Percentage = 100 });
+		}
 		finally
 		{
-			if (Directory.Exists(tempDownloadPath))
+			// Clean up the downloaded file
+			if (!string.IsNullOrEmpty(tempFilePath) && File.Exists(tempFilePath))
 			{
-				Directory.Delete(tempDownloadPath, true);
+				try
+				{
+					File.Delete(tempFilePath);
+				}
+				catch (Exception ex)
+				{
+					Debug.WriteLine($"[ModDBModService] Failed to clean up temp file: {ex.Message}");
+				}
 			}
 		}
 	}
+
 	public void Dispose()
 	{
 		if (_isDisposed) return;
@@ -328,4 +402,10 @@ internal class DownloadProgressEventArgs
 
 	[System.Text.Json.Serialization.JsonPropertyName("state")]
 	public string State { get; set; } = string.Empty;
+
+	[System.Text.Json.Serialization.JsonPropertyName("receivedBytes")]
+	public long ReceivedBytes { get; set; }
+
+	[System.Text.Json.Serialization.JsonPropertyName("totalBytes")]
+	public long TotalBytes { get; set; }
 }

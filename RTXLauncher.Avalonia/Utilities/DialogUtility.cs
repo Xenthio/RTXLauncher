@@ -17,4 +17,14 @@ public static class DialogUtility
 		var result = await messageBox.ShowAsync();
 		return result == ButtonResult.Yes;
 	}
+	public async static Task ShowErrorAsync(string title, string message)
+	{
+		var messageBox = MessageBoxManager.GetMessageBoxStandard(
+			title,
+			message,
+			ButtonEnum.Ok,
+			Icon.Error
+		);
+		await messageBox.ShowAsync();
+	}
 }

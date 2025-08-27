@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using RTXLauncher.Avalonia.Utilities;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using System;
@@ -13,6 +14,7 @@ public partial class ModDetailsViewModel : PageViewModel
 {
 	private readonly ModInfo _mod;
 	private readonly IModService _modService;
+	private readonly AddonInstallService _addonInstallService;
 	private readonly IMessenger _messenger;
 
 	public Action? OnNavigateBackRequested { get; set; }
@@ -30,10 +32,11 @@ public partial class ModDetailsViewModel : PageViewModel
 
 	public ObservableCollection<ModFile> Files { get; } = new();
 
-	public ModDetailsViewModel(ModInfo mod, IModService modService, IMessenger messenger)
+	public ModDetailsViewModel(ModInfo mod, IModService modService, AddonInstallService addonInstallService, IMessenger messenger)
 	{
 		_mod = mod;
 		_modService = modService;
+		_addonInstallService = addonInstallService;
 		_messenger = messenger;
 		// Combine Header with a "Back" button hint for better UX
 		Header = "‹ Mods / " + mod.Title;
@@ -64,35 +67,32 @@ public partial class ModDetailsViewModel : PageViewModel
 		if (file is null) return;
 		IsBusy = true;
 		DownloadProgress = 0;
-		ReportProgress("Preparing download...", 0);
+
 		try
 		{
-			ReportProgress($"Fetching details for {file.Title}...", 5);
-			var detailedFile = await _modService.GetFileDetailsAndUrlAsync(file);
-			if (string.IsNullOrEmpty(detailedFile.DirectDownloadUrl)) throw new Exception("Could not retrieve a valid download mirror URL.");
-
-			var destinationPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), detailedFile.Filename ?? "mod.zip");
-			ReportProgress($"Starting download to {destinationPath}...", 10);
-
-			var progress = new Progress<double>(percentage =>
+			var progress = new Progress<InstallProgressReport>(report =>
 			{
-				ReportProgress($"Downloading... {percentage:F1}%", percentage);
-				DownloadProgress = percentage;
+				ReportProgress(report.Message, report.Percentage);
+				DownloadProgress = report.Percentage;
 			});
-			await _modService.DownloadFileAsync(detailedFile, destinationPath, progress);
 
-			ReportProgress("Download complete! Starting installation...", 95);
-			await Task.Delay(1000);
-			ReportProgress("Installation successful!", 100);
-			_mod.IsInstalled = true;
+			// The confirmation provider links the core service to a UI implementation
+			Func<string, Task<bool>> confirmationProvider = async (message) =>
+			{
+				return await DialogUtility.ShowConfirmationAsync("Confirm Action", message);
+			};
+
+			await _modService.InstallModFileAsync(_mod, file, confirmationProvider, progress);
 		}
 		catch (Exception ex)
 		{
 			ReportProgress($"ERROR: {ex.Message}", 100);
+			await DialogUtility.ShowErrorAsync("Installation Failed", $"An error occurred during the installation process: {ex.Message}");
 		}
 		finally
 		{
 			IsBusy = false;
+			DownloadProgress = 0; // Reset progress bar
 		}
 	}
 

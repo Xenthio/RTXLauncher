@@ -18,6 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase
 	private readonly IMessenger _messenger;
 	private readonly IModService _modBrowserService; // Keep a reference to the service
 	private readonly PageViewModel _modsPageInstance; // Store the ModsViewModel instance
+	private readonly AddonInstallService _addonInstallService; // Store the ModsViewModel instance
 
 	// --- NEW: Properties for the Top Progress Bar ---
 
@@ -76,7 +77,9 @@ public partial class MainWindowViewModel : ViewModelBase
 		var patchingService = new PatchingService();
 		var mountingService = new MountingService();
 		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService);
-		_modBrowserService = new ModDBModService();
+		var installedModsService = new InstalledModsService();
+		_addonInstallService = new AddonInstallService();
+		_modBrowserService = new ModDBModService(_addonInstallService, installedModsService);
 
 		// 1. Create the instance of ModsViewModel
 		var modsViewModel = new ModsViewModel(_modBrowserService);
@@ -106,7 +109,7 @@ public partial class MainWindowViewModel : ViewModelBase
 	{
 		Debug.WriteLine($"[MainWindowViewModel] ShowModDetails called for: '{mod.Title}'.");
 
-		var detailsViewModel = new ModDetailsViewModel(mod, _modBrowserService, _messenger);
+		var detailsViewModel = new ModDetailsViewModel(mod, _modBrowserService, _addonInstallService, _messenger);
 		detailsViewModel.OnNavigateBackRequested = ShowModsList;
 
 		Debug.WriteLine("[MainWindowViewModel] New ModDetailsViewModel created. Now setting SelectedPage...");
