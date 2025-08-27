@@ -6,19 +6,16 @@ namespace RTXLauncher.Core.Services;
 public class AddonInstallService
 {
 	/// <summary>
-	/// Installs a mod/addon from a given file path (e.g., a downloaded zip file).
+	/// Installs a mod/addon and returns a list of created file/directory paths.
 	/// </summary>
-	/// <param name="filePath">The path to the addon file (likely a zip).</param>
-	/// <param name="addonName">A descriptive name for the addon, used for creating folders.</param>
-	/// <param name="confirmationProvider">A UI-agnostic function to ask for user confirmation.</param>
-	/// <param name="progress">An optional progress reporter.</param>
-	public async Task InstallAddonAsync(string filePath, string addonName, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress = null)
+	public async Task<List<string>> InstallAddonAsync(string filePath, string addonName, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress = null)
 	{
 		if (!File.Exists(filePath))
 			throw new FileNotFoundException("Addon file not found.", filePath);
 
 		var installFolder = GarrysModUtility.GetThisInstallFolder();
 		var tempExtractPath = Path.Combine(Path.GetTempPath(), "rtx_addon_install", Guid.NewGuid().ToString());
+		var installedPaths = new List<string>();
 
 		try
 		{
@@ -31,12 +28,11 @@ public class AddonInstallService
 			}
 			else
 			{
-				// If it's not a zip, copy the file to the temp directory to handle it uniformly
 				File.Copy(filePath, Path.Combine(tempExtractPath, Path.GetFileName(filePath)), true);
 			}
 
 			progress?.Report("Analyzing addon contents...");
-			await ProcessExtractedFiles(tempExtractPath, addonName, installFolder, confirmationProvider, progress);
+			installedPaths = await ProcessExtractedFiles(tempExtractPath, addonName, installFolder, confirmationProvider, progress);
 		}
 		finally
 		{
@@ -45,15 +41,63 @@ public class AddonInstallService
 				Directory.Delete(tempExtractPath, true);
 			}
 		}
+		return installedPaths;
 	}
 
-	private async Task ProcessExtractedFiles(string extractedPath, string addonName, string installFolder, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress)
+	/// <summary>
+	/// Uninstalls an addon by deleting the files and directories at the specified paths.
+	/// </summary>
+	public Task UninstallAddonAsync(List<string> installedPaths, IProgress<string>? progress = null)
 	{
+		return Task.Run(() =>
+		{
+			var installFolder = GarrysModUtility.GetThisInstallFolder();
+			foreach (var path in installedPaths.OrderByDescending(p => p.Length)) // Process deeper paths first
+			{
+				try
+				{
+					if (File.Exists(path))
+					{
+						progress?.Report($"Deleting file: {Path.GetFileName(path)}");
+						File.Delete(path);
+
+						// Special handling for rtx.conf: try to restore a backup
+						if (Path.GetFileName(path).Equals("rtx.conf", StringComparison.OrdinalIgnoreCase))
+						{
+							var backup = Directory.GetFiles(installFolder, "rtx.conf.backup.*")
+												  .OrderByDescending(f => f)
+												  .FirstOrDefault();
+							if (backup != null)
+							{
+								progress?.Report("Restoring rtx.conf from backup...");
+								File.Move(backup, path);
+							}
+						}
+					}
+					else if (Directory.Exists(path))
+					{
+						progress?.Report($"Deleting directory: {Path.GetFileName(path)}");
+						Directory.Delete(path, true);
+					}
+				}
+				catch (Exception ex)
+				{
+					// Log error but continue trying to uninstall other parts
+					progress?.Report($"ERROR: Could not remove '{path}'. {ex.Message}");
+				}
+			}
+		});
+	}
+
+	private async Task<List<string>> ProcessExtractedFiles(string extractedPath, string addonName, string installFolder, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress)
+	{
+		var createdPaths = new List<string>();
+
 		// Heuristic 1: Find Remix Mods (containing mod.usda)
 		var modUsdaFiles = Directory.GetFiles(extractedPath, "mod.usda", SearchOption.AllDirectories);
 		if (modUsdaFiles.Any())
 		{
-			var modUsdaFile = modUsdaFiles.First(); // Prioritize the first one found
+			var modUsdaFile = modUsdaFiles.First();
 			var modRoot = Path.GetDirectoryName(modUsdaFile);
 
 			if (modRoot != null)
@@ -61,23 +105,17 @@ public class AddonInstallService
 				var targetModsFolder = Path.Combine(installFolder, "rtx-remix", "mods");
 				Directory.CreateDirectory(targetModsFolder);
 
-				string finalModFolderName;
-				// If mod.usda is in the root of the zip, create a new folder for it.
+				string finalModFolderName = new DirectoryInfo(modRoot).Name;
 				if (Path.GetFullPath(modRoot).Equals(Path.GetFullPath(extractedPath)))
 				{
 					finalModFolderName = addonName;
-					var targetPath = Path.Combine(targetModsFolder, finalModFolderName);
-					progress?.Report($"Installing Remix mod '{addonName}'...");
-					CopyDirectory(modRoot, targetPath);
 				}
-				else // Otherwise, it's in a subdirectory, so copy that subdirectory.
-				{
-					finalModFolderName = new DirectoryInfo(modRoot).Name;
-					var targetPath = Path.Combine(targetModsFolder, finalModFolderName);
-					progress?.Report($"Installing Remix mod '{finalModFolderName}'...");
-					CopyDirectory(modRoot, targetPath);
-				}
-				return; // Remix mod installed, primary job is done.
+
+				var targetPath = Path.Combine(targetModsFolder, finalModFolderName);
+				progress?.Report($"Installing Remix mod '{finalModFolderName}'...");
+				CopyDirectory(modRoot, targetPath);
+				createdPaths.Add(targetPath); // Track the created directory
+				return createdPaths;
 			}
 		}
 
@@ -103,6 +141,7 @@ public class AddonInstallService
 					progress?.Report($"Backed up current config to {Path.GetFileName(backupPath)}");
 				}
 				File.Copy(newConfPath, existingConfPath, true);
+				createdPaths.Add(existingConfPath); // Track the replaced file
 				progress?.Report("rtx.conf has been replaced.");
 			}
 			else
@@ -110,6 +149,7 @@ public class AddonInstallService
 				progress?.Report("Skipped replacing rtx.conf.");
 			}
 		}
+		return createdPaths;
 	}
 
 	private static void CopyDirectory(string sourceDir, string destinationDir)

@@ -190,11 +190,6 @@ public class ModDBModService : IModService
 		return file;
 	}
 
-	/// <summary>
-	/// Downloads a file by listening to the browser's low-level CDP messages for download events,
-	/// and correctly identifies the final file using the 'suggestedFilename' from the event data.
-	/// This is the definitive and most robust method for handling file downloads.
-	/// </summary>
 	public async Task DownloadFileAsync(ModFile file, string destinationPath, IProgress<double> progress)
 	{
 		if (string.IsNullOrEmpty(file.DirectDownloadUrl))
@@ -205,7 +200,6 @@ public class ModDBModService : IModService
 		var tempDownloadPath = Path.GetDirectoryName(destinationPath);
 		var finalFileName = Path.GetFileName(destinationPath);
 
-		// Puppeteer needs a directory to download to, not a file path.
 		Directory.CreateDirectory(tempDownloadPath!);
 
 		try
@@ -295,7 +289,6 @@ public class ModDBModService : IModService
 
 				Debug.WriteLine($"[ModDBModService] Download complete. File located at: {downloadedFilePath}");
 
-				// If the downloaded file doesn't have the name we expect, rename it.
 				if (!string.Equals(Path.GetFileName(downloadedFilePath), finalFileName, StringComparison.Ordinal))
 				{
 					File.Move(downloadedFilePath, destinationPath, true);
@@ -322,7 +315,6 @@ public class ModDBModService : IModService
 		var tempFilePath = string.Empty;
 		try
 		{
-			// Step 1: Get File Details
 			progress.Report(new InstallProgressReport { Message = "Fetching file details...", Percentage = 2 });
 			var detailedFile = await GetFileDetailsAndUrlAsync(file);
 			if (string.IsNullOrEmpty(detailedFile.DirectDownloadUrl) || string.IsNullOrEmpty(detailedFile.Filename))
@@ -330,30 +322,28 @@ public class ModDBModService : IModService
 				throw new Exception("Could not retrieve file details or download URL.");
 			}
 
-			// Step 2: Download
 			tempFilePath = Path.Combine(Path.GetTempPath(), detailedFile.Filename);
 			var downloadProgress = new Progress<double>(percentage =>
 			{
-				var scaled = 5 + (percentage * 0.85); // Scale download to 5%-90%
+				var scaled = 5 + (percentage * 0.85);
 				progress.Report(new InstallProgressReport { Message = $"Downloading... {percentage:F1}%", Percentage = (int)scaled });
 			});
 			await DownloadFileAsync(detailedFile, tempFilePath, downloadProgress);
 			progress.Report(new InstallProgressReport { Message = "Download complete!", Percentage = 90 });
 
-			// Step 3: Install
 			var installProgress = new Progress<string>(message =>
 			{
 				progress.Report(new InstallProgressReport { Message = message, Percentage = 95 });
 			});
-			await _addonInstallService.InstallAddonAsync(tempFilePath, file.Title, confirmationProvider, installProgress);
+			var installedPaths = await _addonInstallService.InstallAddonAsync(tempFilePath, file.Title, confirmationProvider, installProgress);
 			progress.Report(new InstallProgressReport { Message = "Finalizing installation...", Percentage = 98 });
 
-			// Step 4: Record Installation
 			var installedInfo = new InstalledModInfo
 			{
 				ModPageUrl = mod.ModPageUrl ?? string.Empty,
 				FilePageUrl = file.FilePageUrl,
-				InstallDate = DateTime.UtcNow
+				InstallDate = DateTime.UtcNow,
+				InstalledPaths = installedPaths
 			};
 			await _installedModsService.AddInstalledModAsync(installedInfo);
 
@@ -362,19 +352,44 @@ public class ModDBModService : IModService
 		}
 		finally
 		{
-			// Clean up the downloaded file
 			if (!string.IsNullOrEmpty(tempFilePath) && File.Exists(tempFilePath))
 			{
-				try
-				{
-					File.Delete(tempFilePath);
-				}
-				catch (Exception ex)
-				{
-					Debug.WriteLine($"[ModDBModService] Failed to clean up temp file: {ex.Message}");
-				}
+				try { File.Delete(tempFilePath); }
+				catch (Exception ex) { Debug.WriteLine($"[ModDBModService] Failed to clean up temp file: {ex.Message}"); }
 			}
 		}
+	}
+
+	public async Task UninstallModAsync(ModInfo mod, IProgress<InstallProgressReport> progress)
+	{
+		if (mod.ModPageUrl == null)
+		{
+			throw new InvalidOperationException("Mod does not have a valid page URL.");
+		}
+
+		progress.Report(new InstallProgressReport { Message = $"Uninstalling {mod.Title}...", Percentage = 10 });
+
+		var installedMods = await _installedModsService.GetInstalledModsAsync();
+		var modToUninstall = installedMods.FirstOrDefault(m => m.ModPageUrl.Equals(mod.ModPageUrl, StringComparison.OrdinalIgnoreCase));
+
+		if (modToUninstall == null)
+		{
+			progress.Report(new InstallProgressReport { Message = "Mod not found in installed list.", Percentage = 100 });
+			return;
+		}
+
+		var uninstallProgress = new Progress<string>(message =>
+		{
+			progress.Report(new InstallProgressReport { Message = message, Percentage = 50 });
+		});
+
+		await _addonInstallService.UninstallAddonAsync(modToUninstall.InstalledPaths, uninstallProgress);
+		progress.Report(new InstallProgressReport { Message = "Removing installation record...", Percentage = 90 });
+
+		await _installedModsService.RemoveInstalledModAsync(mod.ModPageUrl);
+		mod.IsInstalled = false;
+
+		progress.Report(new InstallProgressReport { Message = "Uninstallation complete!", Percentage = 100 });
 	}
 
 	public void Dispose()

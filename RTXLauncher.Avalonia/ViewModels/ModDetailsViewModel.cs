@@ -14,7 +14,6 @@ public partial class ModDetailsViewModel : PageViewModel
 {
 	private readonly ModInfo _mod;
 	private readonly IModService _modService;
-	private readonly AddonInstallService _addonInstallService;
 	private readonly IMessenger _messenger;
 
 	public Action? OnNavigateBackRequested { get; set; }
@@ -32,13 +31,11 @@ public partial class ModDetailsViewModel : PageViewModel
 
 	public ObservableCollection<ModFile> Files { get; } = new();
 
-	public ModDetailsViewModel(ModInfo mod, IModService modService, AddonInstallService addonInstallService, IMessenger messenger)
+	public ModDetailsViewModel(ModInfo mod, IModService modService, IMessenger messenger)
 	{
 		_mod = mod;
 		_modService = modService;
-		_addonInstallService = addonInstallService;
 		_messenger = messenger;
-		// Combine Header with a "Back" button hint for better UX
 		Header = "‹ Mods / " + mod.Title;
 
 		LoadFilesCommand.Execute(null);
@@ -50,7 +47,6 @@ public partial class ModDetailsViewModel : PageViewModel
 		OnNavigateBackRequested?.Invoke();
 	}
 
-	// ... (LoadFilesAsync and InstallFileAsync are the same as the previous step) ...
 	[RelayCommand]
 	private async Task LoadFilesAsync()
 	{
@@ -76,26 +72,57 @@ public partial class ModDetailsViewModel : PageViewModel
 				DownloadProgress = report.Percentage;
 			});
 
-			// The confirmation provider links the core service to a UI implementation
 			Func<string, Task<bool>> confirmationProvider = async (message) =>
 			{
 				return await DialogUtility.ShowConfirmationAsync("Confirm Action", message);
 			};
 
 			await _modService.InstallModFileAsync(_mod, file, confirmationProvider, progress);
-
-			// Refresh installed status
-			await LoadFilesAsync();
+			await LoadFilesAsync(); // Refresh the file list
 		}
 		catch (Exception ex)
 		{
 			ReportProgress($"ERROR: {ex.Message}", 100);
-			await DialogUtility.ShowErrorAsync("Installation Failed", $"An error occurred during the installation process: {ex.Message}");
+			await DialogUtility.ShowErrorAsync("Installation Failed", $"An error occurred: {ex.Message}");
 		}
 		finally
 		{
 			IsBusy = false;
-			DownloadProgress = 0; // Reset progress bar
+			DownloadProgress = 0;
+		}
+	}
+
+	[RelayCommand]
+	private async Task UninstallFileAsync(ModFile? file)
+	{
+		if (file is null) return;
+
+		var confirm = await DialogUtility.ShowConfirmationAsync("Uninstall Mod",
+			$"Are you sure you want to uninstall '{_mod.Title}'? This will delete its files from your installation.");
+		if (!confirm) return;
+
+		IsBusy = true;
+		DownloadProgress = 0;
+		try
+		{
+			var progress = new Progress<InstallProgressReport>(report =>
+			{
+				ReportProgress(report.Message, report.Percentage);
+				DownloadProgress = report.Percentage;
+			});
+
+			await _modService.UninstallModAsync(_mod, progress);
+			await LoadFilesAsync(); // Refresh the file list
+		}
+		catch (Exception ex)
+		{
+			ReportProgress($"ERROR: {ex.Message}", 100);
+			await DialogUtility.ShowErrorAsync("Uninstallation Failed", $"An error occurred: {ex.Message}");
+		}
+		finally
+		{
+			IsBusy = false;
+			DownloadProgress = 0;
 		}
 	}
 

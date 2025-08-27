@@ -13,7 +13,7 @@ public class InstalledModsService
 	public InstalledModsService()
 	{
 		var installFolder = GarrysModUtility.GetThisInstallFolder();
-		_filePath = Path.Combine(installFolder, "gmrtx-installedmods.json");
+		_filePath = Path.Combine(installFolder, "installedmods.json");
 	}
 
 	public async Task<List<InstalledModInfo>> GetInstalledModsAsync()
@@ -50,6 +50,16 @@ public class InstalledModsService
 		mods.RemoveAll(m => m.ModPageUrl.Equals(mod.ModPageUrl, StringComparison.OrdinalIgnoreCase));
 		mods.Add(mod);
 		await SaveAsync();
+	}
+
+	public async Task RemoveInstalledModAsync(string modPageUrl)
+	{
+		var mods = await GetInstalledModsAsync();
+		var removedCount = mods.RemoveAll(m => m.ModPageUrl.Equals(modPageUrl, StringComparison.OrdinalIgnoreCase));
+		if (removedCount > 0)
+		{
+			await SaveAsync();
+		}
 	}
 
 	private async Task SaveAsync()

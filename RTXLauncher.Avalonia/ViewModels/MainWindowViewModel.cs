@@ -109,7 +109,7 @@ public partial class MainWindowViewModel : ViewModelBase
 	{
 		Debug.WriteLine($"[MainWindowViewModel] ShowModDetails called for: '{modItem.Title}'.");
 
-		var detailsViewModel = new ModDetailsViewModel(modItem.Model, _modBrowserService, _addonInstallService, _messenger);
+		var detailsViewModel = new ModDetailsViewModel(modItem.Model, _modBrowserService, _messenger);
 		detailsViewModel.OnNavigateBackRequested = () =>
 		{
 			// When we navigate back, refresh the item in the main list

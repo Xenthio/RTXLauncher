@@ -54,20 +54,28 @@
 										<TextBlock Text="{Binding PublishDate, StringFormat='Published on {0:D}'}" FontSize="11" Foreground="Gray"/>
 									</StackPanel>
 
-									<Panel Grid.Column="1" VerticalAlignment="Center">
-										<!-- This button's DataContext is a ModFile object -->
+									<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+										<!-- Install Button -->
 										<Button Content="Install"
                                                 IsEnabled="{Binding !$parent[UserControl].DataContext.IsBusy}"
                                                 Command="{Binding $parent[UserControl].DataContext.InstallFileCommand}"
                                                 CommandParameter="{Binding}"
                                                 IsVisible="{Binding !IsInstalled}"/>
 
-										<TextBlock Text="✔ Installed"
-                                                   Foreground="LawnGreen"
-                                                   FontWeight="Bold"
-                                                   VerticalAlignment="Center"
-                                                   IsVisible="{Binding IsInstalled}"/>
-									</Panel>
+										<!-- Installed Indicator & Uninstall Button -->
+										<Panel IsVisible="{Binding IsInstalled}">
+											<TextBlock Text="✔ Installed"
+                                                       Foreground="LawnGreen"
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"/>
+											<Button Content="Uninstall"
+                                                    Classes="destructive"
+                                                    IsEnabled="{Binding !$parent[UserControl].DataContext.IsBusy}"
+                                                    Command="{Binding $parent[UserControl].DataContext.UninstallFileCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Margin="90,0,0,0"/>
+										</Panel>
+									</StackPanel>
 								</Grid>
 							</Border>
 						</DataTemplate>
