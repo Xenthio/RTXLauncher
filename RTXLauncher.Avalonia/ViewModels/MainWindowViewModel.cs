@@ -102,6 +102,23 @@ public partial class MainWindowViewModel : ViewModelBase
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
 			modsViewModel,
 		};
+
+		var setupViewModel = new SetupViewModel(quickInstallService, _messenger);
+
+		// if not installed, show setup first, else put it before advanced install
+		var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
+		if (installType == "unknown")
+		{
+			Pages.Insert(0, setupViewModel);
+		}
+		else
+		{
+			// get pos of advanced install
+			var advInstallIndex = Pages.IndexOf(Pages.First(p => p is AdvancedInstallViewModel));
+			Pages.Insert(advInstallIndex, setupViewModel);
+		}
+
+
 		_selectedSidebarItem = Pages.FirstOrDefault();
 		_currentPage = _selectedSidebarItem;
 	}
