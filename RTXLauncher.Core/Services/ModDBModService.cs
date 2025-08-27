@@ -3,6 +3,7 @@ using PuppeteerSharp;
 using RTXLauncher.Core.Models;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace RTXLauncher.Core.Services;
 
@@ -114,4 +115,129 @@ public class ModDBModService : IModService
 		Debug.WriteLine($"[ModDBModService] Finished fetching. Returning {modList.Count} mods.");
 		return modList;
 	}
+
+	// Method 1: Get file list from RSS (uses HttpClient for speed)
+	public async Task<List<ModFile>> GetFilesForModAsync(ModInfo mod)
+	{
+		var files = new List<ModFile>();
+		if (mod.ModPageUrl == null) return files;
+
+		// Extract the mod's "slug" (e.g., "gm-bigcity-rtx") from its URL
+		var modSlug = mod.ModPageUrl.Split('/').Last();
+		var rssUrl = $"https://rss.moddb.com/mods/{modSlug}/downloads/feed/rss.xml";
+
+		try
+		{
+			using var httpClient = new HttpClient();
+			httpClient.DefaultRequestHeaders.Add("User-Agent", "RTXLauncherApp/1.0");
+			var xmlString = await httpClient.GetStringAsync(rssUrl);
+
+			var doc = XDocument.Parse(xmlString);
+			foreach (var item in doc.Descendants("item"))
+			{
+				var file = new ModFile
+				{
+					Title = item.Element("title")?.Value ?? "N/A",
+					FilePageUrl = item.Element("link")?.Value ?? string.Empty,
+					PublishDate = DateTime.TryParse(item.Element("pubDate")?.Value, out var date) ? date : DateTime.MinValue
+				};
+				files.Add(file);
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"[ModDBModService] Error fetching RSS feed: {ex.Message}");
+		}
+
+		// Return the newest files first
+		return files.OrderByDescending(f => f.PublishDate).ToList();
+	}
+
+	// Method 2: Get details and final URL (uses Puppeteer for navigation)
+	public async Task<ModFile> GetFileDetailsAndUrlAsync(ModFile file)
+	{
+		IBrowser browser = null;
+		try
+		{
+			var browserFetcher = new BrowserFetcher();
+			await browserFetcher.DownloadAsync();
+			browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true, Args = new[] { "--no-sandbox" } });
+			await using var page = await browser.NewPageAsync();
+
+			// 1. Go to the file's detail page
+			await page.GoToAsync(file.FilePageUrl);
+
+			// 2. Scrape all details from this page
+			var filenameNode = await page.QuerySelectorAsync("#downloadsinfo .row:nth-child(2) .summary");
+			file.Filename = (await filenameNode?.GetPropertyAsync("textContent"))?.RemoteObject.Value?.ToString()?.Trim();
+
+			var uploaderNode = await page.QuerySelectorAsync("#downloadsinfo .row:nth-child(4) .summary a");
+			file.Uploader = (await uploaderNode?.GetPropertyAsync("textContent"))?.RemoteObject.Value?.ToString()?.Trim();
+
+			var sizeNode = await page.QuerySelectorAsync("#downloadsinfo .row:nth-child(6) .summary");
+			var sizeText = (await sizeNode?.GetPropertyAsync("textContent"))?.RemoteObject.Value?.ToString()?.Trim() ?? "";
+			var match = Regex.Match(sizeText, @"\(([\d,]+) bytes\)");
+			if (match.Success)
+				file.SizeInBytes = long.Parse(match.Groups[1].Value.Replace(",", ""));
+
+			var hashNode = await page.QuerySelectorAsync("#downloadsinfo .row:nth-child(8) .summary");
+			file.Md5Hash = (await hashNode?.GetPropertyAsync("textContent"))?.RemoteObject.Value?.ToString()?.Trim();
+
+			// 3. Get the intermediate "/downloads/start/..." link
+			var startLinkNode = await page.QuerySelectorAsync("a#downloadmirrorstoggle");
+			var startLink = "https://www.moddb.com" + (await startLinkNode?.GetPropertyAsync("href"))?.RemoteObject.Value?.ToString();
+
+			// 4. Go to the intermediate page
+			if (!string.IsNullOrEmpty(startLink))
+			{
+				await page.GoToAsync(startLink);
+
+				// 5. Find the final mirror link on the new page
+				var mirrorLinkNode = await page.QuerySelectorAsync("p > a");
+				var mirrorLink = (await mirrorLinkNode?.GetPropertyAsync("href"))?.RemoteObject.Value?.ToString();
+				file.DirectDownloadUrl = mirrorLink;
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"[ModDBModService] Error getting file details: {ex.Message}");
+		}
+		finally
+		{
+			if (browser != null) await browser.CloseAsync();
+		}
+
+		return file;
+	}
+
+	// Method 3: Download the file (uses HttpClient for performance)
+	public async Task DownloadFileAsync(ModFile file, string destinationPath, IProgress<double> progress)
+	{
+		if (string.IsNullOrEmpty(file.DirectDownloadUrl))
+			throw new InvalidOperationException("Direct download URL is not available.");
+
+		using var client = new HttpClient();
+		using var response = await client.GetAsync(file.DirectDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
+		response.EnsureSuccessStatusCode();
+
+		var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+		var totalBytesRead = 0L;
+
+		using var contentStream = await response.Content.ReadAsStreamAsync();
+		using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+
+		var buffer = new byte[8192];
+		int bytesRead;
+		while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+		{
+			await fileStream.WriteAsync(buffer, 0, bytesRead);
+			totalBytesRead += bytesRead;
+
+			if (totalBytes != -1)
+			{
+				progress.Report((double)totalBytesRead / totalBytes * 100);
+			}
+		}
+	}
+
 }
