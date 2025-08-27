@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+             xmlns:models="using:RTXLauncher.Core.Models"
              xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
              xmlns:converters="using:RTXLauncher.Avalonia.Converters"
              x:Class="RTXLauncher.Avalonia.Views.ModsView"
@@ -10,11 +11,17 @@
 		<converters:StringIsNullOrEmptyConverter x:Key="StringIsVisibleConverter"/>
 	</UserControl.Resources>
 
-	<Grid RowDefinitions="Auto,Auto,*" Margin="10" RowSpacing="10">
-		<!-- Search and Status Area -->
-		<Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-			<TextBox Grid.Column="0" Text="{Binding SearchText, Mode=TwoWay}" Watermark="Search for mods by title or author..."/>
-			<ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Width="100" Margin="10,0,0,0"/>
+	<Grid RowDefinitions="Auto,Auto,*,Auto" Margin="10" RowSpacing="10">
+		<!-- Search and Filter Area -->
+		<Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+			<TextBox Grid.Column="0" Text="{Binding QueryOptions.SearchText, Mode=TwoWay}" Watermark="Search for mods..." KeyUp="SearchBox_KeyUp"/>
+			<ComboBox Grid.Column="1"
+			          ItemsSource="{Binding SortOptions}"
+			          SelectedItem="{Binding SelectedSortOption}"
+			          DisplayMemberBinding="{Binding Key}"
+			          Width="180"/>
+			<Button Grid.Column="2" Content="Apply Filters" Command="{Binding ApplyFiltersCommand}"/>
+			<ProgressBar Grid.Column="3" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Width="100"/>
 		</Grid>
 
 		<!-- ModDB Notice -->
@@ -76,5 +83,12 @@
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>
 		</ScrollViewer>
+
+		<!-- Pagination Area -->
+		<StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+			<Button Content="‹ Previous" Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanGoToPreviousPage}"/>
+			<TextBlock Text="{Binding QueryOptions.Page, StringFormat='Page {0}'}" VerticalAlignment="Center"/>
+			<Button Content="Next ›" Command="{Binding NextPageCommand}" IsEnabled="{Binding CanGoToNextPage}"/>
+		</StackPanel>
 	</Grid>
 </UserControl>

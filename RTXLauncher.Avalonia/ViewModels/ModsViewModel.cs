@@ -1,10 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,92 +12,97 @@ namespace RTXLauncher.Avalonia.ViewModels;
 
 public partial class ModsViewModel : PageViewModel
 {
-	private readonly IModService _modBrowserService;
-	private List<ModItemViewModel> _allMods = new();
-	private bool _modsLoaded;
-
-	// This Action is the key to communication. The MainWindowViewModel will subscribe to it.
+	private readonly IModService _modService;
 	public Action<ModItemViewModel>? OnViewDetailsRequested { get; set; }
 
-	[ObservableProperty] private string? _searchText;
 	[ObservableProperty] private bool _isBusy;
+	[ObservableProperty] private bool _canGoToPreviousPage;
+	[ObservableProperty] private bool _canGoToNextPage;
 
+	public ModQueryOptions QueryOptions { get; } = new();
 	public ObservableCollection<ModItemViewModel> Mods { get; } = new();
 
-	public ModsViewModel(IModService modBrowserService)
+	public Dictionary<string, string> SortOptions { get; } = new()
 	{
-		Header = "Mods";
-		_modBrowserService = modBrowserService;
-	}
+		{ "Popular (All Time)", "visitstotal-desc" },
+		{ "Popular (Today)", "ranktoday-asc" },
+		{ "Newest First", "dateup-desc" },
+		{ "Oldest First", "dateup-asc" },
+		{ "Name (A-Z)", "name-asc" }
+	};
 
+	[ObservableProperty]
+	private KeyValuePair<string, string> _selectedSortOption;
+
+	public ModsViewModel(IModService modService)
+	{
+		_modService = modService;
+		Header = "Mods";
+		_selectedSortOption = SortOptions.First(); // Set default sort order
+	}
 	public async Task LoadModsAsync()
 	{
-		if (_modsLoaded) return;
 		IsBusy = true;
 		Mods.Clear();
-		_allMods.Clear();
 
-		var modInfos = await _modBrowserService.GetAllModsAsync();
+		QueryOptions.SortOrder = SelectedSortOption.Value;
+		var mods = await _modService.GetAllModsAsync(QueryOptions);
 
-		foreach (var info in modInfos)
+		foreach (var mod in mods)
 		{
-			var vm = new ModItemViewModel(info);
-			_allMods.Add(vm);
-			Mods.Add(vm);
+			Mods.Add(new ModItemViewModel(mod));
 		}
 
+		UpdatePagination();
 		IsBusy = false;
-		_modsLoaded = true;
 	}
 
-	// This command is called from the "View Details" button in the View.
 	[RelayCommand]
-	private void ViewDetails(ModItemViewModel? modItem)
+	private async Task ApplyFiltersAsync()
 	{
-		if (modItem != null)
-		{
-			Debug.WriteLine($"[ModsViewModel] ViewDetailsCommand executed for: '{modItem.Title}'.");
-			Debug.WriteLine("[ModsViewModel] Invoking OnViewDetailsRequested Action...");
+		QueryOptions.Page = 1; // Reset to first page for new search/filter
+		await LoadModsAsync();
+	}
 
-			// Invoke the action
-			OnViewDetailsRequested?.Invoke(modItem);
+	[RelayCommand]
+	private async Task NextPageAsync()
+	{
+		if (!CanGoToNextPage) return;
+		QueryOptions.Page++;
+		await LoadModsAsync();
+	}
 
-			Debug.WriteLine("[ModsViewModel] OnViewDetailsRequested Action was invoked.");
-		}
-		else
+	[RelayCommand]
+	private async Task PreviousPageAsync()
+	{
+		if (!CanGoToPreviousPage) return;
+		QueryOptions.Page--;
+		await LoadModsAsync();
+	}
+
+	private void UpdatePagination()
+	{
+		CanGoToPreviousPage = QueryOptions.Page > 1;
+		// We can go to the next page if we got a full page of results (ModDB shows 30 per page)
+		CanGoToNextPage = Mods.Count == 30;
+	}
+
+	[RelayCommand]
+	private void ViewDetails(ModItemViewModel? item)
+	{
+		if (item != null)
 		{
-			Debug.WriteLine("[ModsViewModel] ViewDetailsCommand executed but modItem was null.");
+			OnViewDetailsRequested?.Invoke(item);
 		}
 	}
 
-	/// <summary>
-	/// Refreshes the properties of a ModItemViewModel from its underlying model.
-	/// This is useful for updating the UI after changes are made in a details view.
-	/// </summary>
 	public void RefreshModItem(ModItemViewModel? item)
 	{
 		if (item is null) return;
-		item.IsInstalled = item.Model.IsInstalled;
-	}
-
-	async partial void OnSearchTextChanged(string? value)
-	{
-		IsBusy = true;
-		await Task.Delay(300); // Debounce
-
-		Mods.Clear();
-		if (string.IsNullOrWhiteSpace(value))
+		var displayedItem = Mods.FirstOrDefault(m => m.Model.ModPageUrl == item.Model.ModPageUrl);
+		if (displayedItem != null)
 		{
-			foreach (var mod in _allMods) Mods.Add(mod);
+			displayedItem.IsInstalled = item.Model.IsInstalled;
 		}
-		else
-		{
-			var filteredMods = _allMods.Where(m =>
-				m.Title.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-				m.Author.Contains(value, StringComparison.OrdinalIgnoreCase));
-
-			foreach (var mod in filteredMods) Mods.Add(mod);
-		}
-		IsBusy = false;
 	}
 }

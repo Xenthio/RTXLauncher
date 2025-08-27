@@ -34,7 +34,7 @@ public class ModDBModService : IModService
 		Debug.WriteLine("[ModDBModService] Shared browser instance created.");
 	}
 
-	public async Task<List<ModInfo>> GetAllModsAsync()
+	public async Task<List<ModInfo>> GetAllModsAsync(ModQueryOptions options)
 	{
 		await EnsureBrowserAsync();
 		var modList = new List<ModInfo>();
@@ -43,9 +43,12 @@ public class ModDBModService : IModService
 
 		try
 		{
+			var query = options.ToUrlQuery();
+			var modsUrl = $"https://www.moddb.com/games/garrys-mod-10/mods/page/{options.Page}?{query}";
+			Debug.WriteLine($"[ModDBModService] Navigating to: {modsUrl}");
+
 			await using var page = await _browser!.NewPageAsync();
 			await page.SetUserAgentAsync(UserAgent);
-			const string modsUrl = "https://www.moddb.com/games/garrys-mod-10/mods/page/1?filter=t&rtx=1&sort=visitstotal-desc";
 			await page.GoToAsync(modsUrl, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 } });
 			var html = await page.GetContentAsync();
 
@@ -262,6 +265,8 @@ public class ModDBModService : IModService
 				}
 				catch (Exception ex) { Debug.WriteLine($"[ModDBModService] Error processing CDP message: {ex.Message}"); }
 			}
+
+
 
 			client.MessageReceived += MessageReceivedHandler;
 

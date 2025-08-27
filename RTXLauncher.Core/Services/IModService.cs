@@ -4,7 +4,7 @@ namespace RTXLauncher.Core.Services;
 
 public interface IModService : IDisposable
 {
-	Task<List<ModInfo>> GetAllModsAsync();
+	Task<List<ModInfo>> GetAllModsAsync(ModQueryOptions options);
 	Task<List<ModFile>> GetFilesForModAsync(ModInfo mod);
 	Task<ModFile> GetFileDetailsAndUrlAsync(ModFile file);
 	Task DownloadFileAsync(ModFile file, string destinationPath, IProgress<double> progress);

@@ -3,7 +3,7 @@
         xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
         x:Class="RTXLauncher.Avalonia.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="Garry's Mod RTX Launcher" Width="850" Height="600">
+        Title="Garry's Mod RTX Launcher" Width="870" Height="600">
 
 	<!-- Grid is now 3 rows: Top Bar, Main Content, Bottom Buttons -->
 	<Grid RowDefinitions="Auto,*,Auto" Margin="10" RowSpacing="10">
