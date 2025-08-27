@@ -223,4 +223,21 @@ public static class LauncherUtility
 		if (sb.Length > 0) yield return sb.ToString();
 	}
 
+	public static readonly List<string> CommonResolutions = new()
+	{
+		"3840x2160",
+		"3440x1440",
+		"2560x1600",
+		"2560x1440",
+		"2560x1080",
+		"1920x1200",
+		"1920x1080",
+		"1680x1050",
+		"1600x900",
+		"1440x900",
+		"1366x768",
+		"1280x800",
+		"1280x720"
+	};
+
 }

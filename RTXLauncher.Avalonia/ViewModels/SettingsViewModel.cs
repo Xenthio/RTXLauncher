@@ -6,6 +6,7 @@ using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Utilities;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -24,6 +25,9 @@ public partial class SettingsViewModel : PageViewModel
 	// --- UI State Properties ---
 	[ObservableProperty] private bool _isQuickInstallVisible;
 	[ObservableProperty] private bool _isBusy;
+	[ObservableProperty] private string _selectedResolution;
+
+	public List<string> Resolutions { get; }
 
 	public SettingsViewModel(
 		SettingsData settingsData, // The loaded settings are passed in
@@ -35,7 +39,45 @@ public partial class SettingsViewModel : PageViewModel
 		_quickInstallService = quickInstallService;
 		_messenger = messenger;
 
+		Resolutions = new List<string> { "Native Resolution" };
+		Resolutions.AddRange(LauncherUtility.CommonResolutions);
+
+		if (settingsData.Width == 0 || settingsData.Height == 0)
+		{
+			SelectedResolution = "Native Resolution";
+		}
+		else
+		{
+			if (Resolutions.Contains($"{settingsData.Width}x{settingsData.Height}"))
+			{
+				SelectedResolution = $"{settingsData.Width}x{settingsData.Height}";
+			}
+			else
+			{
+				UseCustomResolution = true;
+				SelectedResolution = $"{settingsData.Width}x{settingsData.Height}";
+			}
+		}
+
 		CheckInstallationStatus();
+	}
+
+	partial void OnSelectedResolutionChanged(string value)
+	{
+		if (value == "Native Resolution")
+		{
+			Width = 0;
+			Height = 0;
+		}
+		else
+		{
+			var parts = value.Split('x');
+			if (parts.Length == 2 && int.TryParse(parts[0], out var width) && int.TryParse(parts[1], out var height))
+			{
+				Width = width;
+				Height = height;
+			}
+		}
 	}
 
 	// ===================================================================
