@@ -9,7 +9,7 @@ public class QuickInstallService
 {
 	// Define the recommended sources as constants
 	private const string RecommendedRemixSource = "sambow23/dxvk-remix-gmod";
-	private const string RecommendedFixesSource = "Xenthio/gmod-rtx-fixes-2 (Any)";
+	private const string RecommendedFixesSource = "Xenthio/garrys-mod-rtx-remixed (Any)";
 	private const string RecommendedPatchesSourceX64 = "sambow23/SourceRTXTweaks";
 	private const string RecommendedPatchesSourceX86 = "BlueAmulet/SourceRTXTweaks";
 
@@ -77,7 +77,7 @@ public class QuickInstallService
 
 		// Step 5: Install recommended fixes package
 		progress.Report(new InstallProgressReport { Message = "Fetching recommended fixes package...", Percentage = 80 });
-		var (fixesOwner, fixesRepo) = ("Xenthio", "gmod-rtx-fixes-2"); // From constant
+		var (fixesOwner, fixesRepo) = ("Xenthio", "garrys-mod-rtx-remixed"); // From constant
 		var fixesReleases = await _githubService.FetchReleasesAsync(fixesOwner, fixesRepo);
 		var latestFixes = fixesReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault()
 			?? throw new Exception("Could not find any fixes packages.");
