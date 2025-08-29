@@ -13,6 +13,7 @@ public class ModDBModService : IModService
 	private readonly AddonInstallService _addonInstallService;
 	private readonly InstalledModsService _installedModsService;
 	private IBrowser? _browser;
+	private IPage? _page; // Reusable page instance for performance
 	private bool _isDisposed;
 
 	// Use a full browser User-Agent string consistently.
@@ -30,13 +31,51 @@ public class ModDBModService : IModService
 		Debug.WriteLine("[ModDBModService] Creating new shared browser instance...");
 		var browserFetcher = new BrowserFetcher();
 		await browserFetcher.DownloadAsync();
-		_browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true, Args = new[] { "--no-sandbox" } });
+		_browser = await Puppeteer.LaunchAsync(new LaunchOptions
+		{
+			Headless = true,
+			Args = new[] { "--no-sandbox" }
+		});
 		Debug.WriteLine("[ModDBModService] Shared browser instance created.");
+	}
+
+	/// <summary>
+	/// OPTIMIZATION: Ensures a shared, persistent page is created and configured for speed.
+	/// </summary>
+	private async Task EnsurePageAsync()
+	{
+		await EnsureBrowserAsync();
+		if (_page != null && !_page.IsClosed) return;
+
+		Debug.WriteLine("[ModDBModService] Creating new shared page instance...");
+		_page = await _browser!.NewPageAsync();
+		await _page.SetUserAgentAsync(UserAgent);
+
+		// --- THE #1 PERFORMANCE OPTIMIZATION: REQUEST BLOCKING ---
+		await _page.SetRequestInterceptionAsync(true);
+		_page.Request += (sender, e) =>
+		{
+			var resourceType = e.Request.ResourceType;
+			if (resourceType == ResourceType.Image ||
+				resourceType == ResourceType.StyleSheet ||
+				resourceType == ResourceType.Font ||
+				resourceType == ResourceType.Media)
+			{
+				// Abort unnecessary requests to speed up page loading.
+				_ = e.Request.AbortAsync();
+			}
+			else
+			{
+				// Allow essential requests (documents, scripts, etc.).
+				_ = e.Request.ContinueAsync();
+			}
+		};
+		Debug.WriteLine("[ModDBModService] Shared page created with request interception enabled.");
 	}
 
 	public async Task<List<ModInfo>> GetAllModsAsync(ModQueryOptions options)
 	{
-		await EnsureBrowserAsync();
+		await EnsurePageAsync();
 		var modList = new List<ModInfo>();
 		var installedMods = await _installedModsService.GetInstalledModsAsync();
 		var installedModsDict = installedMods.ToDictionary(m => m.ModPageUrl, m => m.FilePageUrl, StringComparer.OrdinalIgnoreCase);
@@ -47,10 +86,9 @@ public class ModDBModService : IModService
 			var modsUrl = $"https://www.moddb.com/games/garrys-mod-10/mods/page/{options.Page}?{query}";
 			Debug.WriteLine($"[ModDBModService] Navigating to: {modsUrl}");
 
-			await using var page = await _browser!.NewPageAsync();
-			await page.SetUserAgentAsync(UserAgent);
-			await page.GoToAsync(modsUrl, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 } });
-			var html = await page.GetContentAsync();
+			// Use the shared page instance
+			await _page!.GoToAsync(modsUrl, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 } });
+			var html = await _page.GetContentAsync();
 
 			var doc = new HtmlDocument();
 			doc.LoadHtml(html);
@@ -99,7 +137,11 @@ public class ModDBModService : IModService
 				}
 			}
 		}
-		catch (Exception ex) { Debug.WriteLine($"[ModDBModService] FATAL Error getting mod list: {ex}"); }
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"[ModDBModService] FATAL Error getting mod list: {ex}. Resetting page.");
+			if (_page != null) { await _page.CloseAsync(); _page = null; }
+		}
 		return modList;
 	}
 
@@ -107,12 +149,10 @@ public class ModDBModService : IModService
 	{
 		var files = new List<ModFile>();
 		if (string.IsNullOrEmpty(mod.ModPageUrl)) return files;
-
 		var installedMods = await _installedModsService.GetInstalledModsAsync();
 		var installedFileForThisMod = installedMods
 			.FirstOrDefault(m => m.ModPageUrl.Equals(mod.ModPageUrl, StringComparison.OrdinalIgnoreCase))?
 			.FilePageUrl;
-
 		var modSlug = mod.ModPageUrl.Split('/').LastOrDefault();
 		if (string.IsNullOrEmpty(modSlug)) return files;
 		var rssUrl = $"https://rss.moddb.com/mods/{modSlug}/downloads/feed/rss.xml";
@@ -140,21 +180,18 @@ public class ModDBModService : IModService
 
 	public async Task<ModFile> GetFileDetailsAndUrlAsync(ModFile file)
 	{
-		await EnsureBrowserAsync();
+		await EnsurePageAsync();
 		try
 		{
-			await using var page = await _browser!.NewPageAsync();
-			await page.SetUserAgentAsync(UserAgent);
-
 			Debug.WriteLine($"[ModDBModService] Navigating to file page: {file.FilePageUrl}");
-			await page.GoToAsync(file.FilePageUrl, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 }, Timeout = 25000 });
+			await _page!.GoToAsync(file.FilePageUrl, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 }, Timeout = 25000 });
 
 			async Task<string?> GetElementText(string selector)
 			{
 				try
 				{
-					await page.WaitForSelectorAsync(selector, new WaitForSelectorOptions { Timeout = 7000 });
-					return await page.EvaluateExpressionAsync<string>($"document.querySelector('{selector}').textContent");
+					await _page.WaitForSelectorAsync(selector, new WaitForSelectorOptions { Timeout = 7000 });
+					return await _page.EvaluateExpressionAsync<string>($"document.querySelector('{selector}').textContent");
 				}
 				catch (WaitTaskTimeoutException) { Debug.WriteLine($"[ModDBModService] Timeout: Selector '{selector}' not found."); return null; }
 			}
@@ -172,24 +209,28 @@ public class ModDBModService : IModService
 
 			Debug.WriteLine("[ModDBModService] Finding start link...");
 			const string startLinkSelector = "a#downloadmirrorstoggle";
-			await page.WaitForSelectorAsync(startLinkSelector, new WaitForSelectorOptions { Timeout = 10000 });
-			var startLink = await page.EvaluateExpressionAsync<string>($"document.querySelector('{startLinkSelector}').href");
+			await _page.WaitForSelectorAsync(startLinkSelector, new WaitForSelectorOptions { Timeout = 10000 });
+			var startLink = await _page.EvaluateExpressionAsync<string>($"document.querySelector('{startLinkSelector}').href");
 
 			if (!string.IsNullOrEmpty(startLink))
 			{
 				Debug.WriteLine($"[ModDBModService] Navigating to intermediate page: {startLink}");
-				await page.GoToAsync(startLink, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.DOMContentLoaded }, Timeout = 15000 });
+				await _page.GoToAsync(startLink, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.DOMContentLoaded }, Timeout = 15000 });
 
 				Debug.WriteLine("[ModDBModService] Finding final mirror link...");
 				const string mirrorLinkSelector = @"p > a[href*='/downloads/mirror/']";
-				await page.WaitForSelectorAsync(mirrorLinkSelector, new WaitForSelectorOptions { Timeout = 10000 });
-				var mirrorLink = await page.EvaluateExpressionAsync<string>($"document.querySelector(`{mirrorLinkSelector}`).href");
+				await _page.WaitForSelectorAsync(mirrorLinkSelector, new WaitForSelectorOptions { Timeout = 10000 });
+				var mirrorLink = await _page.EvaluateExpressionAsync<string>($"document.querySelector(`{mirrorLinkSelector}`).href");
 
 				file.DirectDownloadUrl = mirrorLink;
 				Debug.WriteLine($"[ModDBModService] SUCCESS: Found direct URL: {file.DirectDownloadUrl}");
 			}
 		}
-		catch (Exception ex) { Debug.WriteLine($"[ModDBModService] FATAL Error getting file details: {ex}"); }
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"[ModDBModService] FATAL Error getting file details: {ex}. Resetting page.");
+			if (_page != null) { await _page.CloseAsync(); _page = null; }
+		}
 		return file;
 	}
 
@@ -198,11 +239,11 @@ public class ModDBModService : IModService
 		if (string.IsNullOrEmpty(file.DirectDownloadUrl))
 			throw new InvalidOperationException("Direct download URL is not available.");
 
-		await EnsureBrowserAsync();
+		await EnsurePageAsync(); // Ensure page and browser are ready
 
+		// Use the temporary directory of the final destination file
 		var tempDownloadPath = Path.GetDirectoryName(destinationPath);
 		var finalFileName = Path.GetFileName(destinationPath);
-
 		Directory.CreateDirectory(tempDownloadPath!);
 
 		try
@@ -210,10 +251,7 @@ public class ModDBModService : IModService
 			progress.Report(0);
 			Debug.WriteLine($"[ModDBModService] Preparing to download to temp path: {tempDownloadPath}");
 
-			await using var page = await _browser!.NewPageAsync();
-			await page.SetUserAgentAsync(UserAgent);
-
-			var client = page.Client;
+			var client = _page!.Client;
 			var downloadCompletionSource = new TaskCompletionSource<string>();
 			string? downloadGuid = null;
 			string? suggestedFilename = null;
@@ -233,7 +271,6 @@ public class ModDBModService : IModService
 								Debug.WriteLine($"[ModDBModService] Browser.downloadWillBegin: guid={downloadGuid}, filename={suggestedFilename}");
 							}
 							break;
-
 						case "Browser.downloadProgress":
 							var progressData = e.MessageData.Deserialize<DownloadProgressEventArgs>();
 							if (progressData != null && progressData.Guid == downloadGuid)
@@ -256,7 +293,8 @@ public class ModDBModService : IModService
 								}
 								else if (progressData.TotalBytes > 0)
 								{
-									var percentage = (double)progressData.ReceivedBytes / progressData.TotalBytes * 100;
+									// Scale the progress from 10% to 90%
+									var percentage = 10 + ((double)progressData.ReceivedBytes / progressData.TotalBytes * 80);
 									progress.Report(percentage);
 								}
 							}
@@ -265,8 +303,6 @@ public class ModDBModService : IModService
 				}
 				catch (Exception ex) { Debug.WriteLine($"[ModDBModService] Error processing CDP message: {ex.Message}"); }
 			}
-
-
 
 			client.MessageReceived += MessageReceivedHandler;
 
@@ -278,11 +314,11 @@ public class ModDBModService : IModService
 					downloadPath = tempDownloadPath,
 					eventsEnabled = true
 				});
-
+				progress.Report(10);
 				try
 				{
 					Debug.WriteLine($"[ModDBModService] Triggering navigation to: {file.DirectDownloadUrl}");
-					await page.GoToAsync(file.DirectDownloadUrl, new NavigationOptions { Timeout = 60000 });
+					await _page.GoToAsync(file.DirectDownloadUrl, new NavigationOptions { Timeout = 60000 });
 				}
 				catch (NavigationException ex) when (ex.Message.Contains("net::ERR_ABORTED"))
 				{
@@ -291,13 +327,17 @@ public class ModDBModService : IModService
 
 				Debug.WriteLine("[ModDBModService] Waiting for the browser download to complete...");
 				var downloadedFilePath = await downloadCompletionSource.Task.WaitAsync(TimeSpan.FromMinutes(30));
-
 				Debug.WriteLine($"[ModDBModService] Download complete. File located at: {downloadedFilePath}");
 
+				// If the downloaded filename is different, move/rename it. Otherwise, it's already in the right place.
 				if (!string.Equals(Path.GetFileName(downloadedFilePath), finalFileName, StringComparison.Ordinal))
 				{
 					File.Move(downloadedFilePath, destinationPath, true);
 					Debug.WriteLine($"[ModDBModService] File successfully moved to: {destinationPath}");
+				}
+				else
+				{
+					Debug.WriteLine($"[ModDBModService] File already has correct name and location: {destinationPath}");
 				}
 				progress.Report(100);
 			}
@@ -330,7 +370,7 @@ public class ModDBModService : IModService
 			tempFilePath = Path.Combine(Path.GetTempPath(), detailedFile.Filename);
 			var downloadProgress = new Progress<double>(percentage =>
 			{
-				var scaled = 5 + (percentage * 0.85);
+				var scaled = 5 + (percentage * 0.85); // Scale 0-100 to 5-90
 				progress.Report(new InstallProgressReport { Message = $"Downloading... {percentage:F1}%", Percentage = (int)scaled });
 			});
 			await DownloadFileAsync(detailedFile, tempFilePath, downloadProgress);
@@ -368,32 +408,24 @@ public class ModDBModService : IModService
 	public async Task UninstallModAsync(ModInfo mod, IProgress<InstallProgressReport> progress)
 	{
 		if (mod.ModPageUrl == null)
-		{
 			throw new InvalidOperationException("Mod does not have a valid page URL.");
-		}
 
 		progress.Report(new InstallProgressReport { Message = $"Uninstalling {mod.Title}...", Percentage = 10 });
-
 		var installedMods = await _installedModsService.GetInstalledModsAsync();
 		var modToUninstall = installedMods.FirstOrDefault(m => m.ModPageUrl.Equals(mod.ModPageUrl, StringComparison.OrdinalIgnoreCase));
-
 		if (modToUninstall == null)
 		{
 			progress.Report(new InstallProgressReport { Message = "Mod not found in installed list.", Percentage = 100 });
 			return;
 		}
-
 		var uninstallProgress = new Progress<string>(message =>
 		{
 			progress.Report(new InstallProgressReport { Message = message, Percentage = 50 });
 		});
-
 		await _addonInstallService.UninstallAddonAsync(modToUninstall.InstalledPaths, uninstallProgress);
 		progress.Report(new InstallProgressReport { Message = "Removing installation record...", Percentage = 90 });
-
 		await _installedModsService.RemoveInstalledModAsync(mod.ModPageUrl);
 		mod.IsInstalled = false;
-
 		progress.Report(new InstallProgressReport { Message = "Uninstallation complete!", Percentage = 100 });
 	}
 
@@ -415,7 +447,6 @@ internal class DownloadWillBeginEventArgs
 {
 	[System.Text.Json.Serialization.JsonPropertyName("guid")]
 	public string Guid { get; set; } = string.Empty;
-
 	[System.Text.Json.Serialization.JsonPropertyName("suggestedFilename")]
 	public string SuggestedFilename { get; set; } = string.Empty;
 }
@@ -427,13 +458,10 @@ internal class DownloadProgressEventArgs
 {
 	[System.Text.Json.Serialization.JsonPropertyName("guid")]
 	public string Guid { get; set; } = string.Empty;
-
 	[System.Text.Json.Serialization.JsonPropertyName("state")]
 	public string State { get; set; } = string.Empty;
-
 	[System.Text.Json.Serialization.JsonPropertyName("receivedBytes")]
 	public long ReceivedBytes { get; set; }
-
 	[System.Text.Json.Serialization.JsonPropertyName("totalBytes")]
 	public long TotalBytes { get; set; }
 }
