@@ -42,37 +42,6 @@ public class ProgressBarWidthConverter : IMultiValueConverter
 	}
 }
 
-/// <summary>
-/// Converts an animation progress value (0.0 to 1.0) into a pixel offset for the indeterminate progress bar.
-/// It calculates the position needed to make a fixed-width indicator travel across a variable-width track.
-/// </summary>
-public class IndeterminateProgressConverter : IMultiValueConverter
-{
-	public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
-	{
-		if (values.Count == 3 &&
-			values[0] is double progress &&      // The animated value from 0.0 to 1.0
-			values[1] is double trackWidth &&    // The width of the container (PART_Track)
-			values[2] is double indicatorWidth)  // The width of the indicator itself
-		{
-			if (trackWidth <= 0 || indicatorWidth <= 0)
-			{
-				return -indicatorWidth; // Start off-screen if track isn't rendered yet
-			}
-
-			// Calculate the total distance the indicator needs to travel.
-			// It starts at -indicatorWidth (fully off-screen left) and ends at +trackWidth (fully off-screen right).
-			double totalTravelDistance = trackWidth + indicatorWidth;
-
-			// Calculate the current position based on the animation progress.
-			double currentPosition = (progress * totalTravelDistance) - indicatorWidth;
-
-			return currentPosition;
-		}
-
-		return 0.0;
-	}
-}
 public static class AnimationProperties
 {
 	// 1. Define the attached property.
@@ -111,11 +80,23 @@ public class IndeterminateSnapConverter : IMultiValueConverter
 				return -indicatorWidth; // Start off-screen
 			}
 
-			// 1. Calculate the IDEAL SMOOTH position, just like before.
-			double totalTravelDistance = trackWidth + indicatorWidth;
+			// ====================================================================
+			//      CONTROL THE DELAY HERE
+			// ====================================================================
+			// This is the width of the invisible "gap" after the bar.
+			// A smaller number means a shorter delay and a tighter loop.
+			// Try a value like 48.0 for a quick loop, or 0.0 for an instant loop.
+			const double loopPaddingWidth = 48.0;
+			// ====================================================================
+
+			// 1. Calculate the total distance the indicator must travel in one full loop.
+			//    It's the visible track, plus the indicator's own width (to exit completely), plus our custom gap.
+			double totalTravelDistance = trackWidth + indicatorWidth + loopPaddingWidth;
+
+			// 2. Calculate the ideal SMOOTH position based on the animation progress.
 			double smoothPosition = (progress * totalTravelDistance) - indicatorWidth;
 
-			// 2. THIS IS THE MAGIC: Snap the smooth position to the nearest segment boundary.
+			// 3. Snap the smooth position to the nearest segment boundary to create the VGUI effect.
 			double snappedPosition = Math.Round(smoothPosition / SegmentWidth) * SegmentWidth;
 
 			return snappedPosition;

@@ -49,6 +49,23 @@
     <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
   </ItemGroup>
 
+	<ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+		<DirectPInvoke Include="libHarfBuzzSharp" />
+		<NativeLibrary Include="lib\win64\libHarfBuzzSharp.lib" />
+		<DirectPInvoke Include="libSkiaSharp" />
+		<NativeLibrary Include="lib\win64\skia.lib" />
+		<NativeLibrary Include="lib\win64\SkiaSharp.lib" />
+		<DirectPInvoke Include="av_libglesv2" />
+		<NativeLibrary Include="lib\win64\libANGLE_static.lib" />
+		<NativeLibrary Include="lib\win64\libGLESv2_static.lib" />
+		<NativeLibrary Include="d3d9.lib" />
+		<NativeLibrary Include="dxguid.lib" />
+		<NativeLibrary Include="dxgi.lib" />
+		<NativeLibrary Include="Synchronization.lib" />
+		<NativeLibrary Include="user32.lib" />
+		<NativeLibrary Include="gdi32.lib" />
+	</ItemGroup>
+	
   <ItemGroup>
     <ProjectReference Include="..\RTXLauncher.Core\RTXLauncher.Core.csproj" />
   </ItemGroup>
