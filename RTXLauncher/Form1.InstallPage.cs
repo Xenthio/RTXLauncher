@@ -12,7 +12,7 @@ namespace RTXLauncher
 
 		private Dictionary<string, (string Owner, string Repo, string InstallType)> _packageSources = new Dictionary<string, (string, string, string)>
 		{
-			{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("Xenthio", "gmod-rtx-fixes-2", "Any") },
+			{ "Xenthio/garrys-mod-rtx-remixed (Any)", ("Xenthio", "garrys-mod-rtx-remixed", "Any") },
 			{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") }
 		};
 
@@ -333,8 +333,8 @@ bin/win64/usd_ms.dll
 				packageSourceComboBox.Items.Add(source);
 			}
 
-			// Find and select "Xenthio/gmod-rtx-fixes-2 (Any)" by default
-			string defaultSource = "Xenthio/gmod-rtx-fixes-2 (Any)";
+			// Find and select "Xenthio/garrys-mod-rtx-remixed (Any)" by default
+			string defaultSource = "Xenthio/garrys-mod-rtx-remixed (Any)";
 			int defaultIndex = packageSourceComboBox.Items.IndexOf(defaultSource);
 
 			if (defaultIndex >= 0)

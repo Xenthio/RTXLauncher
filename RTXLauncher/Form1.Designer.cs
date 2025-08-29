@@ -757,7 +757,7 @@
 			remixSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			remixSourceComboBox.FlatStyle = FlatStyle.System;
 			remixSourceComboBox.FormattingEnabled = true;
-			remixSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			remixSourceComboBox.Items.AddRange(new object[] { "Xenthio/garrys-mod-rtx-remixed (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
 			remixSourceComboBox.Location = new Point(63, 22);
 			remixSourceComboBox.Name = "remixSourceComboBox";
 			remixSourceComboBox.Size = new Size(353, 23);
@@ -816,7 +816,7 @@
 			patchesSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			patchesSourceComboBox.FlatStyle = FlatStyle.System;
 			patchesSourceComboBox.FormattingEnabled = true;
-			patchesSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			patchesSourceComboBox.Items.AddRange(new object[] { "Xenthio/garrys-mod-rtx-remixed (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
 			patchesSourceComboBox.Location = new Point(63, 22);
 			patchesSourceComboBox.Name = "patchesSourceComboBox";
 			patchesSourceComboBox.Size = new Size(241, 23);
@@ -864,7 +864,7 @@
 			packageVersionComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			packageVersionComboBox.FlatStyle = FlatStyle.System;
 			packageVersionComboBox.FormattingEnabled = true;
-			packageVersionComboBox.Items.AddRange(new object[] { "gmod_x86-64 Xenthio/gmod-rtx-fixes-2", "gmod_x86-64 sambow23/gmod-rtx-binary (fork)", "gmod_main skurtyyskirts/GmodRTX", "gmod_main Xenthio/GMRTXClassic" });
+			packageVersionComboBox.Items.AddRange(new object[] { "gmod_x86-64 Xenthio/garrys-mod-rtx-remixed", "gmod_x86-64 sambow23/gmod-rtx-binary (fork)", "gmod_main skurtyyskirts/GmodRTX", "gmod_main Xenthio/GMRTXClassic" });
 			packageVersionComboBox.Location = new Point(63, 51);
 			packageVersionComboBox.Name = "packageVersionComboBox";
 			packageVersionComboBox.Size = new Size(241, 23);
@@ -876,12 +876,12 @@
 			packageSourceComboBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 			packageSourceComboBox.FlatStyle = FlatStyle.System;
 			packageSourceComboBox.FormattingEnabled = true;
-			packageSourceComboBox.Items.AddRange(new object[] { "Xenthio/gmod-rtx-fixes-2 (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
+			packageSourceComboBox.Items.AddRange(new object[] { "Xenthio/garrys-mod-rtx-remixed (Any)", "Xenthio/GMRTXClassic (gmod_main)" });
 			packageSourceComboBox.Location = new Point(63, 22);
 			packageSourceComboBox.Name = "packageSourceComboBox";
 			packageSourceComboBox.Size = new Size(353, 23);
 			packageSourceComboBox.TabIndex = 2;
-			packageSourceComboBox.Text = "Xenthio/gmod-rtx-fixes-2 (Any)";
+			packageSourceComboBox.Text = "Xenthio/garrys-mod-rtx-remixed (Any)";
 			// 
 			// InstallFixesPackageButton
 			// 

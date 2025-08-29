@@ -298,8 +298,8 @@ namespace RTXLauncher
 		{
 			try
 			{
-				// Use the recommended fixes package (Xenthio/gmod-rtx-fixes-2)
-				var fixesSource = _packageSources["Xenthio/gmod-rtx-fixes-2 (Any)"];
+				// Use the recommended fixes package (Xenthio/garrys-mod-rtx-remixed)
+				var fixesSource = _packageSources["Xenthio/garrys-mod-rtx-remixed (Any)"];
 
 				// Get the latest fixes release
 				List<GitHubRelease> fixesReleases = await GitHubAPI.FetchReleasesAsync(fixesSource.Owner, fixesSource.Repo);

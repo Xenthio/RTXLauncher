@@ -27,9 +27,9 @@ namespace RTXLauncher
 				// Check if the game has RTXIO package files and warn the user
 				var installPath = SteamLibrary.GetGameInstallFolder(InstallFolder);
 				bool hasRTXIOPackages = installPath != null && RTXIOPackageManager.HasRTXIOPackageFiles(installPath, RemixModFolder);
-				
+
 				string message = $"Are you sure you want to mount {InstallFolder}?\n\n";
-				
+
 				if (hasRTXIOPackages)
 				{
 					var pkgFiles = RTXIOPackageManager.GetPackageFiles(installPath, RemixModFolder);
@@ -41,26 +41,26 @@ namespace RTXLauncher
 							  "• An internet connection is required for the initial download\n\n" +
 							  "This is a one-time process per game installation.\n\n";
 				}
-				
+
 				message += "By selecting yes, you agree that you have correctly extracted any RTX IO assets prior to mounting.\n\n" +
 						  "You also agree that there will be no user support for assets that have incomplete replacements such as the Half-Life 2: RTX demo.";
-				
-                string linkText = "Learn more about content mounting";
-                string linkUrl = "https://github.com/Xenthio/gmod-rtx-fixes-2/wiki/Using-HL2-RTX-Assets-in-Garry's-Mod-RTX";
-                
-                using (var customDialog = new CustomWarningDialog(message, "Confirm Mount", linkText, linkUrl))
-                {
-                    var result = customDialog.ShowDialog();
-                    
-                    if (result == System.Windows.Forms.DialogResult.Yes)
-                    {
+
+				string linkText = "Learn more about content mounting";
+				string linkUrl = "https://github.com/Xenthio/garrys-mod-rtx-remixed/wiki/Using-HL2-RTX-Assets-in-Garry's-Mod-RTX";
+
+				using (var customDialog = new CustomWarningDialog(message, "Confirm Mount", linkText, linkUrl))
+				{
+					var result = customDialog.ShowDialog();
+
+					if (result == System.Windows.Forms.DialogResult.Yes)
+					{
 						// Disable the checkbox during mounting to prevent multiple operations
 						Enabled = false;
-						
+
 						try
 						{
 							bool mountSuccess = await ContentMountingSystem.MountGameAsync(GameFolder, InstallFolder, RemixModFolder);
-							
+
 							if (!mountSuccess)
 							{
 								// Revert checkbox state if mounting failed
@@ -74,7 +74,7 @@ namespace RTXLauncher
 								"Mounting Error",
 								System.Windows.Forms.MessageBoxButtons.OK,
 								System.Windows.Forms.MessageBoxIcon.Error);
-							
+
 							// Revert checkbox state if mounting failed
 							Checked = false;
 						}
@@ -83,13 +83,13 @@ namespace RTXLauncher
 							// Re-enable the checkbox
 							Enabled = true;
 						}
-                    }
-                    else
-                    {
-                        // Revert checkbox state if user cancels
-                        Checked = false;
-                    }
-                }
+					}
+					else
+					{
+						// Revert checkbox state if user cancels
+						Checked = false;
+					}
+				}
 			}
 			else
 			{
@@ -99,7 +99,7 @@ namespace RTXLauncher
 					"Confirm Unmount",
 					System.Windows.Forms.MessageBoxButtons.YesNo,
 					System.Windows.Forms.MessageBoxIcon.Warning);
-					
+
 				if (result == System.Windows.Forms.DialogResult.Yes)
 				{
 					ContentMountingSystem.UnMountGame(GameFolder, InstallFolder, RemixModFolder);
