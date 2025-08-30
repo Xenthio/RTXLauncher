@@ -124,11 +124,21 @@ public class GitHubService
 	/// </summary>
 	public async Task<GitHubArtifactInfo> FetchLatestStagingArtifact(string owner, string repo, bool forceRefresh = false)
 	{
-		// Cache and logic similar to FetchReleasesAsync
-		// ... (This method is long, assume it's converted to non-static and UI-free) ...
+		string cacheFile = Path.Combine(_cacheDirectory, $"{owner}_{repo}_staging.json");
 
-		// Simplified stub:
-		var fallback = new GitHubArtifactInfo { Name = "Latest", ArchiveDownloadUrl = "fallback-url" };
+		// Check cache first
+		if (!forceRefresh && IsCacheValid(cacheFile))
+		{
+			try
+			{
+				var cachedJson = await File.ReadAllTextAsync(cacheFile);
+				return JsonSerializer.Deserialize(cachedJson, GitHubJsonContext.Default.GitHubArtifactInfo)!;
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"Cache error: {ex.Message}");
+			}
+		}
 
 		// Add token to headers if available
 		AddAuthToken();
@@ -136,21 +146,74 @@ public class GitHubService
 		try
 		{
 			// Fetch workflow runs
-			var runsUrl = $"https://api.github.com/repos/{owner}/{repo}/actions/runs?status=success&event=push";
+			var runsUrl = $"https://api.github.com/repos/{owner}/{repo}/actions/runs?status=success&event=push&per_page=10";
 			var runsResponse = await _httpClient.GetAsync(runsUrl);
+
+			if (runsResponse.StatusCode == HttpStatusCode.Forbidden && IsRateLimited(runsResponse.Headers))
+			{
+				throw new GitHubRateLimitExceededException(GetRateLimitResetTime(runsResponse.Headers));
+			}
 
 			runsResponse.EnsureSuccessStatusCode();
 
-			var runsJson = await runsResponse.Content.ReadFromJsonAsync<GitHubActionsRunsResponse>();
-			// ... (find latest run and artifact) ...
+			var runsJson = await runsResponse.Content.ReadAsStringAsync();
+			var runs = JsonSerializer.Deserialize(runsJson, GitHubJsonContext.Default.GitHubActionsRunsResponse);
 
-			// Return the found artifact
-			return new GitHubArtifactInfo { Name = "RTXLauncher-hash", ArchiveDownloadUrl = "download-url" };
+			if (runs?.WorkflowRuns?.Count > 0)
+			{
+				// Get the latest successful run
+				var latestRun = runs.WorkflowRuns.First();
+
+				// Fetch artifacts for this run
+				var artifactsUrl = latestRun.ArtifactsUrl;
+				var artifactsResponse = await _httpClient.GetAsync(artifactsUrl);
+				artifactsResponse.EnsureSuccessStatusCode();
+
+				var artifactsJson = await artifactsResponse.Content.ReadAsStringAsync();
+				var artifacts = JsonSerializer.Deserialize(artifactsJson, GitHubJsonContext.Default.GitHubActionsArtifactsResponse);
+
+				// Find RTXLauncher artifact
+				var rtxArtifact = artifacts?.Artifacts?.FirstOrDefault(a => 
+					a.Name.StartsWith("RTXLauncher", StringComparison.OrdinalIgnoreCase));
+
+				if (rtxArtifact != null)
+				{
+					// Cache the result
+					var resultJson = JsonSerializer.Serialize(rtxArtifact, GitHubJsonContext.Default.GitHubArtifactInfo);
+					SaveCache(cacheFile, resultJson);
+
+					return rtxArtifact;
+				}
+			}
+
+			// Fallback artifact
+			var fallback = new GitHubArtifactInfo 
+			{ 
+				Name = "RTXLauncher-latest", 
+				ArchiveDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe"
+			};
+
+			return fallback;
 		}
 		catch (Exception ex)
 		{
-			// Error handling: if cache is available use it, otherwise throw
-			throw new ApiException($"Failed to fetch staging artifact for {owner}/{repo}", ex);
+			// Try to load from cache if available
+			if (File.Exists(cacheFile))
+			{
+				try
+				{
+					var cachedJson = await File.ReadAllTextAsync(cacheFile);
+					return JsonSerializer.Deserialize(cachedJson, GitHubJsonContext.Default.GitHubArtifactInfo)!;
+				}
+				catch { /* ignore */ }
+			}
+
+			// Return fallback
+			return new GitHubArtifactInfo 
+			{ 
+				Name = "RTXLauncher-latest", 
+				ArchiveDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe"
+			};
 		}
 	}
 
@@ -186,7 +249,15 @@ public class GitHubService
 
 	private void SaveCache(string cacheFile, string json)
 	{
-		// ... (your existing cache saving logic) ...
+		try
+		{
+			File.WriteAllText(cacheFile, json);
+			File.WriteAllText(cacheFile + ".timestamp", DateTime.Now.ToString());
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Failed to save cache: {ex.Message}");
+		}
 	}
 
 	/// <summary>
