@@ -1,6 +1,7 @@
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Utilities;
 using System.Diagnostics;
+using System.IO.Compression;
 
 namespace RTXLauncher.Core.Services;
 
@@ -153,6 +154,30 @@ public class UpdateService
 			// Download the update
 			string downloadPath = await DownloadFileAsync(updateSource.DownloadUrl, downloadFolder, progress);
 
+			// If it's a zip file, extract it
+			if (downloadPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+			{
+				progress?.Report(new UpdateProgress { Message = "Extracting files...", PercentComplete = 85 });
+				
+				string extractPath = Path.Combine(downloadFolder, "extracted");
+				Directory.CreateDirectory(extractPath);
+				
+				ZipFile.ExtractToDirectory(downloadPath, extractPath);
+				
+				// Look for the appropriate executable in the extracted content
+				string targetExe = GetTargetExecutableName();
+				string extractedExe = FindExecutableInDirectory(extractPath, targetExe);
+				
+				if (!string.IsNullOrEmpty(extractedExe))
+				{
+					// Copy the found executable to the main download folder
+					string destinationExe = Path.Combine(downloadFolder, Path.GetFileName(extractedExe));
+					File.Copy(extractedExe, destinationExe, true);
+				}
+				
+				progress?.Report(new UpdateProgress { Message = "Extraction complete", PercentComplete = 95 });
+			}
+
 			progress?.Report(new UpdateProgress { Message = "Download complete", PercentComplete = 100, IsComplete = true });
 
 			return downloadFolder;
@@ -162,6 +187,45 @@ public class UpdateService
 			progress?.Report(new UpdateProgress { Message = $"Download failed: {ex.Message}", Error = ex });
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Finds the target executable in a directory (recursive search)
+	/// </summary>
+	private string FindExecutableInDirectory(string directory, string targetExeName)
+	{
+		// First try direct match
+		string directMatch = Path.Combine(directory, targetExeName);
+		if (File.Exists(directMatch))
+		{
+			return directMatch;
+		}
+
+		// Try recursive search
+		try
+		{
+			var foundFiles = Directory.GetFiles(directory, targetExeName, SearchOption.AllDirectories);
+			if (foundFiles.Length > 0)
+			{
+				return foundFiles[0];
+			}
+
+			// If specific target not found, look for any RTXLauncher executable
+			var anyRtxExe = Directory.GetFiles(directory, "RTXLauncher*.exe", SearchOption.AllDirectories);
+			if (anyRtxExe.Length > 0)
+			{
+				// Prefer the one that matches our current type
+				var currentType = GetTargetExecutableName().Contains("Avalonia") ? "Avalonia" : "WinForms";
+				var preferredExe = anyRtxExe.FirstOrDefault(f => Path.GetFileName(f).Contains(currentType, StringComparison.OrdinalIgnoreCase));
+				return preferredExe ?? anyRtxExe[0];
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Error searching for executable: {ex.Message}");
+		}
+
+		return string.Empty;
 	}
 
 	/// <summary>
