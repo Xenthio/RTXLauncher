@@ -7,6 +7,7 @@
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/Button.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/Label.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/CheckBox.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/TextBox.axaml"/>
 	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/ListBox.axaml"/>

@@ -1,0 +1,38 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:utilities="using:RTXLauncher.Avalonia.Utilities">
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Colors.axaml"/>
+	<StyleInclude Source="avares://RTXLauncher.Avalonia/Themes/VGUI/_Globals.axaml"/>
+
+	<Design.PreviewWith>
+		<Border Padding="20"
+				Background="{StaticResource VguiBackgroundBrush}">
+			<StackPanel Spacing="10" Width="250">
+				<Label Content="_Username:" Target="{Binding ElementName=UsernameTextBox}"/>
+				<TextBox x:Name="UsernameTextBox" Text="Sample Text"/>
+				<Label Content="_Password:" Target="{Binding ElementName=PasswordTextBox}"/>
+				<TextBox x:Name="PasswordTextBox" Text="Another Sample"/>
+			</StackPanel>
+		</Border>
+	</Design.PreviewWith>
+
+	<!-- Base Label Style -->
+	<Style Selector="Label">
+		<Setter Property="Foreground" Value="{StaticResource VguiTextLabelBrush}"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<!-- Override for labels that have a target - this will apply to ALL labels -->
+	<Style Selector="Label">
+		<Setter Property="Foreground"
+		        Value="{Binding Target.IsFocused, 
+		                RelativeSource={RelativeSource Self}, 
+		                Converter={x:Static utilities:BoolToColorConverter.Instance},
+		                FallbackValue={StaticResource VguiTextLabelBrush}}"/>
+	</Style>
+
+	<Style Selector="Button">
+		<!-- Style here! -->
+	</Style>
+</Styles>
