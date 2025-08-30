@@ -71,7 +71,7 @@ public class GitHubService
 			try
 			{
 				var cachedJson = await File.ReadAllTextAsync(cacheFile);
-				return JsonSerializer.Deserialize<List<GitHubRelease>>(cachedJson)!;
+				return JsonSerializer.Deserialize(cachedJson, GitHubJsonContext.Default.ListGitHubRelease)!;
 			}
 			catch (Exception ex)
 			{
@@ -100,7 +100,7 @@ public class GitHubService
 			// Cache the response
 			SaveCache(cacheFile, json);
 
-			return JsonSerializer.Deserialize<List<GitHubRelease>>(json)!;
+			return JsonSerializer.Deserialize(json, GitHubJsonContext.Default.ListGitHubRelease)!;
 		}
 		catch (Exception ex)
 		{
@@ -110,7 +110,7 @@ public class GitHubService
 				try
 				{
 					var cachedJson = await File.ReadAllTextAsync(cacheFile);
-					return JsonSerializer.Deserialize<List<GitHubRelease>>(cachedJson)!;
+					return JsonSerializer.Deserialize(cachedJson, GitHubJsonContext.Default.ListGitHubRelease)!;
 				}
 				catch { /* ignore */ }
 			}

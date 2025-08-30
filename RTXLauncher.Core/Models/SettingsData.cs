@@ -18,6 +18,13 @@ public class SettingsData
 	[XmlAttribute] public string CustomLaunchOptions { get; set; } = "";
 	[XmlAttribute] public string ManuallySpecifiedInstallPath { get; set; } = "";
 
+	// Linux-specific settings
+	[XmlAttribute] public string LinuxProtonPath { get; set; } = "";
+	[XmlAttribute] public string LinuxSteamRootOverride { get; set; } = "";
+	[XmlAttribute] public bool LinuxEnableProtonLog { get; set; } = false;
+	[XmlAttribute] public string LinuxSelectedProtonLabel { get; set; } = "";
+	[XmlAttribute] public string LinuxVulkanDriver { get; set; } = "Auto";
+
 
 	public bool RTXInstalled => RemixUtility.IsInstalled();
 	public bool RTXOn => RemixUtility.IsEnabled();
@@ -25,4 +32,7 @@ public class SettingsData
 	// Launcher settings
 	[XmlAttribute] public bool CheckForUpdatesOnLaunch { get; set; } = true;
 	[XmlAttribute] public string Theme { get; set; } = "Simple";
+
+	// Setup completion tracking
+	[XmlAttribute] public bool SetupCompleted { get; set; } = false;
 }

@@ -89,9 +89,25 @@ public static class LauncherUtility
 		var gameDirectory = Path.GetDirectoryName(gameExecutablePath)
 			?? throw new DirectoryNotFoundException("Could not determine the game's parent directory.");
 
-		// --- Call the centralized SteamLibraryUtility ---
-		var steamRoot = SteamLibraryUtility.GetSteamRoot()
-			?? throw new DirectoryNotFoundException("Could not automatically detect the Steam root directory. Please check your Steam installation.");
+		// --- Call the centralized SteamLibraryUtility with override support ---
+		string? steamRoot = null;
+		if (!string.IsNullOrEmpty(settings.LinuxSteamRootOverride))
+		{
+			steamRoot = settings.LinuxSteamRootOverride;
+			if (!Directory.Exists(steamRoot))
+			{
+				throw new DirectoryNotFoundException($"Custom Steam root directory not found: {steamRoot}");
+			}
+		}
+		else
+		{
+			steamRoot = SteamLibraryUtility.GetSteamRoot();
+		}
+		
+		if (string.IsNullOrEmpty(steamRoot))
+		{
+			throw new DirectoryNotFoundException("Could not automatically detect the Steam root directory. Please check your Steam installation or specify a custom path in Linux Settings.");
+		}
 
 		var protonPath = DetectLinuxProton(settings, steamRoot)
 			?? throw new FileNotFoundException("Could not find a compatible Proton executable. Please ensure Proton is installed via Steam.");
@@ -126,10 +142,41 @@ public static class LauncherUtility
 		processInfo.EnvironmentVariables["STEAM_COMPAT_CLIENT_INSTALL_PATH"] = steamRoot;
 		processInfo.EnvironmentVariables["STEAM_COMPAT_DATA_PATH"] = compatDataPath;
 		processInfo.EnvironmentVariables["WINEDLLOVERRIDES"] = "d3d9=n,b"; // CRITICAL: Use native d3d9 for Remix
+
+		// Set multiple Steam App ID environment variables for better compatibility
 		processInfo.EnvironmentVariables["SteamAppId"] = "4000";
+		processInfo.EnvironmentVariables["SteamAppID"] = "4000";
 		processInfo.EnvironmentVariables["SteamGameId"] = "4000";
-		// ToDo: Add a setting for this in SettingsDataS
-		// if (settings.LinuxEnableProtonLog) processInfo.EnvironmentVariables["PROTON_LOG"] = "1";
+		processInfo.EnvironmentVariables["SteamOverlayGameId"] = "4000";
+
+		// Optional Proton logging
+		if (settings.LinuxEnableProtonLog)
+		{
+			processInfo.EnvironmentVariables["PROTON_LOG"] = "1";
+		}
+		
+		// Vulkan driver selection
+		if (!string.IsNullOrEmpty(settings.LinuxVulkanDriver) && settings.LinuxVulkanDriver != "Auto")
+		{
+			switch (settings.LinuxVulkanDriver)
+			{
+				case "AMDVLK":
+					processInfo.EnvironmentVariables["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/amd_icd64.json";
+					break;
+				case "RADV":
+					processInfo.EnvironmentVariables["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/radeon_icd.x86_64.json";
+					break;
+				case "Intel ANV":
+					processInfo.EnvironmentVariables["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/intel_icd.x86_64.json";
+					break;
+				case "NVIDIA":
+					processInfo.EnvironmentVariables["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/nvidia_icd.json";
+					break;
+			}
+		}
+
+		// Try to ensure Steam client is running for SteamAPI
+		TryStartSteamClient();
 
 		Process.Start(processInfo);
 	}
@@ -141,28 +188,44 @@ public static class LauncherUtility
 	{
 		var args = new List<string>();
 
+		// Console flag
+		if (settings.ConsoleEnabled) args.Add("-console");
+
+		// DirectX level - always enforce level 90 for Linux/Proton compatibility
 		if (isLinux)
 		{
-			// Linux/Proton requires specific DX9 settings for Remix to work reliably.
-			args.Add("-dxlevel 90");
-			args.Add("+mat_disable_d3d9ex 1");
+			args.Add("-dxlevel");
+			args.Add("90");
 		}
 		else
 		{
-			args.Add($"-dxlevel {settings.DXLevel}");
+			args.Add("-dxlevel");
+			args.Add(settings.DXLevel.ToString());
 		}
 
+		// D3D9Ex disable and windowing flags
+		args.Add("+mat_disable_d3d9ex");
+		args.Add("1");
 		args.Add("-nod3d9ex");
 		args.Add("-windowed");
 		args.Add("-noborder");
-		args.Add($"-w {width}");
-		args.Add($"-h {height}");
 
-		if (settings.ConsoleEnabled) args.Add("-console");
+		// Resolution
+		if (width > 0 && height > 0)
+		{
+			args.Add("-w");
+			args.Add(width.ToString());
+			args.Add("-h");
+			args.Add(height.ToString());
+		}
+
+		// Game options
 		if (!settings.LoadWorkshopAddons) args.Add("-noworkshop");
 		if (settings.DisableChromium) args.Add("-nochromium");
 		if (settings.DeveloperMode) args.Add("-dev");
 		if (settings.ToolsMode) args.Add("-tools");
+
+		// Custom launch options
 		if (!string.IsNullOrWhiteSpace(settings.CustomLaunchOptions))
 		{
 			args.AddRange(SplitArgsQuoted(settings.CustomLaunchOptions));
@@ -171,38 +234,183 @@ public static class LauncherUtility
 		return args;
 	}
 
-	private static string? DetectLinuxProton(SettingsData settings, string steamRoot)
+	/// <summary>
+	/// Attempts to start the Steam client silently if not already running.
+	/// This helps with SteamAPI initialization in Proton.
+	/// </summary>
+	private static void TryStartSteamClient()
 	{
-		// ToDo: Add a user-override setting for the Proton path in SettingsData
-		// if (!string.IsNullOrEmpty(settings.LinuxProtonPath) && File.Exists(settings.LinuxProtonPath))
-		// {
-		//     return settings.LinuxProtonPath;
-		// }
+		try
+		{
+			// Check if steam is available in PATH
+			var processInfo = new ProcessStartInfo
+			{
+				FileName = "steam",
+				Arguments = "-silent",
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true
+			};
 
-		var searchPaths = new List<string>();
+			// Don't wait for the process, just try to start it
+			Process.Start(processInfo);
+		}
+		catch
+		{
+			// Ignore errors - Steam might already be running or not in PATH
+		}
+	}
+
+	/// <summary>
+	/// Lists available Proton installations for user selection.
+	/// Based on the Rust implementation's list_proton_builds function.
+	/// </summary>
+	public static List<(string Label, string Path)> ListProtonBuilds(SettingsData settings)
+	{
+		var results = new List<(string Label, string Path)>();
+		var steamRoot = SteamLibraryUtility.GetSteamRoot();
+		if (string.IsNullOrEmpty(steamRoot)) return results;
+
+		// Official Proton from Steam common directory
 		var steamCommonPath = Path.Combine(steamRoot, "steamapps", "common");
-
 		if (Directory.Exists(steamCommonPath))
 		{
-			searchPaths.AddRange(Directory.GetDirectories(steamCommonPath, "Proton*"));
+			try
+			{
+				var officialProtonDirs = Directory.GetDirectories(steamCommonPath)
+					.Where(dir => Path.GetFileName(dir).StartsWith("Proton ") || Path.GetFileName(dir).StartsWith("Proton - "))
+					.Where(dir => File.Exists(Path.Combine(dir, "proton")));
+
+				foreach (var dir in officialProtonDirs)
+				{
+					var label = Path.GetFileName(dir);
+					var protonPath = Path.Combine(dir, "proton");
+					results.Add((label, protonPath));
+				}
+			}
+			catch { /* Ignore errors */ }
 		}
 
-		// Use SteamLibraryUtility to find all library folders for custom Proton installs (e.g., Proton-GE)
-		var allLibraries = SteamLibraryUtility.GetSteamLibraryPaths();
-		foreach (var libraryPath in allLibraries)
+		// Custom Proton installations (Proton-GE, etc.)
+		var compatDirs = new List<string>
 		{
-			var compatToolDir = Path.Combine(libraryPath, "steamapps", "compatibilitytools.d");
-			if (Directory.Exists(compatToolDir))
+			Path.Combine(steamRoot, "compatibilitytools.d")
+		};
+
+		var homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		if (!string.IsNullOrEmpty(homePath))
+		{
+			compatDirs.AddRange(new[]
 			{
-				searchPaths.AddRange(Directory.GetDirectories(compatToolDir));
+				Path.Combine(homePath, ".local", "share", "Steam", "compatibilitytools.d"),
+				Path.Combine(homePath, ".steam", "root", "compatibilitytools.d"),
+				Path.Combine(homePath, ".steam", "steam", "compatibilitytools.d"),
+				Path.Combine(homePath, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam", "compatibilitytools.d")
+			});
+		}
+
+		foreach (var compatDir in compatDirs.Where(Directory.Exists))
+		{
+			try
+			{
+				var customProtonDirs = Directory.GetDirectories(compatDir)
+					.Where(dir => File.Exists(Path.Combine(dir, "proton")));
+
+				foreach (var dir in customProtonDirs)
+				{
+					var label = Path.GetFileName(dir);
+					var protonPath = Path.Combine(dir, "proton");
+					results.Add((label, protonPath));
+				}
+			}
+			catch { /* Ignore errors */ }
+		}
+
+		// Remove duplicates by path, keeping first occurrence
+		var seen = new HashSet<string>();
+		results = results.Where(item => seen.Add(item.Path)).ToList();
+
+		return results;
+	}
+
+	private static string? DetectLinuxProton(SettingsData settings, string steamRoot)
+	{
+		// Check if user selected "Custom" and has a custom path
+		if (settings.LinuxSelectedProtonLabel == "Custom" && !string.IsNullOrEmpty(settings.LinuxProtonPath))
+		{
+			if (File.Exists(settings.LinuxProtonPath))
+			{
+				return settings.LinuxProtonPath;
+			}
+			else
+			{
+				throw new FileNotFoundException($"Custom Proton path not found: {settings.LinuxProtonPath}");
 			}
 		}
+		
+		// Check user override path (for backwards compatibility)
+		if (!string.IsNullOrEmpty(settings.LinuxProtonPath) && File.Exists(settings.LinuxProtonPath))
+		{
+			return settings.LinuxProtonPath;
+		}
 
-		// Find the 'proton' executable within the found directories, preferring newer versions
-		return searchPaths
-			.Select(dir => Path.Combine(dir, "proton"))
+		var candidates = new List<string>();
+		var steamCommonPath = Path.Combine(steamRoot, "steamapps", "common");
+
+		// Official Proton installs from Steam
+		if (Directory.Exists(steamCommonPath))
+		{
+			// Check for specific official Proton versions
+			candidates.Add(Path.Combine(steamCommonPath, "Proton - Experimental", "proton"));
+			candidates.Add(Path.Combine(steamCommonPath, "Proton - Hotfix", "proton"));
+
+			// Check for numbered Proton versions (e.g., "Proton 9.0")
+			try
+			{
+				var protonDirs = Directory.GetDirectories(steamCommonPath, "Proton *")
+					.Where(dir => File.Exists(Path.Combine(dir, "proton")))
+					.Select(dir => Path.Combine(dir, "proton"));
+				candidates.AddRange(protonDirs);
+			}
+			catch { /* Ignore directory access errors */ }
+		}
+
+		// Check compatibilitytools.d directories for custom Proton (e.g., Proton-GE)
+		var compatDirs = new List<string>
+		{
+			Path.Combine(steamRoot, "compatibilitytools.d"),
+		};
+
+		// Also check common user paths for compatibilitytools.d
+		var homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		if (!string.IsNullOrEmpty(homePath))
+		{
+			compatDirs.AddRange(new[]
+			{
+				Path.Combine(homePath, ".local", "share", "Steam", "compatibilitytools.d"),
+				Path.Combine(homePath, ".steam", "root", "compatibilitytools.d"),
+				Path.Combine(homePath, ".steam", "steam", "compatibilitytools.d"),
+				Path.Combine(homePath, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam", "compatibilitytools.d")
+			});
+		}
+
+		foreach (var compatDir in compatDirs.Where(Directory.Exists))
+		{
+			try
+			{
+				var protonInstalls = Directory.GetDirectories(compatDir)
+					.Select(dir => Path.Combine(dir, "proton"))
+					.Where(File.Exists);
+				candidates.AddRange(protonInstalls);
+			}
+			catch { /* Ignore directory access errors */ }
+		}
+
+		// Find the first working Proton executable, preferring newer versions
+		return candidates
 			.Where(File.Exists)
-			.OrderByDescending(f => new DirectoryInfo(Path.GetDirectoryName(f)!).LastWriteTime) // Sort by folder date
+			.OrderByDescending(p => new FileInfo(p).LastWriteTime)
 			.FirstOrDefault();
 	}
 

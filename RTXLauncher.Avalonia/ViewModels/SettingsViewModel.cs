@@ -8,7 +8,9 @@ using RTXLauncher.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace RTXLauncher.Avalonia.ViewModels;
 
@@ -26,8 +28,16 @@ public partial class SettingsViewModel : PageViewModel
 	[ObservableProperty] private bool _isQuickInstallVisible;
 	[ObservableProperty] private bool _isBusy;
 	[ObservableProperty] private string _selectedResolution;
+	[ObservableProperty] private List<(string Label, string Path)> _availableProtonBuilds = new();
+	[ObservableProperty] private List<string> _protonBuildLabels = new();
+	[ObservableProperty] private string _selectedProtonBuild = "";
+	[ObservableProperty] private bool _isCustomProtonPathVisible = false;
 
 	public List<string> Resolutions { get; }
+	[ObservableProperty] private List<string> _vulkanDriverOptions = new();
+	
+	// Platform detection
+	public bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
 	public SettingsViewModel(
 		SettingsData settingsData, // The loaded settings are passed in
@@ -60,6 +70,13 @@ public partial class SettingsViewModel : PageViewModel
 		}
 
 		CheckInstallationStatus();
+		
+		// Initialize Linux-specific settings if on Linux
+		if (IsLinux)
+		{
+			LoadProtonBuilds();
+			LoadVulkanDrivers();
+		}
 	}
 
 	partial void OnSelectedResolutionChanged(string value)
@@ -152,6 +169,41 @@ public partial class SettingsViewModel : PageViewModel
 		get => _settingsData.ManuallySpecifiedInstallPath;
 		set => SetProperty(_settingsData.ManuallySpecifiedInstallPath, value, _settingsData, (model, val) => model.ManuallySpecifiedInstallPath = val);
 	}
+	
+	// ===================================================================
+	//      LINUX-SPECIFIC SETTINGS (Only visible on Linux)
+	// ===================================================================
+	
+	public string LinuxProtonPath
+	{
+		get => _settingsData.LinuxProtonPath;
+		set => SetProperty(_settingsData.LinuxProtonPath, value, _settingsData, (model, val) => model.LinuxProtonPath = val);
+	}
+	
+	public string LinuxSteamRootOverride
+	{
+		get => _settingsData.LinuxSteamRootOverride;
+		set => SetProperty(_settingsData.LinuxSteamRootOverride, value, _settingsData, (model, val) => model.LinuxSteamRootOverride = val);
+	}
+	
+	public bool LinuxEnableProtonLog
+	{
+		get => _settingsData.LinuxEnableProtonLog;
+		set => SetProperty(_settingsData.LinuxEnableProtonLog, value, _settingsData, (model, val) => model.LinuxEnableProtonLog = val);
+	}
+	
+	public string LinuxSelectedProtonLabel
+	{
+		get => _settingsData.LinuxSelectedProtonLabel;
+		set => SetProperty(_settingsData.LinuxSelectedProtonLabel, value, _settingsData, (model, val) => model.LinuxSelectedProtonLabel = val);
+	}
+	
+	public string LinuxVulkanDriver
+	{
+		get => _settingsData.LinuxVulkanDriver;
+		set => SetProperty(_settingsData.LinuxVulkanDriver, value, _settingsData, (model, val) => model.LinuxVulkanDriver = val);
+	}
+	
 	public bool RtxInstalled => RemixUtility.IsInstalled();
 
 	public bool RtxEnabled
@@ -174,6 +226,165 @@ public partial class SettingsViewModel : PageViewModel
 				// Notify the UI that the property's value has changed.
 				OnPropertyChanged(nameof(RtxEnabled));
 			}
+		}
+	}
+	
+	// ===================================================================
+	//      LINUX PROTON MANAGEMENT
+	// ===================================================================
+	
+	private void LoadProtonBuilds()
+	{
+		try
+		{
+			AvailableProtonBuilds = LauncherUtility.ListProtonBuilds(_settingsData);
+			ProtonBuildLabels = AvailableProtonBuilds.Select(p => p.Label).ToList();
+			
+			// Add "Custom" option at the end
+			ProtonBuildLabels.Add("Custom");
+			
+			// Set the selected build based on saved label or first available
+			if (!string.IsNullOrEmpty(LinuxSelectedProtonLabel))
+			{
+				if (LinuxSelectedProtonLabel == "Custom" || !string.IsNullOrEmpty(LinuxProtonPath))
+				{
+					SelectedProtonBuild = "Custom";
+					IsCustomProtonPathVisible = true;
+					return;
+				}
+				
+				var matching = AvailableProtonBuilds.FirstOrDefault(p => p.Label == LinuxSelectedProtonLabel);
+				if (matching != default)
+				{
+					SelectedProtonBuild = matching.Label;
+					IsCustomProtonPathVisible = false;
+					return;
+				}
+			}
+			
+			// Default to first available Proton build
+			if (AvailableProtonBuilds.Count > 0)
+			{
+				SelectedProtonBuild = AvailableProtonBuilds[0].Label;
+				LinuxSelectedProtonLabel = SelectedProtonBuild;
+				IsCustomProtonPathVisible = false;
+			}
+		}
+		catch (Exception ex)
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = $"Warning: Could not load Proton builds: {ex.Message}" 
+			}));
+		}
+	}
+	
+	partial void OnSelectedProtonBuildChanged(string value)
+	{
+		if (!string.IsNullOrEmpty(value))
+		{
+			LinuxSelectedProtonLabel = value;
+			
+			// Show/hide custom path based on selection
+			IsCustomProtonPathVisible = (value == "Custom");
+			
+			// If switching away from custom, clear the custom path
+			if (value != "Custom" && !string.IsNullOrEmpty(LinuxProtonPath))
+			{
+				LinuxProtonPath = "";
+			}
+		}
+	}
+	
+	[RelayCommand]
+	private void RefreshProtonBuilds()
+	{
+		if (IsLinux)
+		{
+			LoadProtonBuilds();
+			LoadVulkanDrivers();
+		}
+	}
+	
+	[RelayCommand]
+	private void ClearProtonPath()
+	{
+		LinuxProtonPath = "";
+		// Switch back to first available Proton build
+		if (AvailableProtonBuilds.Count > 0)
+		{
+			SelectedProtonBuild = AvailableProtonBuilds[0].Label;
+		}
+		_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+		{ 
+			Message = "Switched back to auto-detected Proton version." 
+		}));
+	}
+	
+	private void LoadVulkanDrivers()
+	{
+		var availableDrivers = new List<string> { "Auto" };
+		
+		try
+		{
+			// Check for AMD drivers
+			if (File.Exists("/usr/share/vulkan/icd.d/amd_icd64.json"))
+			{
+				availableDrivers.Add("AMDVLK");
+			}
+			if (File.Exists("/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"))
+			{
+				availableDrivers.Add("RADV");
+			}
+			
+			// Check for Intel driver
+			if (File.Exists("/usr/share/vulkan/icd.d/intel_icd.x86_64.json"))
+			{
+				availableDrivers.Add("Intel ANV");
+			}
+			
+			// Check for NVIDIA driver
+			if (File.Exists("/usr/share/vulkan/icd.d/nvidia_icd.json"))
+			{
+				availableDrivers.Add("NVIDIA");
+			}
+			
+			// Also check in /usr/local/share/vulkan/icd.d/ for custom installations
+			var localIcdDir = "/usr/local/share/vulkan/icd.d/";
+			if (Directory.Exists(localIcdDir))
+			{
+				if (File.Exists(Path.Combine(localIcdDir, "amd_icd64.json")) && !availableDrivers.Contains("AMDVLK"))
+				{
+					availableDrivers.Add("AMDVLK");
+				}
+				if (File.Exists(Path.Combine(localIcdDir, "radeon_icd.x86_64.json")) && !availableDrivers.Contains("RADV"))
+				{
+					availableDrivers.Add("RADV");
+				}
+				if (File.Exists(Path.Combine(localIcdDir, "intel_icd.x86_64.json")) && !availableDrivers.Contains("Intel ANV"))
+				{
+					availableDrivers.Add("Intel ANV");
+				}
+				if (File.Exists(Path.Combine(localIcdDir, "nvidia_icd.json")) && !availableDrivers.Contains("NVIDIA"))
+				{
+					availableDrivers.Add("NVIDIA");
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = $"Warning: Could not detect Vulkan drivers: {ex.Message}" 
+			}));
+		}
+		
+		VulkanDriverOptions = availableDrivers;
+		
+		// Ensure current selection is valid, default to Auto if not
+		if (!VulkanDriverOptions.Contains(LinuxVulkanDriver))
+		{
+			LinuxVulkanDriver = "Auto";
 		}
 	}
 

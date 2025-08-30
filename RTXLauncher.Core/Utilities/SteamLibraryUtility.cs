@@ -131,13 +131,22 @@ public static class SteamLibraryUtility
 		// List of common relative paths for Steam on Linux
 		var potentialPaths = new[]
 		{
-			Path.Combine(homePath, ".local", "share", "Steam"),
+							Path.Combine(homePath, ".local", "share", "Steam"),
 			Path.Combine(homePath, ".steam", "steam"),
-			Path.Combine(homePath, ".var", "app", "com.valvesoftware.Steam", "data", "Steam") // Flatpak path
+			Path.Combine(homePath, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam") // Flatpak path
         };
 
+		// Also check system-wide Steam installation
+		var systemPaths = new[]
+		{
+			"/usr/lib/steam"
+		};
+
+		// Combine user and system paths
+		var allPaths = potentialPaths.Concat(systemPaths);
+
 		// Return the first path that exists
-		return potentialPaths.FirstOrDefault(Directory.Exists);
+		return allPaths.FirstOrDefault(Directory.Exists);
 	}
 
 	// ==========================================================

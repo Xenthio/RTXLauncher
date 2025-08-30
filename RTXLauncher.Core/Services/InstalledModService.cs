@@ -32,7 +32,7 @@ public class InstalledModsService
 		try
 		{
 			var json = await File.ReadAllTextAsync(_filePath);
-			_installedModsCache = JsonSerializer.Deserialize<List<InstalledModInfo>>(json) ?? new List<InstalledModInfo>();
+			_installedModsCache = JsonSerializer.Deserialize(json, GitHubJsonContext.Default.ListInstalledModInfo) ?? new List<InstalledModInfo>();
 			return _installedModsCache;
 		}
 		catch (Exception ex)
@@ -65,7 +65,7 @@ public class InstalledModsService
 	private async Task SaveAsync()
 	{
 		if (_installedModsCache == null) return;
-		var json = JsonSerializer.Serialize(_installedModsCache, new JsonSerializerOptions { WriteIndented = true });
+		var json = JsonSerializer.Serialize(_installedModsCache, GitHubJsonContext.Default.ListInstalledModInfo);
 		await File.WriteAllTextAsync(_filePath, json);
 	}
 }
