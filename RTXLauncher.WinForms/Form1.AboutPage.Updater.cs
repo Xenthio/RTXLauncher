@@ -18,19 +18,19 @@ namespace RTXLauncher.WinForms
 		private GitHubRelease _latestRelease;
 		private bool _updateAvailable = false;
 
-		private class UpdateSource
-		{
-			public string Name { get; set; }
-			public string Version { get; set; }
-			public string DownloadUrl { get; set; }
-			public bool IsStaging { get; set; }
-			public GitHubRelease Release { get; set; }
+		//private class UpdateSource
+		//{
+		//	public string Name { get; set; }
+		//	public string Version { get; set; }
+		//	public string DownloadUrl { get; set; }
+		//	public bool IsStaging { get; set; }
+		//	public GitHubRelease Release { get; set; }
 
-			public override string ToString()
-			{
-				return IsStaging ? $"{Name}" : $"{Name} ({Version})";
-			}
-		}
+		//	public override string ToString()
+		//	{
+		//		return IsStaging ? $"{Name}" : $"{Name} ({Version})";
+		//	}
+		//}
 
 		public void InitialiseUpdater()
 		{
@@ -832,95 +832,94 @@ pause\n
 				}
 			}
 		}
-	}
-
-	/// <summary>
-	/// Alternative method using the unified UpdateService.
-	/// This demonstrates how both WinForms and Avalonia can use the same core logic.
-	/// </summary>
-	private async Task CheckForUpdatesUsingUnifiedServiceAsync()
-	{
-		try
+		/// <summary>
+		/// Alternative method using the unified UpdateService.
+		/// This demonstrates how both WinForms and Avalonia can use the same core logic.
+		/// </summary>
+		private async Task CheckForUpdatesUsingUnifiedServiceAsync()
 		{
-			ReleaseNotesRichTextBox.Text = "Checking for updates using unified service...";
-			
-			var result = await _updateService.CheckForUpdatesAsync(forceRefresh: true);
-			
-			if (result.Error != null)
+			try
 			{
-				ReleaseNotesRichTextBox.Text = $"Error: {result.Error.Message}";
-				return;
+				ReleaseNotesRichTextBox.Text = "Checking for updates using unified service...";
+
+				var result = await _updateService.CheckForUpdatesAsync(forceRefresh: true);
+
+				if (result.Error != null)
+				{
+					ReleaseNotesRichTextBox.Text = $"Error: {result.Error.Message}";
+					return;
+				}
+
+				// Update current version display
+				_currentVersion = result.CurrentVersion;
+
+				// Populate combo box with available updates
+				LauncherUpdateSourceComboBox.Items.Clear();
+				foreach (var source in result.AvailableUpdates)
+				{
+					LauncherUpdateSourceComboBox.Items.Add(source);
+				}
+
+				if (LauncherUpdateSourceComboBox.Items.Count > 0)
+				{
+					LauncherUpdateSourceComboBox.SelectedIndex = result.AvailableUpdates.Count > 1 ? 1 : 0;
+				}
+
+				// Show update status
+				if (result.UpdateAvailable)
+				{
+					ReleaseNotesRichTextBox.Text = $"Update available!\n\n" +
+						$"Current version: {result.CurrentVersion}\n" +
+						$"Latest version: {result.LatestUpdate?.Version}\n\n" +
+						$"{result.LatestUpdate?.Release?.Body ?? "No release notes available."}";
+				}
+				else
+				{
+					ReleaseNotesRichTextBox.Text = "You have the latest version.";
+				}
+
+				InstallLauncherUpdateButton.Enabled = LauncherUpdateSourceComboBox.Items.Count > 0;
 			}
-
-			// Update current version display
-			_currentVersion = result.CurrentVersion;
-
-			// Populate combo box with available updates
-			LauncherUpdateSourceComboBox.Items.Clear();
-			foreach (var source in result.AvailableUpdates)
+			catch (Exception ex)
 			{
-				LauncherUpdateSourceComboBox.Items.Add(source);
+				ReleaseNotesRichTextBox.Text = $"Error checking for updates: {ex.Message}";
 			}
-
-			if (LauncherUpdateSourceComboBox.Items.Count > 0)
-			{
-				LauncherUpdateSourceComboBox.SelectedIndex = result.AvailableUpdates.Count > 1 ? 1 : 0;
-			}
-
-			// Show update status
-			if (result.UpdateAvailable)
-			{
-				ReleaseNotesRichTextBox.Text = $"Update available!\n\n" +
-					$"Current version: {result.CurrentVersion}\n" +
-					$"Latest version: {result.LatestUpdate?.Version}\n\n" +
-					$"{result.LatestUpdate?.Release?.Body ?? "No release notes available."}";
-			}
-			else
-			{
-				ReleaseNotesRichTextBox.Text = "You have the latest version.";
-			}
-
-			InstallLauncherUpdateButton.Enabled = LauncherUpdateSourceComboBox.Items.Count > 0;
 		}
-		catch (Exception ex)
+
+		/// <summary>
+		/// Alternative download method using the unified UpdateService.
+		/// This shows how the same logic can be used across platforms.
+		/// </summary>
+		private async Task DownloadUpdateUsingUnifiedServiceAsync(UpdateSource selectedSource)
 		{
-			ReleaseNotesRichTextBox.Text = $"Error checking for updates: {ex.Message}";
-		}
-	}
+			if (selectedSource == null) return;
 
-	/// <summary>
-	/// Alternative download method using the unified UpdateService.
-	/// This shows how the same logic can be used across platforms.
-	/// </summary>
-	private async Task DownloadUpdateUsingUnifiedServiceAsync(UpdateSource selectedSource)
-	{
-		if (selectedSource == null) return;
-
-		try
-		{
-			CheckForLauncherUpdatesButton.Enabled = false;
-			InstallLauncherUpdateButton.Enabled = false;
-
-			var progress = new Progress<Core.Services.UpdateProgress>(p =>
+			try
 			{
-				ReleaseNotesRichTextBox.Text = p.Message;
-				// Could also update a progress bar here if available
-			});
+				CheckForLauncherUpdatesButton.Enabled = false;
+				InstallLauncherUpdateButton.Enabled = false;
 
-			string downloadFolder = await _updateService.DownloadUpdateAsync(selectedSource, progress);
-			
-			ReleaseNotesRichTextBox.Text = $"Update downloaded to: {downloadFolder}\n\n" +
-				"The existing installation logic from the WinForms updater can now take over " +
-				"to complete the installation process.";
-		}
-		catch (Exception ex)
-		{
-			ReleaseNotesRichTextBox.Text = $"Download failed: {ex.Message}";
-		}
-		finally
-		{
-			CheckForLauncherUpdatesButton.Enabled = true;
-			InstallLauncherUpdateButton.Enabled = true;
+				var progress = new Progress<Core.Services.UpdateProgress>(p =>
+				{
+					ReleaseNotesRichTextBox.Text = p.Message;
+					// Could also update a progress bar here if available
+				});
+
+				string downloadFolder = await _updateService.DownloadUpdateAsync(selectedSource, progress);
+
+				ReleaseNotesRichTextBox.Text = $"Update downloaded to: {downloadFolder}\n\n" +
+					"The existing installation logic from the WinForms updater can now take over " +
+					"to complete the installation process.";
+			}
+			catch (Exception ex)
+			{
+				ReleaseNotesRichTextBox.Text = $"Download failed: {ex.Message}";
+			}
+			finally
+			{
+				CheckForLauncherUpdatesButton.Enabled = true;
+				InstallLauncherUpdateButton.Enabled = true;
+			}
 		}
 	}
 }
