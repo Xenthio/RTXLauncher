@@ -95,10 +95,7 @@ public partial class AboutViewModel : PageViewModel
 			}
 
 			if (UpdateAvailable && result.LatestUpdate != null)
-			{
-				var headerContent = $"Update available: {result.LatestUpdate.Version}\n\n" +
-					$"Current version: {CurrentVersion}\n\n";
-				
+			{				
 				var releaseBody = result.LatestUpdate.Release?.Body ?? "No release notes available.";
 				
 				// Use the markdown formatter to process the release notes
@@ -214,14 +211,9 @@ public partial class AboutViewModel : PageViewModel
 		else if (source.Release != null)
 		{
 			var isNewer = Core.Utilities.VersionUtility.CompareVersions(source.Version, CurrentVersion) > 0;
-			var status = isNewer ? "🆕 Newer version available" : "ℹ️ Same or older version";
-			
-			var headerContent = $"{source.Name}\n{status}\n\n" +
-				$"Published: {source.Release.PublishedAt:yyyy-MM-dd}\n\n";
-			
-			var releaseBody = source.Release.Body ?? "No release notes available.";
 			
 			// Use the markdown formatter to process the release notes
+			var releaseBody = source.Release.Body ?? "No release notes available.";
 			ReleaseNotes = Utilities.MarkdownFormatter.FormatReleaseNotes(
 				source.Version, CurrentVersion, releaseBody, isNewer);
 				
