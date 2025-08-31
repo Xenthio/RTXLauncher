@@ -46,6 +46,7 @@
     </PackageReference>
     <PackageReference Include="Avalonia.Themes.Simple" Version="11.3.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Markdown.Avalonia" Version="*" />
     <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
   </ItemGroup>
 
