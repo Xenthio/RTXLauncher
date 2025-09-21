@@ -37,9 +37,17 @@ public class MountingService
 
 			// --- Link Remix Mod ---
 			progress.Report(new InstallProgressReport { Message = $"Mounting {gameName} Remix content...", Percentage = 25 });
-			if (Directory.Exists(remixModPath) && !Directory.Exists(remixModMountPath))
+			if (Directory.Exists(remixModPath))
 			{
-				CreateDirectorySymbolicLink(remixModMountPath, remixModPath);
+				// Ensure a clean mount folder (remove old symlink or directory)
+				if (Directory.Exists(remixModMountPath))
+				{
+					Directory.Delete(remixModMountPath, true);
+				}
+				Directory.CreateDirectory(remixModMountPath);
+
+				// Copy only ROOT-level .usda files; symlink nested files (including nested .usda) // This is allows to overlay .usda fixes without replacing the orignal files. 
+				MirrorRemixFolderWithUsdaCopies(remixModPath, remixModMountPath, true);
 			}
 
 			// --- Link Source Content ---
@@ -127,6 +135,60 @@ public class MountingService
 				path,
 				ex
 			);
+		}
+	}
+
+	private void CreateFileSymbolicLink(string path, string pathToTarget)
+	{
+		try
+		{
+			File.CreateSymbolicLink(path, pathToTarget);
+		}
+		catch (IOException ex)
+		{
+			throw new SymlinkFailedException(
+				"Failed to create file symbolic link. This requires Administrator privileges.",
+				path,
+				ex
+			);
+		}
+	}
+
+	/// <summary>
+	/// Recursively mirrors a Remix mod folder into the mount folder. Copies ONLY root-level
+	/// .usda files and creates file symlinks for everything else (including nested .usda files).
+	/// Directories are created normally (not symlinked) to allow selective file-level handling.
+	/// </summary>
+	private void MirrorRemixFolderWithUsdaCopies(string sourceDir, string destDir, bool isRoot)
+	{
+		// Create destination directory if missing
+		Directory.CreateDirectory(destDir);
+
+		// First, process files in this directory
+		foreach (var file in Directory.GetFiles(sourceDir))
+		{
+			var fileName = Path.GetFileName(file);
+			var destFile = Path.Combine(destDir, fileName);
+			var ext = Path.GetExtension(file).ToLowerInvariant();
+
+			if (ext == ".usda" && isRoot)
+			{
+				// Copy text-based USD ASCII files so users can edit without touching original game
+				File.Copy(file, destFile, true);
+			}
+			else
+			{
+				// Symlink all other files
+				CreateFileSymbolicLink(destFile, file);
+			}
+		}
+
+		// Then recurse into subdirectories
+		foreach (var subdir in Directory.GetDirectories(sourceDir))
+		{
+			var name = Path.GetFileName(subdir);
+			var destSubdir = Path.Combine(destDir, name);
+			MirrorRemixFolderWithUsdaCopies(subdir, destSubdir, false);
 		}
 	}
 }
