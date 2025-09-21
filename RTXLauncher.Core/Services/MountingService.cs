@@ -70,6 +70,79 @@ public class MountingService
 	}
 
 	/// <summary>
+	/// Downloads the USDA fixes archive and overlays the HL2 RTX demo fixes into the
+	/// mounted hl2rtx Remix mod folder (mount-hl2rtx-hl2rtx), overwriting copied .usda files.
+	/// </summary>
+	public async Task ApplyHl2UsdaFixesAsync(IProgress<InstallProgressReport> progress)
+	{
+		const string fixesUrl = "https://github.com/sambow23/rtx-usda-fixes/archive/refs/heads/main.zip";
+		string tempDir = Path.Combine(Path.GetTempPath(), $"RTXLauncher_UsdFixes_{Path.GetRandomFileName()}");
+		Directory.CreateDirectory(tempDir);
+
+		try
+		{
+			progress.Report(new InstallProgressReport { Message = "Downloading USDA fixes...", Percentage = 5 });
+			string zipPath = Path.Combine(tempDir, "usda_fixes.zip");
+			using (var http = new HttpClient())
+			{
+				http.DefaultRequestHeaders.Add("User-Agent", "RTXLauncher");
+				using var resp = await http.GetAsync(fixesUrl, HttpCompletionOption.ResponseHeadersRead);
+				resp.EnsureSuccessStatusCode();
+				await using var fs = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None);
+				await resp.Content.CopyToAsync(fs);
+			}
+
+			progress.Report(new InstallProgressReport { Message = "Extracting fixes...", Percentage = 25 });
+			string extractDir = Path.Combine(tempDir, "extracted");
+			Directory.CreateDirectory(extractDir);
+			System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, extractDir);
+
+			// The archive structure: <root>/hl2rtxdemo/<files>
+			string? hl2Root = Directory
+				.GetDirectories(extractDir)
+				.SelectMany(d => Directory.GetDirectories(d, "hl2rtxdemo", SearchOption.TopDirectoryOnly))
+				.FirstOrDefault();
+			if (string.IsNullOrEmpty(hl2Root) || !Directory.Exists(hl2Root))
+			{
+				throw new DirectoryNotFoundException("Could not find 'hl2rtxdemo' in the fixes archive.");
+			}
+
+			// Destination is the mounted hl2rtx Remix mod path we create during mount
+			var gmodPath = GarrysModUtility.GetThisInstallFolder();
+			string destMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", "mount-hl2rtx-hl2rtx");
+			if (!Directory.Exists(destMountPath))
+			{
+				throw new DirectoryNotFoundException("Please mount 'Half-Life 2: RTX' first. The mount folder was not found.");
+			}
+
+			progress.Report(new InstallProgressReport { Message = "Applying fixes...", Percentage = 50 });
+			await Task.Run(() => CopyDirectoryOverwrite(hl2Root, destMountPath));
+
+			progress.Report(new InstallProgressReport { Message = "USDA fixes applied successfully.", Percentage = 100 });
+		}
+		finally
+		{
+			try { if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true); } catch { /* ignore cleanup errors */ }
+		}
+	}
+
+	private static void CopyDirectoryOverwrite(string sourceDir, string destDir)
+	{
+		Directory.CreateDirectory(destDir);
+		foreach (var file in Directory.GetFiles(sourceDir))
+		{
+			var name = Path.GetFileName(file);
+			var dest = Path.Combine(destDir, name);
+			File.Copy(file, dest, true);
+		}
+		foreach (var dir in Directory.GetDirectories(sourceDir))
+		{
+			var name = Path.GetFileName(dir);
+			CopyDirectoryOverwrite(dir, Path.Combine(destDir, name));
+		}
+	}
+
+	/// <summary>
 	/// Removes all symbolic links for a mounted game.
 	/// </summary>
 	public void UnmountGame(string gameFolder, string remixModFolder)
