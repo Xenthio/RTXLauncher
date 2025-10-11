@@ -17,7 +17,6 @@ namespace RTXLauncher.Avalonia.ViewModels;
 public partial class SettingsViewModel : PageViewModel
 {
 	// --- Services ---
-	private readonly QuickInstallService _quickInstallService;
 	private readonly IMessenger _messenger;
 
 	// --- The Model ---
@@ -25,8 +24,6 @@ public partial class SettingsViewModel : PageViewModel
 	private readonly SettingsData _settingsData;
 
 	// --- UI State Properties ---
-	[ObservableProperty] private bool _isQuickInstallVisible;
-	[ObservableProperty] private bool _isBusy;
 	[ObservableProperty] private string _selectedResolution;
 	[ObservableProperty] private List<(string Label, string Path)> _availableProtonBuilds = new();
 	[ObservableProperty] private List<string> _protonBuildLabels = new();
@@ -41,12 +38,10 @@ public partial class SettingsViewModel : PageViewModel
 
 	public SettingsViewModel(
 		SettingsData settingsData, // The loaded settings are passed in
-		QuickInstallService quickInstallService,
 		IMessenger messenger)
 	{
 		Header = "Settings";
 		_settingsData = settingsData;
-		_quickInstallService = quickInstallService;
 		_messenger = messenger;
 
 		Resolutions = new List<string> { "Native Resolution" };
@@ -68,8 +63,6 @@ public partial class SettingsViewModel : PageViewModel
 				SelectedResolution = $"{settingsData.Width}x{settingsData.Height}";
 			}
 		}
-
-		CheckInstallationStatus();
 		
 		// Initialize Linux-specific settings if on Linux
 		if (IsLinux)
@@ -387,48 +380,4 @@ public partial class SettingsViewModel : PageViewModel
 			LinuxVulkanDriver = "Auto";
 		}
 	}
-
-	// ===================================================================
-	//      QUICK INSTALL LOGIC
-	// ===================================================================
-
-	public void CheckInstallationStatus()
-	{
-		var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
-		IsQuickInstallVisible = installType == "unknown";
-	}
-
-	[RelayCommand(CanExecute = nameof(CanRunQuickInstall))]
-	private async Task RunQuickInstall()
-	{
-		var confirmed = await DialogUtility.ShowConfirmationAsync(
-			"Quick Install Confirmation",
-			"This will perform a complete installation with recommended settings.\n\n" +
-			"• Create a new RTX installation (if needed)\n" +
-			"• Install the latest recommended RTX Remix\n" +
-			"• Apply recommended patches\n" +
-			"• Install the latest recommended fixes package\n\n" +
-			"Do you want to continue?");
-
-		if (!confirmed) return;
-
-		IsBusy = true;
-		var progressHandle = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
-		IProgress<InstallProgressReport> progress = progressHandle;
-
-		try
-		{
-			await _quickInstallService.PerformQuickInstallAsync(progress);
-			CheckInstallationStatus(); // Hide the panel on success
-		}
-		catch (Exception ex)
-		{
-			progress.Report(new InstallProgressReport { Message = $"FATAL ERROR: {ex.Message}", Percentage = 100 });
-		}
-		finally
-		{
-			IsBusy = false;
-		}
-	}
-	private bool CanRunQuickInstall() => !IsBusy;
 }

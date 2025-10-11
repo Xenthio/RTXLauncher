@@ -1,4 +1,4 @@
-﻿using RTXLauncher.Core.Utilities;
+using RTXLauncher.Core.Utilities;
 using System.Xml.Serialization;
 
 namespace RTXLauncher.Core.Models;

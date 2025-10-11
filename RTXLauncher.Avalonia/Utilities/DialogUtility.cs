@@ -27,4 +27,15 @@ public static class DialogUtility
 		);
 		await messageBox.ShowAsync();
 	}
+
+	public async static Task ShowMessageAsync(string title, string message, string buttonText = "OK")
+	{
+		var messageBox = MessageBoxManager.GetMessageBoxStandard(
+			title,
+			message,
+			ButtonEnum.Ok,
+			Icon.Warning
+		);
+		await messageBox.ShowAsync();
+	}
 }

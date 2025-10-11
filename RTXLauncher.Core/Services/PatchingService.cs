@@ -20,10 +20,10 @@ public class PatchingService
 	/// <summary>
 	/// Fetches a patch script from GitHub, parses it, and applies the binary patches to an installation.
 	/// </summary>
-	public async Task ApplyPatchesAsync(string owner, string repo, string filePath, string installPath, IProgress<InstallProgressReport> progress)
+	public async Task ApplyPatchesAsync(string owner, string repo, string filePath, string installPath, IProgress<InstallProgressReport> progress, string branch = "master")
 	{
 		progress.Report(new InstallProgressReport { Message = "Fetching patch definitions...", Percentage = 5 });
-		var patchFileContent = await FetchPatchFileContentAsync(owner, repo, filePath);
+		var patchFileContent = await FetchPatchFileContentAsync(owner, repo, filePath, branch);
 
 		await Task.Run(() =>
 		{
@@ -153,9 +153,9 @@ public class PatchingService
 	}
 	// --- Private Helper Methods (Ported from your original code) ---
 
-	private async Task<string> FetchPatchFileContentAsync(string owner, string repo, string filePath)
+	private async Task<string> FetchPatchFileContentAsync(string owner, string repo, string filePath, string branch = "master")
 	{
-		var url = $"https://raw.githubusercontent.com/{owner}/{repo}/master/{filePath}";
+		var url = $"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{filePath}";
 		return await _httpClient.GetStringAsync(url);
 	}
 

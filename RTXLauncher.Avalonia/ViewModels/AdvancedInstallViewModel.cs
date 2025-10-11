@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using RTXLauncher.Core.Models;
@@ -50,7 +50,6 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		Packages.Add(new RemixPackageViewModel(_githubService, _packageInstallService, _messenger));
 		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger));
 		Packages.Add(new FixesPackageViewModel(_githubService, _packageInstallService, _messenger));
-		Packages.Add(new OptiScalerPackageViewModel(_githubService, _packageInstallService, _messenger));
 
 		// Initialize all packages
 		_ = InitializePackages();
@@ -336,7 +335,8 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 	private readonly Dictionary<string, (string Owner, string Repo, string InstallType)> _packageSources = new()
 	{
 		{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("Xenthio", "gmod-rtx-fixes-2", "Any") },
-		{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") }
+		{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main") }
 	};
 
 	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger)
@@ -399,96 +399,6 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		{
 			var installDir = GarrysModUtility.GetThisInstallFolder();
 			await _installService.InstallStandardPackageAsync(SelectedRelease, installDir, PackageInstallService.DefaultIgnorePatterns, progress);
-		}
-		catch (Exception ex)
-		{
-			progress.Report(new InstallProgressReport { Message = $"ERROR: {ex.Message}", Percentage = 100 });
-		}
-		finally
-		{
-			IsBusy = false;
-		}
-	}
-}
-
-public partial class OptiScalerPackageViewModel : InstallablePackageViewModel
-{
-	private readonly PackageInstallService _installService;
-	private readonly IMessenger _messenger;
-	// --- 1. Add your sources dictionary for OptiScaler ---
-	private readonly Dictionary<string, (string Owner, string Repo)> _optiScalerSources = new()
-	{
-		{ "sambow23/OptiScaler-Releases", ("sambow23", "OptiScaler-Releases") }
-	};
-
-	public OptiScalerPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger)
-		: base(githubService)
-	{
-		Title = "AMD Support - OptiScaler";
-		_installService = installService;
-		_messenger = messenger;
-	}
-
-
-	// --- 2. Implement LoadSources to read from the dictionary ---
-	protected override Task LoadSources()
-	{
-		Sources.Clear();
-		foreach (var sourceName in _optiScalerSources.Keys)
-		{
-			Sources.Add(sourceName);
-		}
-		return Task.CompletedTask;
-	}
-
-	// --- 3. Implement LoadReleases to use the selected source ---
-	protected override async Task LoadReleases()
-	{
-		if (string.IsNullOrEmpty(SelectedSource) || !_optiScalerSources.TryGetValue(SelectedSource, out var sourceInfo))
-		{
-			Releases.Clear();
-			return;
-		}
-
-		IsBusy = true;
-		Releases.Clear();
-		try
-		{
-			var releases = await GitHubService.FetchReleasesAsync(sourceInfo.Owner, sourceInfo.Repo);
-			foreach (var release in releases.OrderByDescending(r => r.PublishedAt))
-			{
-				Releases.Add(release);
-			}
-			SelectedRelease = Releases.FirstOrDefault();
-		}
-		catch (Exception ex)
-		{
-			System.Diagnostics.Debug.WriteLine($"[OptiScaler] Failed to load releases: {ex.Message}");
-		}
-		finally
-		{
-			IsBusy = false;
-		}
-	}
-
-	protected override async Task Install()
-	{
-		if (SelectedRelease == null) return;
-
-		IsBusy = true;
-
-		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
-		IProgress<InstallProgressReport> progress = progressHandler;
-		try
-		{
-			var installDir = GarrysModUtility.GetThisInstallFolder();
-			if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
-			{
-				throw new Exception("Could not find a valid RTX GMod installation directory.");
-			}
-
-			// Call the special-case installer method for OptiScaler
-			await _installService.InstallOptiScalerPackageAsync(SelectedRelease, installDir, progress);
 		}
 		catch (Exception ex)
 		{

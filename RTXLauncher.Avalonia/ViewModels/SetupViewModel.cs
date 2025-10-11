@@ -5,8 +5,10 @@ using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RTXLauncher.Avalonia.ViewModels;
@@ -33,6 +35,17 @@ public partial class SetupViewModel : PageViewModel
 	public ObservableCollection<string> PreflightWarnings { get; } = new();
 
 	/// <summary>
+	/// Available fixes packages for the user to choose from.
+	/// </summary>
+	public List<FixesPackageInfo> AvailableFixesPackages { get; }
+
+	/// <summary>
+	/// The currently selected fixes package.
+	/// </summary>
+	[ObservableProperty]
+	private FixesPackageInfo _selectedFixesPackage;
+
+	/// <summary>
 	/// A simple boolean property for the View to bind to, indicating if there are any warnings.
 	/// </summary>
 	public bool ShowPreflightWarnings => PreflightWarnings.Count > 0;
@@ -42,6 +55,10 @@ public partial class SetupViewModel : PageViewModel
 		Header = "Setup";
 		_quickInstallService = quickInstallService;
 		_messenger = messenger;
+
+		// Initialize fixes packages
+		AvailableFixesPackages = QuickInstallService.GetAvailableFixesPackages();
+		_selectedFixesPackage = AvailableFixesPackages.First(p => p.Option == FixesPackageOption.Standard); // Default to Standard
 
 		// Run the initial checks to determine which view to show.
 		CheckInitialState();
@@ -95,7 +112,7 @@ public partial class SetupViewModel : PageViewModel
 
 		try
 		{
-			await _quickInstallService.PerformQuickInstallAsync(progressHandle);
+			await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 		}
@@ -112,4 +129,36 @@ public partial class SetupViewModel : PageViewModel
 	}
 
 	private bool CanRunInstall() => !IsBusy;
+
+	/// <summary>
+	/// Called when the selected fixes package changes to validate compatibility.
+	/// </summary>
+	partial void OnSelectedFixesPackageChanged(FixesPackageInfo value)
+	{
+		if (value == null) return;
+
+		// Clear existing warnings related to package compatibility
+		var compatWarnings = PreflightWarnings.Where(w => w.Contains("Performance") || w.Contains("64-bit")).ToList();
+		foreach (var warning in compatWarnings)
+		{
+			PreflightWarnings.Remove(warning);
+		}
+
+		// If the selected package requires x64, add a warning if we can detect it's x32
+		if (value.RequiresX64)
+		{
+			var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
+			if (installType != "unknown" && installType != "gmod_x86-64")
+			{
+				PreflightWarnings.Add($"Warning: The '{value.DisplayName}' package requires a 64-bit installation. Your current installation appears to be 32-bit. The installation will fail if you proceed with this option.");
+			}
+			else if (installType == "unknown")
+			{
+				// We don't know yet, but we should still inform the user
+				PreflightWarnings.Add($"Note: The '{value.DisplayName}' package requires a 64-bit Garry's Mod installation. Make sure your Steam copy of Garry's Mod is the 64-bit version.");
+			}
+		}
+
+		OnPropertyChanged(nameof(ShowPreflightWarnings));
+	}
 }

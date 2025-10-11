@@ -1,4 +1,4 @@
-﻿// ViewModels/MainWindowViewModel.cs
+// ViewModels/MainWindowViewModel.cs
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -95,7 +95,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
 		Pages = new ObservableCollection<PageViewModel>
 		{
-			new SettingsViewModel(_settingsData, quickInstallService, _messenger),
+			new SettingsViewModel(_settingsData, _messenger),
 			new MountingViewModel(mountingService, _messenger),
 			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService),
 			new AboutViewModel(_messenger, gitHubService),

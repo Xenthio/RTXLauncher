@@ -25,3 +25,23 @@ public class DownloadProgressReport : InstallProgressReport
 	public long BytesDownloaded { get; init; }
 	public long TotalBytes { get; init; }
 }
+
+public enum FixesPackageOption
+{
+	Standard,
+	Performance
+}
+
+public class FixesPackageInfo
+{
+	public FixesPackageOption Option { get; init; }
+	public string DisplayName { get; init; } = string.Empty;
+	public string Description { get; init; } = string.Empty;
+	public string Owner { get; init; } = string.Empty;
+	public string Repo { get; init; } = string.Empty;
+	public string PatchOwner { get; init; } = string.Empty;
+	public string PatchRepo { get; init; } = string.Empty;
+	public string PatchBranch { get; init; } = string.Empty;
+	public string PatchFile { get; init; } = string.Empty;
+	public bool RequiresX64 { get; init; }
+}

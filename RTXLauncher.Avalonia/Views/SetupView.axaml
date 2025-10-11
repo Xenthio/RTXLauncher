@@ -13,36 +13,58 @@
 			<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="20"
 			        IsVisible="{Binding IsWelcomeVisible}">
 				<StackPanel Spacing="15">
-					<TextBlock Text="Welcome to the Garry's Mod RTX Launcher" FontSize="20" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+				<TextBlock Text="Welcome to the Garry's Mod RTX Launcher" FontSize="20" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
 
-					<!-- Pre-flight Warnings Area -->
-					<ItemsControl ItemsSource="{Binding PreflightWarnings}"
-					              IsVisible="{Binding ShowPreflightWarnings}">
-						<ItemsControl.ItemTemplate>
+				<!-- Pre-flight Warnings Area -->
+				<ItemsControl ItemsSource="{Binding PreflightWarnings}"
+				              IsVisible="{Binding ShowPreflightWarnings}">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<Border Background="#40FF0000" BorderBrush="Red" BorderThickness="1" CornerRadius="3" Padding="10" Margin="0,5">
+								<TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="White"/>
+							</Border>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+
+				<TextBlock Text="This quick installer will automatically set up everything you need to play." TextWrapping="Wrap"/>
+
+				<StackPanel Margin="20,5,0,5">
+					<TextBlock Text="• Create a clean, separate copy of Garry's Mod."/>
+					<TextBlock Text="• Download and install the latest recommended RTX Remix."/>
+					<TextBlock Text="• Apply essential community fixes and patches."/>
+					<TextBlock Text="• Configure optimal default settings."/>
+				</StackPanel>
+
+				<!-- Fixes Package Selection -->
+				<Separator Margin="0,10"/>
+				<StackPanel Spacing="8">
+					<TextBlock Text="Select Fixes Package:" FontWeight="SemiBold"/>
+					<ComboBox ItemsSource="{Binding AvailableFixesPackages}"
+					          SelectedItem="{Binding SelectedFixesPackage}"
+					          HorizontalAlignment="Stretch">
+						<ComboBox.ItemTemplate>
 							<DataTemplate>
-								<Border Background="#40FF0000" BorderBrush="Red" BorderThickness="1" CornerRadius="3" Padding="10" Margin="0,5">
-									<TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="White"/>
-								</Border>
+								<StackPanel>
+									<TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+									<TextBlock Text="{Binding Description}" 
+									           FontSize="11" 
+									           Opacity="0.7"
+									           TextWrapping="Wrap"/>
+								</StackPanel>
 							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+				</StackPanel>
+				<Separator Margin="0,10"/>
 
-					<TextBlock Text="This quick installer will automatically set up everything you need to play." TextWrapping="Wrap"/>
-
-					<StackPanel Margin="20,5,0,5">
-						<TextBlock Text="• Create a clean, separate copy of Garry's Mod."/>
-						<TextBlock Text="• Download and install the latest recommended RTX Remix."/>
-						<TextBlock Text="• Apply essential community fixes and patches."/>
-						<TextBlock Text="• Configure optimal default settings."/>
-					</StackPanel>
-
-					<Button Content="Start Quick Install"
-					        Command="{Binding RunInstallCommand}"
-					        IsEnabled="{Binding !IsBusy}"
-					        HorizontalAlignment="Stretch"
-					        Classes="accent"
-					        Padding="10"
-					        FontSize="16"/>
+				<Button Content="Start Quick Install"
+				        Command="{Binding RunInstallCommand}"
+				        IsEnabled="{Binding !IsBusy}"
+				        HorizontalAlignment="Stretch"
+				        Classes="accent"
+				        Padding="10"
+				        FontSize="16"/>
 				</StackPanel>
 			</Border>
 

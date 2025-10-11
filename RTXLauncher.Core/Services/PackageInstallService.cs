@@ -20,7 +20,8 @@ public class PackageInstallService
 	public static Dictionary<string, (string Owner, string Repo, string InstallType)> PackageSources = new Dictionary<string, (string, string, string)>
 	{
 		{ "Xenthio/garrys-mod-rtx-remixed (Any)", ("Xenthio", "garrys-mod-rtx-remixed", "Any") },
-		{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") }
+		{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main") }
 	};
 
 	public static Dictionary<string, (string Owner, string Repo, string FilePath)> PatchSources = new Dictionary<string, (string, string, string)>
@@ -28,11 +29,6 @@ public class PackageInstallService
 		{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py") },
 		{ "sambow23/SourceRTXTweaks", ("sambow23", "SourceRTXTweaks", "applypatch.py") },
 		{ "Xenthio/SourceRTXTweaks (outdated, here to test multiple repos)", ("Xenthio", "SourceRTXTweaks", "applypatch.py") }
-	};
-
-	public static Dictionary<string, (string Owner, string Repo)> OptiScalerSources = new Dictionary<string, (string, string)>
-	{
-		{ "sambow23/OptiScaler-Releases", ("sambow23", "OptiScaler-Releases") }
 	};
 
 	public static readonly string DefaultIgnorePatterns =
@@ -189,67 +185,6 @@ bin/win64/usd_ms.dll
 		finally
 		{
 			if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
-		}
-	}
-
-	/// <summary>
-	/// Installs the OptiScaler package, which has special logic for copying files based on game architecture.
-	/// </summary>
-	public async Task InstallOptiScalerPackageAsync(GitHubRelease release, string installDir, IProgress<InstallProgressReport> progress)
-	{
-		var asset = FindBestReleaseAsset(release);
-		if (asset == null)
-		{
-			throw new Exception("Could not find a suitable zip package for OptiScaler.");
-		}
-
-		string tempDir = Path.Combine(Path.GetTempPath(), $"RTXLauncherOpti_{Path.GetRandomFileName()}");
-		Directory.CreateDirectory(tempDir);
-
-		try
-		{
-			string zipPath = Path.Combine(tempDir, asset.Name);
-			string extractTempDir = Path.Combine(tempDir, "extracted");
-
-			var downloadProgress = new Progress<DownloadProgressReport>(report =>
-			{
-				int percentage = report.TotalBytes > 0 ? (int)((double)report.BytesDownloaded / report.TotalBytes * 40) : 20;
-				progress.Report(new InstallProgressReport { Message = $"Downloading: {report.BytesDownloaded / 1048576}MB", Percentage = percentage });
-			});
-			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress);
-
-			progress.Report(new InstallProgressReport { Message = "Extracting package for inspection...", Percentage = 45 });
-			ZipFile.ExtractToDirectory(zipPath, extractTempDir);
-
-			string trexFolderPath = Path.Combine(extractTempDir, "bin", ".trex");
-			if (!Directory.Exists(trexFolderPath))
-			{
-				throw new Exception("Package does not contain the expected bin/.trex folder structure.");
-			}
-
-			string installType = GarrysModUtility.GetInstallType(installDir);
-			bool isX64 = installType == "gmod_x86-64";
-
-			string destPath = isX64 ? Path.Combine(installDir, "bin", "win64") : Path.Combine(installDir, "bin");
-			string sourcePath = isX64 ? trexFolderPath : Path.Combine(extractTempDir, "bin");
-
-			Directory.CreateDirectory(destPath);
-
-			var copyProgress = new Progress<InstallProgressReport>(report =>
-			{
-				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 60 + (int)(report.Percentage * 0.4) });
-			});
-
-			await CopyDirectoryWithProgress(sourcePath, destPath, true, copyProgress);
-
-			progress.Report(new InstallProgressReport { Message = "OptiScaler installed successfully!", Percentage = 100 });
-		}
-		finally
-		{
-			if (Directory.Exists(tempDir))
-			{
-				Directory.Delete(tempDir, true);
-			}
 		}
 	}
 
