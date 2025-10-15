@@ -17,12 +17,9 @@ namespace RTXLauncher.WinForms
 			InstallRTXRemixButton.Click += InstallRTXRemixButton_Click;
 			InstallFixesPackageButton.Click += InstallFixesPackageButton_ClickAsync;
 			ApplyPatchesButton.Click += ApplyPatchesButton_ClickAsync;
-			InstallOptiScalerButton.Click += InstallOptiScalerButton_ClickAsync;
-
 
 			remixSourceComboBox.SelectedIndexChanged += RemixSourceComboBox_SelectedIndexChanged;
 			packageSourceComboBox.SelectedIndexChanged += PackageSourceComboBox_SelectedIndexChanged;
-			optiScalerSourceComboBox.SelectedIndexChanged += OptiScalerSourceComboBox_SelectedIndexChanged;
 		}
 		private void RefreshInstallInfo()
 		{
@@ -66,9 +63,6 @@ namespace RTXLauncher.WinForms
 			await PopulateReleasesComboBoxAsync(packageSourceComboBox, packageVersionComboBox, PackageInstallService.PackageSources.ToDictionary(kvp => kvp.Key, kvp => (kvp.Value.Owner, kvp.Value.Repo)));
 
 			PopulateComboBox(patchesSourceComboBox, PackageInstallService.PatchSources.Keys.ToList());
-
-			PopulateComboBox(optiScalerSourceComboBox, PackageInstallService.OptiScalerSources.Keys.ToList());
-			await PopulateReleasesComboBoxAsync(optiScalerSourceComboBox, optiScalerVersionComboBox, PackageInstallService.OptiScalerSources);
 		}
 
 
@@ -84,12 +78,6 @@ namespace RTXLauncher.WinForms
 			// We need to convert the dictionary's value type to match the helper method's signature.
 			var packageSourceDict = PackageInstallService.PackageSources.ToDictionary(kvp => kvp.Key, kvp => (kvp.Value.Owner, kvp.Value.Repo));
 			await PopulateReleasesComboBoxAsync(packageSourceComboBox, packageVersionComboBox, packageSourceDict);
-		}
-
-		private async void OptiScalerSourceComboBox_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			// When the OptiScaler source changes, update the OptiScaler versions
-			await PopulateReleasesComboBoxAsync(optiScalerSourceComboBox, optiScalerVersionComboBox, PackageInstallService.OptiScalerSources);
 		}
 
 
@@ -215,23 +203,6 @@ namespace RTXLauncher.WinForms
 			}
 			catch (Exception ex) { MessageBox.Show($"Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
 			finally { progressForm.Close(); InstallFixesPackageButton.Enabled = true; }
-		}
-
-		private async void InstallOptiScalerButton_ClickAsync(object sender, EventArgs e)
-		{
-			if (optiScalerVersionComboBox.SelectedItem is not GitHubRelease release) { /* Show error */ return; }
-
-			var progressForm = new ProgressForm { Text = "Installing OptiScaler" };
-			var progress = new Progress<InstallProgressReport>(report => progressForm.UpdateProgress(report.Message, report.Percentage));
-			try
-			{
-				InstallOptiScalerButton.Enabled = false;
-				progressForm.Show(this);
-				await _packageInstallService.InstallOptiScalerPackageAsync(release, GarrysModUtility.GetThisInstallFolder(), progress);
-				MessageBox.Show("OptiScaler installed!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-			}
-			catch (Exception ex) { MessageBox.Show($"Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-			finally { progressForm.Close(); InstallOptiScalerButton.Enabled = true; }
 		}
 
 		private async void ApplyPatchesButton_ClickAsync(object sender, EventArgs e)
