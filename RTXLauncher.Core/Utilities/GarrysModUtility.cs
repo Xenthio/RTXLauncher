@@ -20,9 +20,10 @@ public static class GarrysModUtility
 	/// <summary>
 	/// Finds the vanilla Garry's Mod installation folder using Steam libraries.
 	/// </summary>
-	public static string? GetVanillaInstallFolder()
+	/// <param name="manualPath">An optional, user-specified path to check first.</param>
+	public static string? GetVanillaInstallFolder(string? manualPath = null)
 	{
-		return SteamLibraryUtility.GetGameInstallFolder("GarrysMod");
+		return SteamLibraryUtility.GetGameInstallFolder("GarrysMod", manualPath);
 	}
 
 	/// <summary>

@@ -23,9 +23,6 @@ public partial class ModsViewModel : PageViewModel
 	public ModQueryOptions QueryOptions { get; } = new();
 	public ObservableCollection<ModItemViewModel> Mods { get; } = new();
 
-	// Track if disclaimer has been shown
-	private bool _disclaimerShown = false;
-
 	public Dictionary<string, string> SortOptions { get; } = new()
 	{
 		{ "Popular (All Time)", "visitstotal-desc" },
@@ -46,13 +43,6 @@ public partial class ModsViewModel : PageViewModel
 	}
 	public async Task LoadModsAsync()
 	{
-		// Show disclaimer on first access
-		if (!_disclaimerShown)
-		{
-			_disclaimerShown = true;
-			await ShowDisclaimerAsync();
-		}
-
 		IsBusy = true;
 		Mods.Clear();
 
@@ -66,15 +56,6 @@ public partial class ModsViewModel : PageViewModel
 
 		UpdatePagination();
 		IsBusy = false;
-	}
-
-	private async Task ShowDisclaimerAsync()
-	{
-		await DialogUtility.ShowMessageAsync(
-			"Mods Browser",
-			"This is a proof of concept feature.\n\n" +
-            "You cannot download and install mods yet"
-		);
 	}
 
 	[RelayCommand]

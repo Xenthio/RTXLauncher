@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using RTXLauncher.Avalonia.Utilities;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Utilities;
@@ -28,6 +29,18 @@ public partial class SetupViewModel : PageViewModel
 
 	[ObservableProperty]
 	private bool _isBusy;
+
+	/// <summary>
+	/// Manual path to vanilla Garry's Mod installation, if specified by user.
+	/// </summary>
+	[ObservableProperty]
+	private string? _manualVanillaPath;
+
+	/// <summary>
+	/// Auto-detected vanilla installation path for display purposes.
+	/// </summary>
+	[ObservableProperty]
+	private string _autoDetectedPath = "Checking...";
 
 	/// <summary>
 	/// A collection of warnings to show the user before they install.
@@ -62,6 +75,9 @@ public partial class SetupViewModel : PageViewModel
 
 		// Run the initial checks to determine which view to show.
 		CheckInitialState();
+		
+		// Check for auto-detected vanilla installation
+		CheckVanillaInstallation();
 	}
 
 	/// <summary>
@@ -99,6 +115,53 @@ public partial class SetupViewModel : PageViewModel
 		OnPropertyChanged(nameof(ShowPreflightWarnings));
 	}
 
+	/// <summary>
+	/// Checks if vanilla Garry's Mod can be auto-detected.
+	/// </summary>
+	private void CheckVanillaInstallation()
+	{
+		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder();
+		if (!string.IsNullOrEmpty(vanillaPath))
+		{
+			AutoDetectedPath = vanillaPath;
+		}
+		else
+		{
+			AutoDetectedPath = "Not found - please specify manually";
+			// Add a warning if we can't find it
+			PreflightWarnings.Insert(0, "Warning: Could not auto-detect vanilla Garry's Mod installation. Please specify the location manually using the button below.");
+			OnPropertyChanged(nameof(ShowPreflightWarnings));
+		}
+	}
+
+	[RelayCommand]
+	private async Task BrowseVanillaPathAsync()
+	{
+		var result = await DialogUtility.ShowFolderPickerAsync("Select your vanilla Garry's Mod installation folder");
+		if (!string.IsNullOrEmpty(result))
+		{
+			// Validate that it's actually a Garry's Mod installation
+			var installType = GarrysModUtility.GetInstallType(result);
+			if (installType != "unknown" && installType.StartsWith("gmod"))
+			{
+				ManualVanillaPath = result;
+				// Remove the auto-detection warning if it exists
+				var warning = PreflightWarnings.FirstOrDefault(w => w.Contains("Could not auto-detect"));
+				if (warning != null)
+				{
+					PreflightWarnings.Remove(warning);
+					OnPropertyChanged(nameof(ShowPreflightWarnings));
+				}
+			}
+			else
+			{
+				await DialogUtility.ShowMessageAsync("Invalid Installation", 
+					"The selected folder does not appear to be a valid Garry's Mod installation.\n\n" +
+					"Please select the folder containing 'garrysmod' and 'gmod.exe' or 'hl2.exe'.");
+			}
+		}
+	}
+
 	[RelayCommand(CanExecute = nameof(CanRunInstall))]
 	private async Task RunInstallAsync()
 	{
@@ -112,7 +175,7 @@ public partial class SetupViewModel : PageViewModel
 
 		try
 		{
-			await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option);
+			await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 		}

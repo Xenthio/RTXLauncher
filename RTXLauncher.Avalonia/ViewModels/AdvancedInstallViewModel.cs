@@ -20,6 +20,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	[ObservableProperty] private string _rtxInstallPath = "Error Fetching Path";
 	[ObservableProperty] private string _rtxInstallType = "Error Fetching Install Type";
 	[ObservableProperty] private bool _isBusy;
+	[ObservableProperty] private string? _manualVanillaPath;
 	private readonly IMessenger _messenger;
 	private readonly GitHubService _githubService;
 	private readonly GarrysModInstallService _garrysModInstallService;
@@ -61,17 +62,17 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	{
 		// Refresh the install info
 
-		_vanillaInstallPath = GarrysModUtility.GetVanillaInstallFolder();
-		_vanillaInstallType = GarrysModUtility.GetInstallType(_vanillaInstallPath);
+		VanillaInstallPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath) ?? "Not found";
+		VanillaInstallType = GarrysModUtility.GetInstallType(VanillaInstallPath);
 
-		if (_vanillaInstallType == "unknown") _vanillaInstallType = "Not installed / not found";
+		if (VanillaInstallType == "unknown") VanillaInstallType = "Not installed / not found";
 
-		_rtxInstallPath = GarrysModUtility.GetThisInstallFolder();
-		_rtxInstallType = GarrysModUtility.GetInstallType(_rtxInstallPath);
+		RtxInstallPath = GarrysModUtility.GetThisInstallFolder();
+		RtxInstallType = GarrysModUtility.GetInstallType(RtxInstallPath);
 
-		if (_rtxInstallType == "unknown")
+		if (RtxInstallType == "unknown")
 		{
-			_rtxInstallType = "There's no install here, create one!";
+			RtxInstallType = "There's no install here, create one!";
 			//CreateInstallButton.Enabled = true;
 			//UpdateInstallButton.Enabled = false;
 		}
@@ -113,17 +114,40 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	}
 
 	[RelayCommand]
+	private async Task BrowseVanillaPathAsync()
+	{
+		var result = await Utilities.DialogUtility.ShowFolderPickerAsync("Select your vanilla Garry's Mod installation folder");
+		if (!string.IsNullOrEmpty(result))
+		{
+			// Validate that it's actually a Garry's Mod installation
+			var installType = GarrysModUtility.GetInstallType(result);
+			if (installType != "unknown" && installType.StartsWith("gmod"))
+			{
+				ManualVanillaPath = result;
+				RefreshInstallInfo(); // Refresh to show the new path
+			}
+			else
+			{
+				await Utilities.DialogUtility.ShowMessageAsync("Invalid Installation", 
+					"The selected folder does not appear to be a valid Garry's Mod installation.\n\n" +
+					"Please select the folder containing 'garrysmod' and 'gmod.exe' or 'hl2.exe'.");
+			}
+		}
+	}
+
+	[RelayCommand]
 	private async Task CreateInstall()
 	{
 		IsBusy = true;
 
 		// Use the utility to get the paths
-		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder();
+		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath);
 		var newInstallPath = GarrysModUtility.GetThisInstallFolder();
 
 		if (string.IsNullOrEmpty(vanillaPath))
 		{
-			// TODO: Show an error dialog to the user
+			await Utilities.DialogUtility.ShowMessageAsync("Vanilla Install Not Found", 
+				"Could not find vanilla Garry's Mod installation. Please specify the location manually using the Browse button.");
 			IsBusy = false;
 			return;
 		}
@@ -139,17 +163,14 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			await _garrysModInstallService.CreateNewGmodInstallAsync(vanillaPath, newInstallPath, progress);
 			// TODO: Show a "Success!" dialog
 		}
-		catch (SymlinkFailedException ex)
+		catch (SymlinkFailedException)
 		{
 			// This is where you handle the specific error.
 			// You would show a dialog asking the user if they want to retry as admin.
-			//InstallProgressText = $"Error: {ex.Message}";
-
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
 			// Handle all other installation errors
-			//InstallProgressText = $"An unexpected error occurred: {ex.Message}";
 		}
 		finally
 		{
@@ -196,7 +217,7 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 	// --- 3. Implement LoadReleases to use the selected source ---
 	protected override async Task LoadReleases()
 	{
-		if (string.IsNullOrEmpty(SelectedSource) || !_remixSources.TryGetValue(SelectedSource, out var sourceInfo))
+		if (GitHubService == null || string.IsNullOrEmpty(SelectedSource) || !_remixSources.TryGetValue(SelectedSource, out var sourceInfo))
 		{
 			Releases.Clear();
 			return;
@@ -361,7 +382,7 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 	// --- 3. Implement LoadReleases ---
 	protected override async Task LoadReleases()
 	{
-		if (string.IsNullOrEmpty(SelectedSource) || !_packageSources.TryGetValue(SelectedSource, out var sourceInfo))
+		if (GitHubService == null || string.IsNullOrEmpty(SelectedSource) || !_packageSources.TryGetValue(SelectedSource, out var sourceInfo))
 		{
 			Releases.Clear();
 			return;

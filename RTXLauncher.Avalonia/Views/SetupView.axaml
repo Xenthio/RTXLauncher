@@ -36,6 +36,35 @@
 					<TextBlock Text="• Configure optimal default settings."/>
 				</StackPanel>
 
+				<!-- Vanilla Installation Path -->
+				<Separator Margin="0,10"/>
+				<StackPanel Spacing="8">
+					<TextBlock Text="Vanilla Garry's Mod Path:" FontWeight="SemiBold"/>
+					<Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+						<Border Grid.Column="0" 
+						        BorderBrush="Gray" 
+						        BorderThickness="1" 
+						        CornerRadius="3" 
+						        Padding="8"
+						        Background="#20000000">
+							<TextBlock Text="{Binding AutoDetectedPath}" 
+							           TextTrimming="CharacterEllipsis"
+							           VerticalAlignment="Center"
+							           ToolTip.Tip="{Binding AutoDetectedPath}"/>
+						</Border>
+						<Button Grid.Column="1" 
+						        Content="Browse..." 
+						        Command="{Binding BrowseVanillaPathCommand}"
+						        VerticalAlignment="Stretch"
+						        Width="100"/>
+					</Grid>
+					<TextBlock Text="{Binding ManualVanillaPath, StringFormat='Manual path: {0}'}" 
+					           FontSize="11" 
+					           Foreground="LightGreen"
+					           IsVisible="{Binding ManualVanillaPath, Converter={x:Static ObjectConverters.IsNotNull}}"
+					           TextWrapping="Wrap"/>
+				</StackPanel>
+
 				<!-- Fixes Package Selection -->
 				<Separator Margin="0,10"/>
 				<StackPanel Spacing="8">

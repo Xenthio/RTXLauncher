@@ -63,7 +63,7 @@ public class QuickInstallService
 		};
 	}
 
-	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard)
+	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null)
 	{
 		// Helper to remap progress for sub-tasks
 		IProgress<InstallProgressReport> CreateSubProgress(int basePercent, int range)
@@ -89,8 +89,8 @@ public class QuickInstallService
 		if (installType == "unknown")
 		{
 			// Step 2: Create new installation if needed
-			var vanillaDir = GarrysModUtility.GetVanillaInstallFolder();
-			if (string.IsNullOrEmpty(vanillaDir)) throw new DirectoryNotFoundException("Could not find vanilla Garry's Mod installation.");
+			var vanillaDir = GarrysModUtility.GetVanillaInstallFolder(manualVanillaPath);
+			if (string.IsNullOrEmpty(vanillaDir)) throw new DirectoryNotFoundException("Could not find vanilla Garry's Mod installation. Please specify the location manually.");
 
 			await _installService.CreateNewGmodInstallAsync(vanillaDir, installDir, CreateSubProgress(10, 20));
 			installType = GarrysModUtility.GetInstallType(installDir); // Re-check type

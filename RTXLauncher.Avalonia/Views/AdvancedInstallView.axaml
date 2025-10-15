@@ -13,14 +13,24 @@
 			<!-- ============================================= -->
 
 			<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
-				<Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+				<Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="5">
 					<TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Your Vanilla Garry's Mod Install" FontWeight="Bold" Margin="0,0,0,10"/>
 
 					<TextBlock Grid.Row="1" Grid.Column="0" Text="Install Type:" FontWeight="SemiBold"/>
 					<TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding VanillaInstallType}"/>
 
-					<TextBlock Grid.Row="2" Grid.Column="0" Text="Install Path:"/>
-					<TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding VanillaInstallPath}" TextWrapping="Wrap"/>
+					<TextBlock Grid.Row="2" Grid.Column="0" Text="Install Path:" VerticalAlignment="Center"/>
+					<Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+						<TextBlock Grid.Column="0" Text="{Binding VanillaInstallPath}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+						<Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseVanillaPathCommand}" VerticalAlignment="Center"/>
+					</Grid>
+
+					<TextBlock Grid.Row="3" Grid.Column="1" 
+					           Text="{Binding ManualVanillaPath, StringFormat='Manual path: {0}'}" 
+					           FontSize="11" 
+					           Foreground="LightGreen"
+					           IsVisible="{Binding ManualVanillaPath, Converter={x:Static ObjectConverters.IsNotNull}}"
+					           TextWrapping="Wrap"/>
 				</Grid>
 			</Border>
 

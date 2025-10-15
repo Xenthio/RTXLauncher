@@ -10,7 +10,7 @@ namespace RTXLauncher.Avalonia.ViewModels;
 // A base class for any package that can be installed from a GitHub source.
 public abstract partial class InstallablePackageViewModel : ViewModelBase
 {
-	protected readonly GitHubService GitHubService;
+	protected readonly GitHubService? GitHubService;
 
 	[ObservableProperty]
 	private string? _title;
@@ -33,7 +33,7 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private GitHubRelease? _selectedRelease;
-	protected InstallablePackageViewModel(GitHubService githubService)
+	protected InstallablePackageViewModel(GitHubService? githubService)
 	{
 		GitHubService = githubService;
 	}
