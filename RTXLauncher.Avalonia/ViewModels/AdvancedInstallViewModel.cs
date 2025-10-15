@@ -282,11 +282,11 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 	private readonly PatchingService _patchingService;
 	private readonly IMessenger _messenger;
 
-	private readonly Dictionary<string, (string Owner, string Repo, string FilePath)> _patchSources = new()
+	private readonly Dictionary<string, (string Owner, string Repo, string FilePath, string Branch)> _patchSources = new()
 	{
-		{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py") },
-		{ "sambow23/SourceRTXTweaks", ("sambow23", "SourceRTXTweaks", "applypatch.py") },
-        // ... other sources
+		{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py", "master") },
+		{ "sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
+		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
     };
 
 	public PatcherPackageViewModel(PatchingService patchingService, IMessenger messenger)
@@ -335,7 +335,7 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 			}
 
 			var sourceInfo = _patchSources[SelectedSource];
-			await _patchingService.ApplyPatchesAsync(sourceInfo.Owner, sourceInfo.Repo, sourceInfo.FilePath, installDir, progress);
+			await _patchingService.ApplyPatchesAsync(sourceInfo.Owner, sourceInfo.Repo, sourceInfo.FilePath, installDir, progress, sourceInfo.Branch);
 		}
 		catch (Exception ex)
 		{

@@ -215,7 +215,7 @@ namespace RTXLauncher.WinForms
 			{
 				ApplyPatchesButton.Enabled = false;
 				progressForm.Show(this);
-				await _patchingService.ApplyPatchesAsync(sourceInfo.Owner, sourceInfo.Repo, sourceInfo.FilePath, GarrysModUtility.GetThisInstallFolder(), progress);
+				await _patchingService.ApplyPatchesAsync(sourceInfo.Owner, sourceInfo.Repo, sourceInfo.FilePath, GarrysModUtility.GetThisInstallFolder(), progress, sourceInfo.Branch);
 				MessageBox.Show("Patches applied!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			}
 			catch (Exception ex) { MessageBox.Show($"Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
