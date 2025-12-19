@@ -70,8 +70,9 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 
 	/// <summary>
 	/// Updates the installed version display properties
+	/// Override in derived classes to customize what version string is displayed
 	/// </summary>
-	protected void SetInstalledVersionDisplay(InstalledPackageVersion? version)
+	protected virtual void SetInstalledVersionDisplay(InstalledPackageVersion? version)
 	{
 		if (version != null)
 		{

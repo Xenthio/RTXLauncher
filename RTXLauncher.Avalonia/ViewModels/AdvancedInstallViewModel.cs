@@ -213,6 +213,25 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 		SetInstalledVersionDisplay(version);
 	}
 
+	/// <summary>
+	/// Override to display release name instead of tag for Remix
+	/// </summary>
+	protected override void SetInstalledVersionDisplay(InstalledPackageVersion? version)
+	{
+		if (version != null)
+		{
+			InstalledVersion = version.ReleaseName; // Use release name instead of version tag
+			InstalledSource = version.Source;
+			HasInstalledVersion = true;
+		}
+		else
+		{
+			InstalledVersion = null;
+			InstalledSource = null;
+			HasInstalledVersion = false;
+		}
+	}
+
 	// --- 2. Implement LoadSources to read from the dictionary ---
 	protected override Task LoadSources()
 	{
