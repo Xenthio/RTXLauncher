@@ -134,25 +134,15 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			{
 				var allUpdates = new List<FileUpdateInfo>();
 				
+				// Check root directory (includes gmod.exe, hl2.exe, and bin folder)
+				var rootUpdates = _garrysModUpdateService.CheckForUpdates(vanillaPath, rtxInstallPath);
+				allUpdates.AddRange(rootUpdates);
+				
 				// Check garrysmod folder
 				var vanillaGmodPath = Path.Combine(vanillaPath, "garrysmod");
 				var rtxGmodPath = Path.Combine(rtxInstallPath, "garrysmod");
 				var gmodUpdates = _garrysModUpdateService.CheckForUpdates(vanillaGmodPath, rtxGmodPath);
 				allUpdates.AddRange(gmodUpdates);
-				
-				// Check bin folder (for engine binaries)
-				var vanillaBinPath = Path.Combine(vanillaPath, "bin");
-				var rtxBinPath = Path.Combine(rtxInstallPath, "bin");
-				if (Directory.Exists(vanillaBinPath) && Directory.Exists(rtxBinPath))
-				{
-					var binUpdates = _garrysModUpdateService.CheckForUpdates(vanillaBinPath, rtxBinPath);
-					// Prefix the relative paths with "bin/" so they're identified correctly
-					foreach (var update in binUpdates)
-					{
-						update.RelativePath = Path.Combine("bin", update.RelativePath);
-					}
-					allUpdates.AddRange(binUpdates);
-				}
 				
 				return allUpdates;
 			});
@@ -166,51 +156,30 @@ public partial class AdvancedInstallViewModel : PageViewModel
 
 			// Build summary message
 			var newFiles = updates.Count(u => u.IsNew);
-			var changedFiles = updates.Count(u => u.IsChanged);
-			var directories = updates.Count(u => u.IsDirectory);
-			var files = updates.Count - directories;
+			// Check if any bin files or root executable are being updated (these require patch re-application)
+			var binFilesUpdated = updates.Any(u => 
+				u.RelativePath.StartsWith("bin", StringComparison.OrdinalIgnoreCase) ||
+				u.RelativePath.Equals("gmod.exe", StringComparison.OrdinalIgnoreCase) ||
+				u.RelativePath.Equals("hl2.exe", StringComparison.OrdinalIgnoreCase));
 
-			var summary = $"Found {updates.Count} item(s) to update:\n\n" +
-						  $"• {newFiles} new file(s)\n" +
-						  $"• {changedFiles} changed file(s)\n" +
-						  $"• {directories} new director(y/ies)\n\n" +
-						  $"The following will be updated:\n\n";
-
-			// Add first 20 items to the list
-			var itemsToShow = updates.Take(20).ToList();
-			foreach (var update in itemsToShow)
+			// Show custom dialog with scrollable table
+			var dialogViewModel = new UpdateConfirmationViewModel(updates, binFilesUpdated);
+			var dialog = new Views.UpdateConfirmationWindow
 			{
-				var status = update.IsNew ? "[NEW]" : "[CHANGED]";
-				summary += $"  {status} {update.RelativePath}\n";
+				DataContext = dialogViewModel
+			};
+
+			var mainWindow = App.GetMainWindow();
+			if (mainWindow == null)
+			{
+				await Utilities.DialogUtility.ShowMessageAsync("Error",
+					"Could not show update dialog: Main window not found.");
+				return;
 			}
 
-			if (updates.Count > 20)
-			{
-				summary += $"\n  ... and {updates.Count - 20} more item(s)\n";
-			}
+			await dialog.ShowDialog(mainWindow);
 
-			// Check if any bin files are being updated
-			var binFilesUpdated = updates.Any(u => u.RelativePath.StartsWith("bin", StringComparison.OrdinalIgnoreCase));
-			
-			summary += "\n\nThis will NOT update:\n" +
-					   "  • Symlinked folders (materials, models, maps, etc.)\n" +
-					   "  • User config files (client.vdf, server.vdf, autoexec.cfg, etc.)\n" +
-					   "  • User customizations (loading screens, logos, etc.)\n" +
-					   "  • User data (addons, saves, settings, etc.)\n\n";
-
-			if (binFilesUpdated)
-			{
-				summary += "Binary files will be updated and patches will be re-applied automatically.\n\n";
-			}
-
-			summary += "A backup of existing files will be created in the 'backups' folder.\n\n";
-			summary += "Do you want to proceed with the update?";
-
-			var confirmed = await Utilities.DialogUtility.ShowConfirmationAsync(
-				"Update Installation", 
-				summary);
-
-			if (!confirmed)
+			if (!dialog.Result)
 			{
 				_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
 				{ 

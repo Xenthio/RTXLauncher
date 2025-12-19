@@ -102,18 +102,21 @@
 								<Label Grid.Row="2" Grid.Column="0"
                                        Content="Version"
                                        Target="{Binding ElementName=VersionComboBox}"
-                                       VerticalAlignment="Center"/>
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding Releases.Count}"/>
 								<Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
 									<ComboBox Grid.Column="0"
                                               x:Name="VersionComboBox"
                                               ItemsSource="{Binding Releases}"
                                               SelectedItem="{Binding SelectedRelease}"
-                                              DisplayMemberBinding="{Binding Name}"/>
+                                              DisplayMemberBinding="{Binding Name}"
+                                              IsVisible="{Binding Releases.Count}"/>
 									<!-- Tell ComboBox to show the 'Name' property of the release object -->
 									<Button Grid.Column="1"
                                             Content="{Binding ButtonText}"
                                             Command="{Binding InstallCommand}"
-                                            IsEnabled="{Binding IsNotBusy}"/>
+                                            IsEnabled="{Binding IsNotBusy}"
+                                            HorizontalAlignment="Stretch"/>
 								</Grid>
 							</Grid>
 						</Border>

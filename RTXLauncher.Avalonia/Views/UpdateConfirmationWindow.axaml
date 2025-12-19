@@ -1,0 +1,187 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+        xmlns:views="using:RTXLauncher.Avalonia.Views"
+        xmlns:services="using:RTXLauncher.Core.Services"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="600"
+        x:Class="RTXLauncher.Avalonia.Views.UpdateConfirmationWindow"
+        x:DataType="vm:UpdateConfirmationViewModel"
+        Title="Update Installation"
+        Width="700" Height="600"
+        MinWidth="600" MinHeight="500"
+        WindowStartupLocation="CenterOwner">
+
+	<Design.DataContext>
+		<vm:UpdateConfirmationViewModel/>
+	</Design.DataContext>
+
+	<Grid RowDefinitions="Auto,*,Auto,Auto" Margin="20">
+		
+		<!-- Summary Section -->
+		<StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,20">
+			<TextBlock Text="Update Summary" FontSize="16" FontWeight="Bold"/>
+			
+			<Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20">
+				<StackPanel Grid.Column="0" Spacing="2">
+					<TextBlock Text="Total Items" FontSize="11" Foreground="Gray"/>
+					<TextBlock Text="{Binding TotalItems}" FontSize="16" FontWeight="SemiBold"/>
+				</StackPanel>
+				
+				<StackPanel Grid.Column="1" Spacing="2">
+					<TextBlock Text="New Files" FontSize="11" Foreground="Gray"/>
+					<TextBlock Text="{Binding NewFiles}" FontSize="16" FontWeight="SemiBold" Foreground="LightGreen"/>
+				</StackPanel>
+				
+				<StackPanel Grid.Column="2" Spacing="2">
+					<TextBlock Text="Changed Files" FontSize="11" Foreground="Gray"/>
+					<TextBlock Text="{Binding ChangedFiles}" FontSize="16" FontWeight="SemiBold" Foreground="Orange"/>
+				</StackPanel>
+				
+				<StackPanel Grid.Column="3" Spacing="2">
+					<TextBlock Text="Directories" FontSize="11" Foreground="Gray"/>
+					<TextBlock Text="{Binding Directories}" FontSize="16" FontWeight="SemiBold" Foreground="SkyBlue"/>
+				</StackPanel>
+			</Grid>
+		</StackPanel>
+
+		<!-- Files Table -->
+		<Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="5">
+			<DockPanel>
+				<!-- Header -->
+				<Grid DockPanel.Dock="Top" ColumnDefinitions="100,*,80" Background="#20FFFFFF" Height="35">
+					<TextBlock Grid.Column="0" Text="Status" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0"/>
+					<TextBlock Grid.Column="1" Text="File Path" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0"/>
+					<TextBlock Grid.Column="2" Text="Type" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0"/>
+				</Grid>
+				
+				<!-- Separator -->
+				<Border DockPanel.Dock="Top" Height="1" Background="Gray"/>
+				
+				<!-- Items List -->
+				<ScrollViewer>
+					<ItemsControl ItemsSource="{Binding Updates}" x:CompileBindings="False">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="0" MinHeight="30">
+									<Grid ColumnDefinitions="100,*,80" Background="Transparent">
+										<!-- Status Column -->
+										<TextBlock Grid.Column="0" 
+												   Text="{Binding IsNew, Converter={StaticResource StatusConverter}}"
+												   FontWeight="SemiBold"
+												   VerticalAlignment="Center"
+												   HorizontalAlignment="Center">
+											<TextBlock.Foreground>
+												<MultiBinding Converter="{StaticResource StatusColorConverter}">
+													<Binding Path="IsNew"/>
+												</MultiBinding>
+											</TextBlock.Foreground>
+										</TextBlock>
+										
+										<!-- File Path Column -->
+										<TextBlock Grid.Column="1" 
+												   Text="{Binding RelativePath}" 
+												   VerticalAlignment="Center" 
+												   Margin="10,5"
+												   TextTrimming="CharacterEllipsis"
+												   ToolTip.Tip="{Binding RelativePath}"/>
+										
+										<!-- Type Column -->
+										<TextBlock Grid.Column="2" 
+												   Text="{Binding IsDirectory, Converter={StaticResource TypeConverter}}" 
+												   VerticalAlignment="Center" 
+												   Margin="10,5"
+												   Foreground="LightGray"/>
+									</Grid>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</DockPanel>
+		</Border>
+
+		<!-- Warning/Info Section -->
+		<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
+			
+			<Border Background="#20FF6B35" 
+					BorderBrush="#FF6B35" 
+					BorderThickness="1" 
+					CornerRadius="5" 
+					Padding="15"
+					IsVisible="{Binding BinFilesUpdated}">
+				<StackPanel Spacing="5">
+					<TextBlock Text="⚠ Binary Files Update" FontWeight="Bold" FontSize="13"/>
+					<TextBlock TextWrapping="Wrap" FontSize="12">
+						Binary files will be updated and patches will be re-applied automatically.
+					</TextBlock>
+				</StackPanel>
+			</Border>
+
+			<Border Background="#2033A1FD" 
+					BorderBrush="#33A1FD" 
+					BorderThickness="1" 
+					CornerRadius="5" 
+					Padding="15">
+				<StackPanel Spacing="5">
+					<TextBlock Text="ℹ What Will NOT Be Updated" FontWeight="Bold" FontSize="13"/>
+					<TextBlock TextWrapping="Wrap" FontSize="12" LineHeight="18">
+						• Symlinked folders (materials, models, maps, etc.)
+						<LineBreak/>
+						• User config files (client.vdf, server.vdf, autoexec.cfg, etc.)
+						<LineBreak/>
+						• User customizations (loading screens, logos, etc.)
+						<LineBreak/>
+						• User data (addons, saves, settings, etc.)
+					</TextBlock>
+				</StackPanel>
+			</Border>
+
+			<Border Background="#2098D98E" 
+					BorderBrush="#98D98E" 
+					BorderThickness="1" 
+					CornerRadius="5" 
+					Padding="15">
+				<StackPanel Spacing="5">
+					<TextBlock Text="💾 Backup Information" FontWeight="Bold" FontSize="13"/>
+					<TextBlock TextWrapping="Wrap" FontSize="12">
+						A backup of existing files will be created in the 'backups' folder before updating.
+					</TextBlock>
+				</StackPanel>
+			</Border>
+		</StackPanel>
+
+		<!-- Action Buttons -->
+		<Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="0,20,0,0">
+			<Button Grid.Column="1" 
+					Content="Cancel" 
+					Width="100"
+					Click="CancelButton_Click"/>
+			<Button Grid.Column="2" 
+					Content="Proceed" 
+					Width="100"
+					Classes="accent"
+					Click="ProceedButton_Click"/>
+		</Grid>
+	</Grid>
+
+	<Window.Resources>
+		<!-- Status Converters -->
+		<views:StatusToStringConverter x:Key="StatusConverter"/>
+		<views:StatusColorConverter x:Key="StatusColorConverter"/>
+		<views:TypeToStringConverter x:Key="TypeConverter"/>
+	</Window.Resources>
+
+	<Window.Styles>
+		<Style Selector="Button.accent">
+			<Setter Property="Background" Value="#0078D4"/>
+			<Setter Property="Foreground" Value="White"/>
+		</Style>
+		
+		<Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="#1084DE"/>
+		</Style>
+	</Window.Styles>
+</Window>
+

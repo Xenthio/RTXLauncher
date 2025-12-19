@@ -74,11 +74,13 @@ public class GarrysModUpdateService
 
 		// Additional directories to exclude at the root level
 		// - sourceengine and platform are typically symlinked
+		// - garrysmod is checked separately in AdvancedInstallViewModel
 		// - Other temporary/log directories
 		var additionalRootExcludes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 			{
 				"crashes", "logs", "temp", "update", "xenmod",
-				"sourceengine", "platform" // These are symlinked during quick install
+				"sourceengine", "platform", "patched", // These are symlinked during quick install
+				"garrysmod" // Checked separately to avoid duplicates
 			};
 
 

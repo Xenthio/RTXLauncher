@@ -145,4 +145,16 @@ public partial class App : Application
 			oldWindow?.Close();
 		}
 	}
+
+	/// <summary>
+	/// Gets the current main window
+	/// </summary>
+	public static Window? GetMainWindow()
+	{
+		if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+		{
+			return desktop.MainWindow;
+		}
+		return null;
+	}
 }
