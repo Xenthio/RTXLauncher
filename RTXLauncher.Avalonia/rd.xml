@@ -1,5 +1,10 @@
 ﻿<linker>
 	<assembly fullname="RTXLauncher.Avalonia">
 		<type fullname="RTXLauncher.Avalonia.Views.*" preserve="all"/>
+		<type fullname="RTXLauncher.Avalonia.ViewModels.*" preserve="all"/>
+	</assembly>
+	<assembly fullname="RTXLauncher.Core">
+		<type fullname="RTXLauncher.Core.Services.FileUpdateInfo" preserve="all"/>
+		<type fullname="RTXLauncher.Core.Services.UpdateProgressReport" preserve="all"/>
 	</assembly>
 </linker>

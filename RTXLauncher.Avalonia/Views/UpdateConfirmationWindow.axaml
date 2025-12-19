@@ -61,9 +61,9 @@
 				
 				<!-- Items List -->
 				<ScrollViewer>
-					<ItemsControl ItemsSource="{Binding Updates}" x:CompileBindings="False">
+					<ItemsControl ItemsSource="{Binding Updates}">
 						<ItemsControl.ItemTemplate>
-							<DataTemplate>
+							<DataTemplate x:DataType="services:FileUpdateInfo">
 								<Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="0" MinHeight="30">
 									<Grid ColumnDefinitions="100,*,80" Background="Transparent">
 										<!-- Status Column -->
