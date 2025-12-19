@@ -193,16 +193,32 @@ bin/win64/usd_ms.dll
 
 			var downloadProgress = new Progress<DownloadProgressReport>(report =>
 			{
-				int percentage = report.TotalBytes > 0 ? (int)((double)report.BytesDownloaded / report.TotalBytes * 50) : 25;
+				int percentage = report.TotalBytes > 0 ? (int)((double)report.BytesDownloaded / report.TotalBytes * 40) : 20;
 				progress.Report(new InstallProgressReport { Message = $"Downloading: {report.BytesDownloaded / 1048576}MB", Percentage = percentage });
 			});
 			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress);
 
+			// Perform pre-install cleanup (remove outdated folders before extraction)
+			progress.Report(new InstallProgressReport { Message = "Removing outdated folders...", Percentage = 45 });
+			var preCleanupMessages = CleanupUtility.PerformPreInstallCleanup(installDir);
+			foreach (var message in preCleanupMessages)
+			{
+				progress.Report(new InstallProgressReport { Message = $"Pre-cleanup: {message}", Percentage = 45 });
+			}
+
 			var extractProgress = new Progress<InstallProgressReport>(report =>
 			{
-				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (report.Percentage / 2) });
+				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (int)(report.Percentage * 0.4) });
 			});
 			await ExtractZipWithIgnoreAsync(zipPath, installDir, defaultIgnorePatterns, extractProgress);
+
+			// Perform post-install cleanup (clean config files after extraction)
+			progress.Report(new InstallProgressReport { Message = "Cleaning config files...", Percentage = 95 });
+			var postCleanupMessages = CleanupUtility.PerformPostInstallCleanup(installDir);
+			foreach (var message in postCleanupMessages)
+			{
+				progress.Report(new InstallProgressReport { Message = $"Post-cleanup: {message}", Percentage = 97 });
+			}
 
 			progress.Report(new InstallProgressReport { Message = "Installation complete!", Percentage = 100 });
 		}

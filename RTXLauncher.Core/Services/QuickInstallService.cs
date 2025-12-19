@@ -148,7 +148,11 @@ public class QuickInstallService
 
 		await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
 
-		// Step 6: TODO - Process .launcherdependencies (can be added here later)
+		// The cleanup is now handled automatically within InstallStandardPackageAsync:
+		// - Pre-install: Removes outdated folders before extraction
+		// - Post-install: Cleans config files after extraction
+
+		// TODO: Process .launcherdependencies (can be added here later)
 
 		progress.Report(new InstallProgressReport { Message = "Quick Install finished successfully!", Percentage = 100 });
 	}
