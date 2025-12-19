@@ -76,7 +76,8 @@ public partial class MainWindowViewModel : ViewModelBase
 		var packageInstallService = new PackageInstallService();
 		var patchingService = new PatchingService();
 		var mountingService = new MountingService();
-		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService);
+		var installedPackagesService = new InstalledPackagesService();
+		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService, installedPackagesService);
 		var installedModsService = new InstalledModsService();
 		_addonInstallService = new AddonInstallService();
 		_modBrowserService = new ModDBModService(_addonInstallService, installedModsService);
@@ -97,7 +98,7 @@ public partial class MainWindowViewModel : ViewModelBase
 		{
 			new SettingsViewModel(_settingsData, _messenger),
 			new MountingViewModel(mountingService, _messenger),
-			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService),
+			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService, installedPackagesService),
 			new AboutViewModel(_messenger, gitHubService),
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
 			modsViewModel,

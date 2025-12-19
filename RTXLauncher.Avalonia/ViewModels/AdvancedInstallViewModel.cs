@@ -27,6 +27,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	private readonly PackageInstallService _packageInstallService;
 	private readonly GarrysModUpdateService _garrysModUpdateService;
 	private readonly PatchingService _patchingService;
+	private readonly InstalledPackagesService _installedPackagesService;
 
 	// THE SCALABLE LIST OF PACKAGES
 	public ObservableCollection<InstallablePackageViewModel> Packages { get; } = new();
@@ -36,7 +37,8 @@ public partial class AdvancedInstallViewModel : PageViewModel
 				PackageInstallService packageInstallService,
 				PatchingService patchingService,
 				GarrysModInstallService installService,
-				GarrysModUpdateService updateService)
+				GarrysModUpdateService updateService,
+				InstalledPackagesService installedPackagesService)
 	{
 		Header = "Advanced Install";
 
@@ -46,11 +48,12 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		_patchingService = patchingService;
 		_garrysModInstallService = installService;
 		_garrysModUpdateService = updateService;
+		_installedPackagesService = installedPackagesService;
 
 		// To add a new package, you just add it to this list!
-		Packages.Add(new RemixPackageViewModel(_githubService, _packageInstallService, _messenger));
-		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger));
-		Packages.Add(new FixesPackageViewModel(_githubService, _packageInstallService, _messenger));
+		Packages.Add(new RemixPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService));
+		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger, _installedPackagesService));
+		Packages.Add(new FixesPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService, _patchingService, () => ManualVanillaPath));
 
 		// Initialize all packages
 		_ = InitializePackages();
@@ -195,12 +198,19 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 		{ "sambow23/dxvk-remix-gmod", ("sambow23", "dxvk-remix-gmod") },
 	};
 
-	public RemixPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger)
-		: base(githubService)
+	public RemixPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService)
+		: base(githubService, installedPackagesService)
 	{
 		Title = "NVIDIA RTX Remix";
 		_installService = installService;
 		_messenger = messenger;
+	}
+
+	protected override async Task LoadInstalledVersion()
+	{
+		if (InstalledPackagesService == null) return;
+		var version = await InstalledPackagesService.GetRemixVersionAsync();
+		SetInstalledVersionDisplay(version);
 	}
 
 	// --- 2. Implement LoadSources to read from the dictionary ---
@@ -289,6 +299,16 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 		{
 			// Call the service with the appropriate configuration
 			await _installService.InstallRemixPackageAsync(SelectedRelease, installDir, progress);
+
+			// Save installed version
+			if (InstalledPackagesService != null && SelectedSource != null)
+			{
+				await InstalledPackagesService.SetRemixVersionAsync(
+					SelectedSource,
+					SelectedRelease.TagName,
+					SelectedRelease.Name ?? SelectedRelease.TagName);
+				await RefreshInstalledVersionAsync();
+			}
 		}
 		catch (Exception ex)
 		{
@@ -315,13 +335,20 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
     };
 
-	public PatcherPackageViewModel(PatchingService patchingService, IMessenger messenger)
-		: base(null) // It doesn't use GitHubService for releases, so we pass null.
+	public PatcherPackageViewModel(PatchingService patchingService, IMessenger messenger, InstalledPackagesService installedPackagesService)
+		: base(null, installedPackagesService) // It doesn't use GitHubService for releases, so we pass null.
 	{
 		Title = "Binary Patches";
 		ButtonText = "Apply Patches";
 		_patchingService = patchingService;
 		_messenger = messenger;
+	}
+
+	protected override async Task LoadInstalledVersion()
+	{
+		if (InstalledPackagesService == null) return;
+		var version = await InstalledPackagesService.GetPatchesVersionAsync();
+		SetInstalledVersionDisplay(version);
 	}
 
 	protected override Task LoadSources()
@@ -362,6 +389,13 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 
 			var sourceInfo = _patchSources[SelectedSource];
 			await _patchingService.ApplyPatchesAsync(sourceInfo.Owner, sourceInfo.Repo, sourceInfo.FilePath, installDir, progress, sourceInfo.Branch);
+
+			// Save installed version
+			if (InstalledPackagesService != null)
+			{
+				await InstalledPackagesService.SetPatchesVersionAsync(SelectedSource, sourceInfo.Branch);
+				await RefreshInstalledVersionAsync();
+			}
 		}
 		catch (Exception ex)
 		{
@@ -377,21 +411,39 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 public partial class FixesPackageViewModel : InstallablePackageViewModel
 {
 	private readonly PackageInstallService _installService;
+	private readonly PatchingService _patchingService;
 	private readonly IMessenger _messenger;
+	private readonly Func<string?> _getManualVanillaPath;
+	
 	// --- 1. Add your sources dictionary ---
 	private readonly Dictionary<string, (string Owner, string Repo, string InstallType)> _packageSources = new()
 	{
 		{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("Xenthio", "gmod-rtx-fixes-2", "Any") },
-		{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") },
 		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main") }
 	};
 
-	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger)
-		: base(githubService)
+	// Mapping of fixes package sources to their required binary patches
+	private readonly Dictionary<string, (string PatchSource, string Owner, string Repo, string FilePath, string Branch)> _requiredPatches = new()
+	{
+		{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") }
+	};
+
+	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService, PatchingService patchingService, Func<string?> getManualVanillaPath)
+		: base(githubService, installedPackagesService)
 	{
 		Title = "Fixes Package";
 		_installService = installService;
 		_messenger = messenger;
+		_patchingService = patchingService;
+		_getManualVanillaPath = getManualVanillaPath;
+	}
+
+	protected override async Task LoadInstalledVersion()
+	{
+		if (InstalledPackagesService == null) return;
+		var version = await InstalledPackagesService.GetFixesVersionAsync();
+		SetInstalledVersionDisplay(version);
 	}
 
 	// --- 2. Implement LoadSources ---
@@ -437,7 +489,7 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 
 	protected override async Task Install()
 	{
-		if (SelectedRelease == null) return;
+		if (SelectedRelease == null || SelectedSource == null) return;
 
 		var installDir = GarrysModUtility.GetThisInstallFolder();
 		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
@@ -448,6 +500,43 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 				Percentage = 100 
 			}));
 			return;
+		}
+
+		// Check if we're switching from a different fixes package
+		string? previousFixesSource = null;
+		string? previousPatchBranch = null;
+		bool needsPatches = false;
+		bool needsBinaryRestore = false;
+		
+		if (InstalledPackagesService != null)
+		{
+			var previousVersion = await InstalledPackagesService.GetFixesVersionAsync();
+			var previousPatchesVersion = await InstalledPackagesService.GetPatchesVersionAsync();
+			
+			if (previousVersion != null)
+			{
+				previousFixesSource = previousVersion.Source;
+				previousPatchBranch = previousPatchesVersion?.Branch;
+				
+				// Check if we're switching to a different fixes package that needs different patches
+				if (previousFixesSource != SelectedSource && _requiredPatches.ContainsKey(SelectedSource))
+				{
+					needsPatches = true;
+					
+					// Check if we need to restore binaries (switching to different patch branch)
+					if (_requiredPatches.TryGetValue(SelectedSource, out var newPatchInfo) && 
+					    !string.IsNullOrEmpty(previousPatchBranch) && 
+					    previousPatchBranch != newPatchInfo.Branch)
+					{
+						needsBinaryRestore = true;
+					}
+				}
+			}
+			else if (_requiredPatches.ContainsKey(SelectedSource))
+			{
+				// First time installing fixes - patches will be needed but no restore needed
+				needsPatches = true;
+			}
 		}
 
 		// Check for existing rtx.conf and prompt for backup
@@ -478,7 +567,99 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		IProgress<InstallProgressReport> progress = progressHandler;
 		try
 		{
-			await _installService.InstallStandardPackageAsync(SelectedRelease, installDir, PackageInstallService.DefaultIgnorePatterns, progress);
+			// Install fixes package (takes 0-80%)
+			var fixesProgress = new Progress<InstallProgressReport>(report =>
+			{
+				progress.Report(new InstallProgressReport 
+				{ 
+					Message = report.Message, 
+					Percentage = (int)(report.Percentage * 0.8) 
+				});
+			});
+			await _installService.InstallStandardPackageAsync(SelectedRelease, installDir, PackageInstallService.DefaultIgnorePatterns, fixesProgress);
+
+			// Save installed version
+			if (InstalledPackagesService != null)
+			{
+				await InstalledPackagesService.SetFixesVersionAsync(
+					SelectedSource,
+					SelectedRelease.TagName,
+					SelectedRelease.Name ?? SelectedRelease.TagName);
+				await RefreshInstalledVersionAsync();
+			}
+
+			// Auto-apply required patches if needed (takes 80-100%)
+			if (needsPatches && _requiredPatches.TryGetValue(SelectedSource, out var patchInfo))
+			{
+				// Restore original binaries before patching if switching between different patch branches
+				if (needsBinaryRestore)
+				{
+					progress.Report(new InstallProgressReport 
+					{ 
+						Message = "Restoring original binaries before applying new patches...", 
+						Percentage = 80 
+					});
+
+					await Task.Run(() =>
+					{
+						var restoreProgress = new Progress<InstallProgressReport>(report =>
+						{
+							progress.Report(new InstallProgressReport 
+							{ 
+								Message = report.Message, 
+								Percentage = 80 + (int)(report.Percentage * 0.05) 
+							});
+						});
+
+						BinaryRestorationUtility.RestoreOriginalBinaries(installDir, restoreProgress, _getManualVanillaPath());
+					});
+				}
+
+				progress.Report(new InstallProgressReport 
+				{ 
+					Message = $"Applying required binary patches for {SelectedSource}...", 
+					Percentage = needsBinaryRestore ? 85 : 80
+				});
+
+				var patchProgress = new Progress<InstallProgressReport>(report =>
+				{
+					int basePercentage = needsBinaryRestore ? 85 : 80;
+					int range = needsBinaryRestore ? 15 : 20;
+					progress.Report(new InstallProgressReport 
+					{ 
+						Message = report.Message, 
+						Percentage = basePercentage + (int)(report.Percentage * (range / 100.0)) 
+					});
+				});
+
+				await _patchingService.ApplyPatchesAsync(
+					patchInfo.Owner, 
+					patchInfo.Repo, 
+					patchInfo.FilePath, 
+					installDir, 
+					patchProgress, 
+					patchInfo.Branch);
+
+				// Save patches version
+				if (InstalledPackagesService != null)
+				{
+					await InstalledPackagesService.SetPatchesVersionAsync(patchInfo.PatchSource, patchInfo.Branch);
+				}
+
+				progress.Report(new InstallProgressReport 
+				{ 
+					Message = "Fixes package and patches installed successfully!", 
+					Percentage = 100 
+				});
+			}
+			else
+			{
+				progress.Report(new InstallProgressReport 
+				{ 
+					Message = "Fixes package installed successfully!", 
+					Percentage = 100 
+				});
+			}
 		}
 		catch (Exception ex)
 		{

@@ -4,6 +4,7 @@ using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System;
 
 namespace RTXLauncher.Avalonia.ViewModels;
 
@@ -11,6 +12,7 @@ namespace RTXLauncher.Avalonia.ViewModels;
 public abstract partial class InstallablePackageViewModel : ViewModelBase
 {
 	protected readonly GitHubService? GitHubService;
+	protected readonly InstalledPackagesService? InstalledPackagesService;
 
 	[ObservableProperty]
 	private string? _title;
@@ -20,6 +22,15 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private bool _isBusy; // Use this to disable controls during operations
+
+	[ObservableProperty]
+	private string? _installedVersion;
+
+	[ObservableProperty]
+	private string? _installedSource;
+
+	[ObservableProperty]
+	private bool _hasInstalledVersion;
 
 	// A simple derived property for easier binding
 	public bool IsNotBusy => !IsBusy;
@@ -33,9 +44,11 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private GitHubRelease? _selectedRelease;
-	protected InstallablePackageViewModel(GitHubService? githubService)
+
+	protected InstallablePackageViewModel(GitHubService? githubService, InstalledPackagesService? installedPackagesService = null)
 	{
 		GitHubService = githubService;
+		InstalledPackagesService = installedPackagesService;
 	}
 
 	// The command for the install button
@@ -46,10 +59,47 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 	protected abstract Task LoadSources();
 	protected abstract Task LoadReleases();
 
+	/// <summary>
+	/// Override in derived classes to load the installed version for this package type
+	/// </summary>
+	protected virtual Task LoadInstalledVersion()
+	{
+		// Base implementation does nothing - override in derived classes
+		return Task.CompletedTask;
+	}
+
+	/// <summary>
+	/// Updates the installed version display properties
+	/// </summary>
+	protected void SetInstalledVersionDisplay(InstalledPackageVersion? version)
+	{
+		if (version != null)
+		{
+			InstalledVersion = version.Version;
+			InstalledSource = version.Source;
+			HasInstalledVersion = true;
+		}
+		else
+		{
+			InstalledVersion = null;
+			InstalledSource = null;
+			HasInstalledVersion = false;
+		}
+	}
+
+	/// <summary>
+	/// Refreshes the installed version display
+	/// </summary>
+	public async Task RefreshInstalledVersionAsync()
+	{
+		await LoadInstalledVersion();
+	}
+
 	// This method is called when the ViewModel is created
 	public async Task InitializeAsync()
 	{
 		await LoadSources();
+		await LoadInstalledVersion();
 		if (Sources.Count > 0)
 		{
 			SelectedSource = Sources[0];

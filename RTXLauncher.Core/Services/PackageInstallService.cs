@@ -20,7 +20,6 @@ public class PackageInstallService
 	public static Dictionary<string, (string Owner, string Repo, string InstallType)> PackageSources = new Dictionary<string, (string, string, string)>
 	{
 		{ "Xenthio/garrys-mod-rtx-remixed (Any)", ("Xenthio", "garrys-mod-rtx-remixed", "Any") },
-		{ "Xenthio/RTXFixes (gmod_main)", ("Xenthio", "RTXFixes", "gmod_main") },
 		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main") }
 	};
 
@@ -208,17 +207,9 @@ bin/win64/usd_ms.dll
 
 			var extractProgress = new Progress<InstallProgressReport>(report =>
 			{
-				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (int)(report.Percentage * 0.4) });
+				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (int)(report.Percentage * 0.5) });
 			});
 			await ExtractZipWithIgnoreAsync(zipPath, installDir, defaultIgnorePatterns, extractProgress);
-
-			// Perform post-install cleanup (clean config files after extraction)
-			progress.Report(new InstallProgressReport { Message = "Cleaning config files...", Percentage = 95 });
-			var postCleanupMessages = CleanupUtility.PerformPostInstallCleanup(installDir);
-			foreach (var message in postCleanupMessages)
-			{
-				progress.Report(new InstallProgressReport { Message = $"Post-cleanup: {message}", Percentage = 97 });
-			}
 
 			progress.Report(new InstallProgressReport { Message = "Installation complete!", Percentage = 100 });
 		}

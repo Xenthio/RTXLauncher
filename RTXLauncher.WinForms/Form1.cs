@@ -15,6 +15,7 @@ public partial class Form1 : Form
 	public static MountingService _mountingService { get; set; }
 	public static PackageInstallService _packageInstallService { get; set; }
 	public static PatchingService _patchingService { get; set; }
+	public static InstalledPackagesService _installedPackagesService { get; set; }
 	public static QuickInstallService _quickInstallService { get; set; }
 	public static UpdateService _updateService { get; set; } // New unified update service
 	//public SettingsService SettingsService { get; set; }
@@ -27,7 +28,8 @@ public partial class Form1 : Form
 		_mountingService = new MountingService();
 		_packageInstallService = new PackageInstallService();
 		_patchingService = new PatchingService();
-		_quickInstallService = new QuickInstallService(_gmodInstallService, _githubService, _packageInstallService, _patchingService);
+		_installedPackagesService = new InstalledPackagesService();
+		_quickInstallService = new QuickInstallService(_gmodInstallService, _githubService, _packageInstallService, _patchingService, _installedPackagesService);
 		_updateService = new UpdateService(_githubService); // Initialize the unified update service
 		//SettingsService = new SettingsService();
 

@@ -18,13 +18,15 @@ public class QuickInstallService
 	private readonly GitHubService _githubService;
 	private readonly PackageInstallService _packageInstallService;
 	private readonly PatchingService _patchingService;
+	private readonly InstalledPackagesService _installedPackagesService;
 
-	public QuickInstallService(GarrysModInstallService installService, GitHubService githubService, PackageInstallService packageInstallService, PatchingService patchingService)
+	public QuickInstallService(GarrysModInstallService installService, GitHubService githubService, PackageInstallService packageInstallService, PatchingService patchingService, InstalledPackagesService installedPackagesService)
 	{
 		_installService = installService;
 		_githubService = githubService;
 		_packageInstallService = packageInstallService;
 		_patchingService = patchingService;
+		_installedPackagesService = installedPackagesService;
 	}
 
 	/// <summary>
@@ -43,7 +45,7 @@ public class QuickInstallService
 				Repo = "garrys-mod-rtx-remixed",
 				PatchOwner = "sambow23",
 				PatchRepo = "SourceRTXTweaks",
-				PatchBranch = "master",
+				PatchBranch = "main",
 				PatchFile = "applypatch.py",
 				RequiresX64 = false
 			},
@@ -112,15 +114,22 @@ public class QuickInstallService
 
 		await _packageInstallService.InstallRemixPackageAsync(latestRemix, installDir, CreateSubProgress(35, 25));
 
+		// Save Remix version info
+		await _installedPackagesService.SetRemixVersionAsync(
+			$"{remixOwner}/{remixRepo}",
+			latestRemix.TagName,
+			latestRemix.Name ?? latestRemix.TagName);
+
 		// Step 4: Apply recommended patches
 		progress.Report(new InstallProgressReport { Message = $"Applying {fixesPackageInfo.DisplayName} patches...", Percentage = 60 });
-		string patchOwner, patchRepo, patchFile;
+		string patchOwner, patchRepo, patchFile, patchBranch;
 		
 		if (isX64)
 		{
 			patchOwner = fixesPackageInfo.PatchOwner;
 			patchRepo = fixesPackageInfo.PatchRepo;
 			patchFile = fixesPackageInfo.PatchFile;
+			patchBranch = fixesPackageInfo.PatchBranch;
 		}
 		else
 		{
@@ -128,17 +137,23 @@ public class QuickInstallService
 			patchOwner = "BlueAmulet";
 			patchRepo = "SourceRTXTweaks";
 			patchFile = "applypatch.py";
+			patchBranch = "master";
 		}
 
 		// Use branch-specific patching if needed
-		if (!string.IsNullOrEmpty(fixesPackageInfo.PatchBranch) && fixesPackageInfo.PatchBranch != "master")
+		if (!string.IsNullOrEmpty(patchBranch) && patchBranch != "master")
 		{
-			await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15), fixesPackageInfo.PatchBranch);
+			await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15), patchBranch);
 		}
 		else
 		{
 			await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15));
 		}
+
+		// Save Patches version info
+		await _installedPackagesService.SetPatchesVersionAsync(
+			$"{patchOwner}/{patchRepo}",
+			patchBranch);
 
 		// Step 5: Install recommended fixes package
 		progress.Report(new InstallProgressReport { Message = $"Fetching {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
@@ -148,9 +163,14 @@ public class QuickInstallService
 
 		await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
 
-		// The cleanup is now handled automatically within InstallStandardPackageAsync:
-		// - Pre-install: Removes outdated folders before extraction
-		// - Post-install: Cleans config files after extraction
+		// Save Fixes version info
+		await _installedPackagesService.SetFixesVersionAsync(
+			$"{fixesPackageInfo.Owner}/{fixesPackageInfo.Repo}",
+			latestFixes.TagName,
+			latestFixes.Name ?? latestFixes.TagName);
+
+		// The pre-install cleanup is handled automatically within InstallStandardPackageAsync
+		// (removes outdated folders before extraction)
 
 		// TODO: Process .launcherdependencies (can be added here later)
 
