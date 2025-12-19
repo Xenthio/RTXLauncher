@@ -156,13 +156,39 @@ namespace RTXLauncher.WinForms
 		{
 			if (remixReleaseComboBox.SelectedItem is not GitHubRelease release) { /* Show error */ return; }
 
+			var installDir = GarrysModUtility.GetThisInstallFolder();
+
+			// Check for existing rtx.conf and prompt for backup
+			if (RemixUtility.RtxConfigExists(installDir))
+			{
+				var result = MessageBox.Show(
+					"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+					"The backup will be saved as rtx.conf.backup_[timestamp]",
+					"RTX Config Found",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+
+				if (result == DialogResult.Yes)
+				{
+					var backupPath = RemixUtility.BackupRtxConfig(installDir);
+					if (backupPath != null)
+					{
+						MessageBox.Show($"Backed up rtx.conf to {Path.GetFileName(backupPath)}", "Backup Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+					else
+					{
+						MessageBox.Show("Failed to backup rtx.conf. Installation will continue.", "Backup Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
+				}
+			}
+
 			var progressForm = new ProgressForm { Text = "Installing RTX Remix" };
 			var progress = new Progress<InstallProgressReport>(report => progressForm.UpdateProgress(report.Message, report.Percentage));
 			try
 			{
 				InstallRTXRemixButton.Enabled = false;
 				progressForm.Show(this);
-				await _packageInstallService.InstallRemixPackageAsync(release, GarrysModUtility.GetThisInstallFolder(), progress);
+				await _packageInstallService.InstallRemixPackageAsync(release, installDir, progress);
 				MessageBox.Show("RTX Remix installed!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			}
 			catch (Exception ex) { MessageBox.Show($"Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
@@ -192,13 +218,39 @@ namespace RTXLauncher.WinForms
 		{
 			if (packageVersionComboBox.SelectedItem is not GitHubRelease release) { /* Show error */ return; }
 
+			var installDir = GarrysModUtility.GetThisInstallFolder();
+
+			// Check for existing rtx.conf and prompt for backup
+			if (RemixUtility.RtxConfigExists(installDir))
+			{
+				var result = MessageBox.Show(
+					"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+					"The backup will be saved as rtx.conf.backup_[timestamp]",
+					"RTX Config Found",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+
+				if (result == DialogResult.Yes)
+				{
+					var backupPath = RemixUtility.BackupRtxConfig(installDir);
+					if (backupPath != null)
+					{
+						MessageBox.Show($"Backed up rtx.conf to {Path.GetFileName(backupPath)}", "Backup Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+					else
+					{
+						MessageBox.Show("Failed to backup rtx.conf. Installation will continue.", "Backup Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
+				}
+			}
+
 			var progressForm = new ProgressForm { Text = "Installing Fixes Package" };
 			var progress = new Progress<InstallProgressReport>(report => progressForm.UpdateProgress(report.Message, report.Percentage));
 			try
 			{
 				InstallFixesPackageButton.Enabled = false;
 				progressForm.Show(this);
-				await _packageInstallService.InstallStandardPackageAsync(release, GarrysModUtility.GetThisInstallFolder(), PackageInstallService.DefaultIgnorePatterns, progress);
+				await _packageInstallService.InstallStandardPackageAsync(release, installDir, PackageInstallService.DefaultIgnorePatterns, progress);
 				MessageBox.Show("Fixes package installed!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			}
 			catch (Exception ex) { MessageBox.Show($"Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }

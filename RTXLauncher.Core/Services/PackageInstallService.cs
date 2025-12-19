@@ -74,6 +74,29 @@ bin/win64/usd_ms.dll
 		// GitHub API can sometimes reject requests without a User-Agent
 		_httpClient.DefaultRequestHeaders.Add("User-Agent", "RTXLauncher");
 	}
+
+	/// <summary>
+	/// Checks if rtx.conf exists in the installation directory and backs it up if requested.
+	/// This should be called before any installation that might overwrite rtx.conf.
+	/// </summary>
+	/// <param name="installDir">The installation directory to check</param>
+	/// <param name="shouldBackup">Whether to create a backup (typically true if user confirmed)</param>
+	/// <returns>True if no config exists or backup succeeded, false if backup was requested but failed</returns>
+	public static bool CheckAndBackupRtxConfig(string installDir, bool shouldBackup = true)
+	{
+		if (!RemixUtility.RtxConfigExists(installDir))
+		{
+			return true; // No config exists, safe to proceed
+		}
+
+		if (!shouldBackup)
+		{
+			return true; // User chose not to backup
+		}
+
+		var backupPath = RemixUtility.BackupRtxConfig(installDir);
+		return backupPath != null; // Return true if backup succeeded
+	}
 	/// <summary>
 	/// Installs RTX Remix, which has special logic for finding .trex/bin folders
 	/// and placing them in the correct 32-bit or 64-bit game directory.

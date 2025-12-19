@@ -17,6 +17,32 @@ namespace RTXLauncher.WinForms
 			var confirm = MessageBox.Show("This will perform a complete installation with recommended settings. Continue?", "Quick Install", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 			if (confirm != DialogResult.Yes) return;
 
+			var installDir = GarrysModUtility.GetThisInstallFolder();
+
+			// Check for existing rtx.conf and prompt for backup
+			if (RemixUtility.RtxConfigExists(installDir))
+			{
+				var result = MessageBox.Show(
+					"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+					"The backup will be saved as rtx.conf.backup_[timestamp]",
+					"RTX Config Found",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+
+				if (result == DialogResult.Yes)
+				{
+					var backupPath = RemixUtility.BackupRtxConfig(installDir);
+					if (backupPath != null)
+					{
+						MessageBox.Show($"Backed up rtx.conf to {Path.GetFileName(backupPath)}", "Backup Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+					else
+					{
+						MessageBox.Show("Failed to backup rtx.conf. Installation will continue.", "Backup Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
+				}
+			}
+
 			var progressForm = new ProgressForm { Text = "Performing Quick Install" };
 			var progress = new Progress<InstallProgressReport>(report => progressForm.UpdateProgress(report.Message, report.Percentage));
 
@@ -26,7 +52,6 @@ namespace RTXLauncher.WinForms
 				progressForm.Show(this);
 
 				// Step 1: Create Install if needed
-				var installDir = GarrysModUtility.GetThisInstallFolder();
 				if (GarrysModUtility.GetInstallType(installDir) == "unknown")
 				{
 					await _gmodInstallService.CreateNewGmodInstallAsync(GarrysModUtility.GetVanillaInstallFolder(), installDir, progress);

@@ -165,6 +165,30 @@ public partial class SetupViewModel : PageViewModel
 	[RelayCommand(CanExecute = nameof(CanRunInstall))]
 	private async Task RunInstallAsync()
 	{
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+
+		// Check for existing rtx.conf and prompt for backup before starting install
+		if (RemixUtility.RtxConfigExists(installDir))
+		{
+			var shouldBackup = await DialogUtility.ShowConfirmationAsync(
+				"RTX Config Found",
+				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+				"The backup will be saved as rtx.conf.backup_[timestamp]");
+
+			if (shouldBackup)
+			{
+				var backupPath = RemixUtility.BackupRtxConfig(installDir);
+				if (backupPath != null)
+				{
+					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+					{ 
+						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
+						Percentage = 0 
+					}));
+				}
+			}
+		}
+
 		IsBusy = true;
 		// Hide both panels; progress is shown globally in the main window's progress bar.
 		IsWelcomeVisible = false;

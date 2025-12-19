@@ -248,19 +248,45 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 	{
 		if (SelectedRelease == null) return;
 
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = "ERROR: Could not find a valid RTX GMod installation directory.", 
+				Percentage = 100 
+			}));
+			return;
+		}
+
+		// Check for existing rtx.conf and prompt for backup
+		if (RemixUtility.RtxConfigExists(installDir))
+		{
+			var shouldBackup = await Utilities.DialogUtility.ShowConfirmationAsync(
+				"RTX Config Found",
+				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+				"The backup will be saved as rtx.conf.backup_[timestamp]");
+
+			if (shouldBackup)
+			{
+				var backupPath = RemixUtility.BackupRtxConfig(installDir);
+				if (backupPath != null)
+				{
+					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+					{ 
+						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
+						Percentage = 5 
+					}));
+				}
+			}
+		}
+
 		IsBusy = true;
 		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
 		IProgress<InstallProgressReport> progress = progressHandler;
 
-
 		try
 		{
-			var installDir = GarrysModUtility.GetThisInstallFolder();
-			if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
-			{
-				throw new Exception("Could not find a valid RTX GMod installation directory.");
-			}
-
 			// Call the service with the appropriate configuration
 			await _installService.InstallRemixPackageAsync(SelectedRelease, installDir, progress);
 		}
@@ -412,13 +438,46 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 	protected override async Task Install()
 	{
 		if (SelectedRelease == null) return;
+
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = "ERROR: Could not find a valid RTX GMod installation directory.", 
+				Percentage = 100 
+			}));
+			return;
+		}
+
+		// Check for existing rtx.conf and prompt for backup
+		if (RemixUtility.RtxConfigExists(installDir))
+		{
+			var shouldBackup = await Utilities.DialogUtility.ShowConfirmationAsync(
+				"RTX Config Found",
+				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+				"The backup will be saved as rtx.conf.backup_[timestamp]");
+
+			if (shouldBackup)
+			{
+				var backupPath = RemixUtility.BackupRtxConfig(installDir);
+				if (backupPath != null)
+				{
+					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+					{ 
+						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
+						Percentage = 5 
+					}));
+				}
+			}
+		}
+
 		IsBusy = true;
 
 		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
 		IProgress<InstallProgressReport> progress = progressHandler;
 		try
 		{
-			var installDir = GarrysModUtility.GetThisInstallFolder();
 			await _installService.InstallStandardPackageAsync(SelectedRelease, installDir, PackageInstallService.DefaultIgnorePatterns, progress);
 		}
 		catch (Exception ex)

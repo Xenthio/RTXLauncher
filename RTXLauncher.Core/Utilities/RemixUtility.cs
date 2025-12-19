@@ -60,4 +60,49 @@ public static class RemixUtility
 			throw new IOException($"Failed to change Remix state. Please check file permissions.", ex);
 		}
 	}
+
+	/// <summary>
+	/// Checks if rtx.conf exists in the installation directory.
+	/// </summary>
+	/// <param name="installPath">The installation directory path</param>
+	/// <returns>True if rtx.conf exists, false otherwise</returns>
+	public static bool RtxConfigExists(string installPath)
+	{
+		if (string.IsNullOrEmpty(installPath)) return false;
+		return File.Exists(Path.Combine(installPath, "rtx.conf"));
+	}
+
+	/// <summary>
+	/// Backs up rtx.conf to rtx.conf.backup_[timestamp]
+	/// </summary>
+	/// <param name="installPath">The installation directory path</param>
+	/// <returns>The path to the backup file if successful, null otherwise</returns>
+	public static string? BackupRtxConfig(string installPath)
+	{
+		if (string.IsNullOrEmpty(installPath)) return null;
+
+		var configPath = Path.Combine(installPath, "rtx.conf");
+		if (!File.Exists(configPath)) return null;
+
+		try
+		{
+			var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+			var backupPath = Path.Combine(installPath, $"rtx.conf.backup_{timestamp}");
+			File.Copy(configPath, backupPath, true);
+			return backupPath;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Gets the path where rtx.conf should be located for the current installation.
+	/// </summary>
+	/// <returns>The full path to rtx.conf</returns>
+	public static string GetRtxConfigPath()
+	{
+		return Path.Combine(GarrysModUtility.GetThisInstallFolder(), "rtx.conf");
+	}
 }
