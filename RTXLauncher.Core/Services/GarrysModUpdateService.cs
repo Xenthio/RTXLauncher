@@ -34,10 +34,12 @@ public class GarrysModUpdateService
 		var result = new List<FileUpdateInfo>();
 
 		// Exclude these directories from update checks
+		// - Symlinked directories (shouldn't be updated)
 		var excludedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 			{
 				"addons", "saves", "dupes", "demos", "settings", "cache",
 				"materials", "models", "maps", "screenshots", "videos", "download"
+				// bin folder is now allowed - patches will be re-applied after update
 			};
 
 		// Exclude these file extensions
@@ -46,22 +48,37 @@ public class GarrysModUpdateService
 				".dem", ".log", ".vpk"
 			};
 
+		// Exclude specific files
+		var excludedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				"cfg/client.vdf",
+				"cfg/server.vdf",
+				"cfg/autoexec.cfg",
+				"gamemodes/sandbox/logo.png",
+				"html/loading.png",
+				"html/img/gmod_logo_brave.png",
+				"lua/menu/problems/problems.lua",
+			};
+
 		// Scan directories recursively
-		CheckDirectory(sourceDir, destDir, "", result, excludedDirs, excludedExtensions);
+		CheckDirectory(sourceDir, destDir, "", result, excludedDirs, excludedExtensions, excludedFiles);
 
 		return result;
 	}
 	private static void CheckDirectory(string sourceDir, string destDir, string relativePath,
-			List<FileUpdateInfo> results, HashSet<string> excludedDirs, HashSet<string> excludedExtensions)
+			List<FileUpdateInfo> results, HashSet<string> excludedDirs, HashSet<string> excludedExtensions, HashSet<string> excludedFiles)
 	{
 		// Get source directory info
 		var sourceDirInfo = new DirectoryInfo(Path.Combine(sourceDir, relativePath));
 		if (!sourceDirInfo.Exists) return;
 
 		// Additional directories to exclude at the root level
+		// - sourceengine and platform are typically symlinked
+		// - Other temporary/log directories
 		var additionalRootExcludes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 			{
-				"crashes", "logs", "temp", "update", "xenmod"
+				"crashes", "logs", "temp", "update", "xenmod",
+				"sourceengine", "platform" // These are symlinked during quick install
 			};
 
 
@@ -78,6 +95,11 @@ public class GarrysModUpdateService
 				var fileRelativePath = string.IsNullOrEmpty(relativePath)
 					? sourceFile.Name
 					: Path.Combine(relativePath, sourceFile.Name);
+
+				// Skip specific excluded files (user config files)
+				var normalizedPath = fileRelativePath.Replace('\\', '/');
+				if (excludedFiles.Contains(normalizedPath))
+					continue;
 
 				// For root directory, only include gmod.exe
 				if (string.IsNullOrEmpty(relativePath) &&
@@ -149,7 +171,7 @@ public class GarrysModUpdateService
 				}
 
 				// Recursively check this subdirectory
-				CheckDirectory(sourceDir, destDir, subDirRelativePath, results, excludedDirs, excludedExtensions);
+				CheckDirectory(sourceDir, destDir, subDirRelativePath, results, excludedDirs, excludedExtensions, excludedFiles);
 			}
 		}
 	}
@@ -286,18 +308,62 @@ public class GarrysModUpdateService
 
 	/// <summary>
 	/// Performs the file copy operation for a given list of updates.
+	/// Backs up existing files before updating them.
 	/// </summary>
-	public async Task PerformUpdateAsync(List<FileUpdateInfo> updates, IProgress<UpdateProgressReport> progress)
+	public async Task PerformUpdateAsync(List<FileUpdateInfo> updates, IProgress<UpdateProgressReport> progress, string installPath)
 	{
 		await Task.Run(() =>
 		{
+			// Create backup folder with timestamp
+			string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+			string backupDir = Path.Combine(installPath, "backups", $"update_{timestamp}");
+			
+			progress.Report(new UpdateProgressReport { Message = "Creating backup folder...", Percentage = 0 });
+			Directory.CreateDirectory(backupDir);
+
+			// First pass: Backup existing files
+			int backupCount = 0;
+			var filesToBackup = updates.Where(u => !u.IsDirectory && !u.IsNew && File.Exists(u.DestinationPath)).ToList();
+			
+			foreach (var update in filesToBackup)
+			{
+				try
+				{
+					var backupPath = Path.Combine(backupDir, update.RelativePath);
+					var backupPathDir = Path.GetDirectoryName(backupPath);
+					if (!string.IsNullOrEmpty(backupPathDir))
+					{
+						Directory.CreateDirectory(backupPathDir);
+					}
+					
+					File.Copy(update.DestinationPath, backupPath, true);
+					backupCount++;
+					
+					if (backupCount % 10 == 0 || backupCount == filesToBackup.Count)
+					{
+						progress.Report(new UpdateProgressReport 
+						{ 
+							Message = $"Backing up files... ({backupCount}/{filesToBackup.Count})", 
+							Percentage = (backupCount * 10) / filesToBackup.Count 
+						});
+					}
+				}
+				catch (Exception ex)
+				{
+					progress.Report(new UpdateProgressReport { Message = $"Warning: Failed to backup {update.RelativePath}: {ex.Message}", Percentage = 0 });
+				}
+			}
+
+			progress.Report(new UpdateProgressReport { Message = $"Backed up {backupCount} file(s) to backups/update_{timestamp}", Percentage = 10 });
+
+			// Second pass: Apply updates
 			int total = updates.Count;
 			int current = 0;
 
 			foreach (var update in updates)
 			{
 				current++;
-				int percentage = (current * 100) / total;
+				int percentage = 10 + ((current * 90) / total);
 
 				try
 				{
@@ -311,7 +377,11 @@ public class GarrysModUpdateService
 						progress.Report(new UpdateProgressReport { Message = $"Updating: {update.RelativePath}", Percentage = percentage });
 
 						// Ensure the directory exists
-						Directory.CreateDirectory(Path.GetDirectoryName(update.DestinationPath));
+						var destDir = Path.GetDirectoryName(update.DestinationPath);
+						if (!string.IsNullOrEmpty(destDir))
+						{
+							Directory.CreateDirectory(destDir);
+						}
 
 						// Copy the file with overwrite
 						File.Copy(update.SourcePath, update.DestinationPath, true);
@@ -323,7 +393,7 @@ public class GarrysModUpdateService
 					progress.Report(new UpdateProgressReport { Message = $"ERROR updating {update.RelativePath}: {ex.Message}", Percentage = percentage });
 				}
 			}
-			progress.Report(new UpdateProgressReport { Message = "Update complete!", Percentage = 100 });
+			progress.Report(new UpdateProgressReport { Message = $"Update complete! Backup saved to: backups/update_{timestamp}", Percentage = 100 });
 		});
 	}
 }

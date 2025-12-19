@@ -104,11 +104,201 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		IsBusy = true;
 		try
 		{
-			// TODO: Call your GarrysModUpdateService to show the update dialog
-			// For example: await _updateService.ShowUpdateDialogAsync();
+			// Get vanilla and RTX install paths
+			var vanillaPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath);
+			var rtxInstallPath = GarrysModUtility.GetThisInstallFolder();
 
-			// Simulate work for now
-			await Task.Delay(2000);
+			if (string.IsNullOrEmpty(vanillaPath) || !Directory.Exists(vanillaPath))
+			{
+				await Utilities.DialogUtility.ShowMessageAsync("Vanilla Install Not Found",
+					"Could not find vanilla Garry's Mod installation. Please specify the location manually using the Browse button.");
+				return;
+			}
+
+			var rtxInstallType = GarrysModUtility.GetInstallType(rtxInstallPath);
+			if (rtxInstallType == "unknown")
+			{
+				await Utilities.DialogUtility.ShowMessageAsync("No RTX Install",
+					"There is no RTX installation at this location. Use Quick Install to create one first.");
+				return;
+			}
+
+			// Check for updates
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = "Checking for updates from vanilla installation...", 
+				Percentage = 10 
+			}));
+
+			var updates = await Task.Run(() => 
+			{
+				var allUpdates = new List<FileUpdateInfo>();
+				
+				// Check garrysmod folder
+				var vanillaGmodPath = Path.Combine(vanillaPath, "garrysmod");
+				var rtxGmodPath = Path.Combine(rtxInstallPath, "garrysmod");
+				var gmodUpdates = _garrysModUpdateService.CheckForUpdates(vanillaGmodPath, rtxGmodPath);
+				allUpdates.AddRange(gmodUpdates);
+				
+				// Check bin folder (for engine binaries)
+				var vanillaBinPath = Path.Combine(vanillaPath, "bin");
+				var rtxBinPath = Path.Combine(rtxInstallPath, "bin");
+				if (Directory.Exists(vanillaBinPath) && Directory.Exists(rtxBinPath))
+				{
+					var binUpdates = _garrysModUpdateService.CheckForUpdates(vanillaBinPath, rtxBinPath);
+					// Prefix the relative paths with "bin/" so they're identified correctly
+					foreach (var update in binUpdates)
+					{
+						update.RelativePath = Path.Combine("bin", update.RelativePath);
+					}
+					allUpdates.AddRange(binUpdates);
+				}
+				
+				return allUpdates;
+			});
+
+			if (updates.Count == 0)
+			{
+				await Utilities.DialogUtility.ShowMessageAsync("No Updates Found",
+					"Your RTX installation is already up to date with the vanilla installation.");
+				return;
+			}
+
+			// Build summary message
+			var newFiles = updates.Count(u => u.IsNew);
+			var changedFiles = updates.Count(u => u.IsChanged);
+			var directories = updates.Count(u => u.IsDirectory);
+			var files = updates.Count - directories;
+
+			var summary = $"Found {updates.Count} item(s) to update:\n\n" +
+						  $"• {newFiles} new file(s)\n" +
+						  $"• {changedFiles} changed file(s)\n" +
+						  $"• {directories} new director(y/ies)\n\n" +
+						  $"The following will be updated:\n\n";
+
+			// Add first 20 items to the list
+			var itemsToShow = updates.Take(20).ToList();
+			foreach (var update in itemsToShow)
+			{
+				var status = update.IsNew ? "[NEW]" : "[CHANGED]";
+				summary += $"  {status} {update.RelativePath}\n";
+			}
+
+			if (updates.Count > 20)
+			{
+				summary += $"\n  ... and {updates.Count - 20} more item(s)\n";
+			}
+
+			// Check if any bin files are being updated
+			var binFilesUpdated = updates.Any(u => u.RelativePath.StartsWith("bin", StringComparison.OrdinalIgnoreCase));
+			
+			summary += "\n\nThis will NOT update:\n" +
+					   "  • Symlinked folders (materials, models, maps, etc.)\n" +
+					   "  • User config files (client.vdf, server.vdf, autoexec.cfg, etc.)\n" +
+					   "  • User customizations (loading screens, logos, etc.)\n" +
+					   "  • User data (addons, saves, settings, etc.)\n\n";
+
+			if (binFilesUpdated)
+			{
+				summary += "Binary files will be updated and patches will be re-applied automatically.\n\n";
+			}
+
+			summary += "A backup of existing files will be created in the 'backups' folder.\n\n";
+			summary += "Do you want to proceed with the update?";
+
+			var confirmed = await Utilities.DialogUtility.ShowConfirmationAsync(
+				"Update Installation", 
+				summary);
+
+			if (!confirmed)
+			{
+				_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+				{ 
+					Message = "Update cancelled by user", 
+					Percentage = 0 
+				}));
+				return;
+			}
+
+			// Perform the update
+			var progressHandler = new Progress<UpdateProgressReport>(report => 
+				_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+				{ 
+					Message = report.Message, 
+					Percentage = report.Percentage 
+				})));
+
+			await _garrysModUpdateService.PerformUpdateAsync(updates, progressHandler, rtxInstallPath);
+
+			// If bin files were updated, re-apply patches
+			if (binFilesUpdated)
+			{
+				_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+				{ 
+					Message = "Binary files updated. Re-applying patches...", 
+					Percentage = 0 
+				}));
+
+				// Get the currently installed patches
+				var installedPatches = await _installedPackagesService.GetPatchesVersionAsync();
+				if (installedPatches != null)
+				{
+					// Parse the source to extract owner and repo
+					// Source format examples: "BlueAmulet/SourceRTXTweaks", "sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)"
+					var sourceBase = installedPatches.Source.Split('(')[0].Trim(); // Remove any suffix like "(for ...)"
+					var parts = sourceBase.Split('/');
+					
+					if (parts.Length == 2 && !string.IsNullOrEmpty(installedPatches.Branch))
+					{
+						var owner = parts[0];
+						var repo = parts[1];
+						var branch = installedPatches.Branch; // Use the stored branch, not a hardcoded one
+						
+						var patchProgressHandler = new Progress<InstallProgressReport>(report => 
+							_messenger.Send(new ProgressReportMessage(report)));
+
+						await _patchingService.ApplyPatchesAsync(
+							owner, 
+							repo, 
+							"applypatch.py", 
+							rtxInstallPath, 
+							patchProgressHandler, 
+							branch);
+
+						_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+						{ 
+							Message = $"Patches re-applied successfully! (branch: {branch})", 
+							Percentage = 100 
+						}));
+					}
+					else
+					{
+						await Utilities.DialogUtility.ShowMessageAsync("Warning",
+							$"Binary files were updated, but could not automatically re-apply patches.\n\n" +
+							$"Invalid patch source format: {installedPatches.Source}\n\n" +
+							$"Please manually re-apply patches from the Binary Patches section.");
+					}
+				}
+				else
+				{
+					await Utilities.DialogUtility.ShowMessageAsync("Notice",
+						"Binary files were updated. No patches were previously installed, so no patches were applied.\n\n" +
+						"If you need patches, please apply them manually from the Binary Patches section.");
+				}
+			}
+
+			var successMessage = $"Successfully updated {updates.Count} item(s) from vanilla installation.";
+			if (binFilesUpdated)
+			{
+				successMessage += "\n\nBinary files were updated and patches were re-applied.";
+			}
+
+			await Utilities.DialogUtility.ShowMessageAsync("Update Complete", successMessage);
+		}
+		catch (Exception ex)
+		{
+			await Utilities.DialogUtility.ShowMessageAsync("Update Failed",
+				$"An error occurred while updating:\n\n{ex.Message}");
 		}
 		finally
 		{
