@@ -19,6 +19,16 @@ public class InstalledPackagesInfo
 	/// Information about the applied binary patches
 	/// </summary>
 	public InstalledPackageVersion? Patches { get; set; }
+
+	/// <summary>
+	/// Flag indicating if the installation has been downgraded to legacy binaries
+	/// </summary>
+	public bool IsDowngraded { get; set; }
+
+	/// <summary>
+	/// Path to the preserved downgraded depot (for restoring binaries before repatching)
+	/// </summary>
+	public string? DowngradedDepotPath { get; set; }
 }
 
 /// <summary>

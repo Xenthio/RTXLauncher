@@ -9,7 +9,10 @@ namespace RTXLauncher.Core.Services;
 public class PackageInstallService
 {
 	private readonly HttpClient _httpClient;
-
+	private static readonly string CacheDirectory = Path.Combine(
+		Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+		"RTXLauncher",
+		"Cache");
 
 	public static Dictionary<string, (string Owner, string Repo)> RemixSources = new Dictionary<string, (string, string)>
 	{
@@ -72,6 +75,9 @@ bin/win64/usd_ms.dll
 		_httpClient = new HttpClient();
 		// GitHub API can sometimes reject requests without a User-Agent
 		_httpClient.DefaultRequestHeaders.Add("User-Agent", "RTXLauncher");
+		
+		// Ensure cache directory exists
+		Directory.CreateDirectory(CacheDirectory);
 	}
 
 	/// <summary>
@@ -223,20 +229,39 @@ bin/win64/usd_ms.dll
 
 	private async Task DownloadFileAsync(string url, string destinationPath, IProgress<DownloadProgressReport> progress)
 	{
+		// Generate cache filename from URL hash
+		string urlHash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(url)));
+		string cacheFileName = Path.GetFileName(url.Split('?')[0]); // Get filename from URL without query params
+		string cachedFilePath = Path.Combine(CacheDirectory, $"{urlHash}_{cacheFileName}");
+
+		// Check if file is already cached
+		if (File.Exists(cachedFilePath))
+		{
+			progress.Report(new DownloadProgressReport
+			{
+				BytesDownloaded = new FileInfo(cachedFilePath).Length,
+				TotalBytes = new FileInfo(cachedFilePath).Length,
+				Percentage = 100
+			});
+			
+			// Copy from cache to destination
+			File.Copy(cachedFilePath, destinationPath, overwrite: true);
+			return;
+		}
+
+		// Download to cache first
 		using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 		response.EnsureSuccessStatusCode();
 
 		long totalBytes = response.Content.Headers.ContentLength ?? -1;
 		using var downloadStream = await response.Content.ReadAsStreamAsync();
-		using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
+		using var fileStream = new FileStream(cachedFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
 
 		long totalBytesRead = 0;
 		var buffer = new byte[8192];
 		int bytesRead;
 
-		// --- THE CHANGE IS HERE ---
-
-		// 1. Keep track of the last percentage we reported.
+		// Keep track of the last percentage we reported
 		int lastPercentageReported = -1;
 
 		while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
@@ -246,10 +271,8 @@ bin/win64/usd_ms.dll
 
 			if (totalBytes > 0)
 			{
-				// 2. Calculate the current percentage.
 				int currentPercentage = (int)((double)totalBytesRead / totalBytes * 100);
 
-				// 3. ONLY report progress if the percentage has changed since the last report.
 				if (currentPercentage > lastPercentageReported)
 				{
 					lastPercentageReported = currentPercentage;
@@ -257,16 +280,13 @@ bin/win64/usd_ms.dll
 					{
 						BytesDownloaded = totalBytesRead,
 						TotalBytes = totalBytes,
-						// We can also pass the percentage along in the report itself
-						// if the receiver needs it for remapping.
 						Percentage = currentPercentage
 					});
 				}
 			}
 			else
 			{
-				// For indeterminate downloads, we can't use percentage.
-				// A time-based throttle could be used here if needed, but it's more complex.
+				// For indeterminate downloads, we can't use percentage
 				// For now, reporting on every read is acceptable as it's less common.
 				progress.Report(new DownloadProgressReport { BytesDownloaded = totalBytesRead, TotalBytes = totalBytes });
 			}
@@ -277,6 +297,12 @@ bin/win64/usd_ms.dll
 		{
 			progress.Report(new DownloadProgressReport { BytesDownloaded = totalBytes, TotalBytes = totalBytes, Percentage = 100 });
 		}
+		
+		// Close the file stream before copying
+		fileStream.Close();
+		
+		// Copy from cache to destination
+		File.Copy(cachedFilePath, destinationPath, overwrite: true);
 	}
 
 	private async Task ExtractZipWithIgnoreAsync(string zipPath, string installDir, string defaultIgnore, IProgress<InstallProgressReport> progress)

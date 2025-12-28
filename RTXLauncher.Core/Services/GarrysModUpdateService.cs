@@ -28,8 +28,9 @@ public class GarrysModUpdateService
 	/// <summary>
 	/// Detects which files have changed between a source and destination directory.
 	/// </summary>
+	/// <param name="isDowngraded">If true, bin folder will be excluded to preserve downgraded binaries</param>
 	/// <returns>A list of files that are new or have been changed.</returns>
-	public List<FileUpdateInfo> CheckForUpdates(string sourceDir, string destDir)
+	public List<FileUpdateInfo> CheckForUpdates(string sourceDir, string destDir, bool isDowngraded = false)
 	{
 		var result = new List<FileUpdateInfo>();
 
@@ -39,8 +40,13 @@ public class GarrysModUpdateService
 			{
 				"addons", "saves", "dupes", "demos", "settings", "cache",
 				"materials", "models", "maps", "screenshots", "videos", "download"
-				// bin folder is now allowed - patches will be re-applied after update
 			};
+
+		// If downgraded, exclude bin folder to preserve legacy binaries
+		if (isDowngraded)
+		{
+			excludedDirs.Add("bin");
+		}
 
 		// Exclude these file extensions
 		var excludedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

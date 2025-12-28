@@ -3,157 +3,106 @@ using RTXLauncher.Core.Utilities;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.IO.Compression;
+using System.Net.Http;
 
 namespace RTXLauncher.Core.Services;
 
 /// <summary>
-/// Service for downgrading Garry's Mod to a legacy build using Steam depot downloads.
+/// Service for downgrading Garry's Mod to a legacy build using DepotDownloader.
 /// </summary>
 public class DepotDowngradeService
 {
     // Known depot information for Garry's Mod legacy build
     private const int GARRYSMOD_APP_ID = 4000;
     private const int GARRYSMOD_DEPOT_ID = 4002;
-    private const string LEGACY_MANIFEST_ID = "2195078592256565401";
+    private const string LEGACY_BETA = "x86-64";
+    private const string DEPOTDOWNLOADER_URL = "https://github.com/SteamRE/DepotDownloader/releases/latest/download/DepotDownloader-windows-x64.zip";
     
     /// <summary>
-    /// Downloads a legacy depot of Garry's Mod using the Steam console.
+    /// Downloads a legacy depot of Garry's Mod using DepotDownloader.
+    /// User will enter password and 2FA directly in DepotDownloader console.
     /// </summary>
+    /// <param name="username">Steam username</param>
+    /// <param name="manifestId">Steam depot manifest ID to download</param>
     /// <param name="progress">Progress reporter for UI updates</param>
-    /// <param name="customSteamPath">Optional custom Steam installation path</param>
     /// <returns>The path where the depot was downloaded</returns>
     public async Task<string> DownloadLegacyDepotAsync(
-        IProgress<InstallProgressReport> progress,
-        string? customSteamPath = null)
+        string username,
+        string manifestId,
+        IProgress<InstallProgressReport> progress)
     {
-        return await Task.Run(() => DownloadLegacyDepot(progress, customSteamPath));
+        return await Task.Run(() => DownloadLegacyDepot(username, manifestId, progress));
     }
     
     private string DownloadLegacyDepot(
-        IProgress<InstallProgressReport> progress,
-        string? customSteamPath)
+        string username,
+        string manifestId,
+        IProgress<InstallProgressReport> progress)
     {
         try
         {
+            // Step 1: Ensure DepotDownloader is available
             progress.Report(new InstallProgressReport 
             { 
-                Message = "Locating Steam installation...", 
+                Message = "Checking for DepotDownloader...", 
                 Percentage = 5 
             });
             
-            // Find Steam installation
-            string steamPath = customSteamPath ?? SteamLibraryUtility.GetSteamRoot()
-                ?? throw new DirectoryNotFoundException("Could not locate Steam installation. Please ensure Steam is installed.");
+            string depotDownloaderDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "depotdownloader");
+            string depotDownloaderExe = Path.Combine(depotDownloaderDir, "DepotDownloader.exe");
             
-            // Locate steam.exe
-            string steamExe = Path.Combine(steamPath, "steam.exe");
-            if (!File.Exists(steamExe))
+            if (!File.Exists(depotDownloaderExe))
             {
-                // Try alternative paths
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    steamExe = Path.Combine(steamPath, "steam.sh");
-                }
+                progress.Report(new InstallProgressReport 
+                { 
+                    Message = "Downloading DepotDownloader...", 
+                    Percentage = 10 
+                });
                 
-                if (!File.Exists(steamExe))
-                {
-                    throw new FileNotFoundException($"Could not find Steam executable at {steamExe}");
-                }
+                DownloadAndExtractDepotDownloader(depotDownloaderDir, progress);
             }
             
             progress.Report(new InstallProgressReport 
             { 
-                Message = "Preparing Steam console command...", 
-                Percentage = 10 
+                Message = "Launching DepotDownloader...\n\nPlease enter your Steam password and 2FA code in the DepotDownloader console window.", 
+                Percentage = 20 
             });
             
-            string arguments = $"-console +download_depot {GARRYSMOD_APP_ID} {GARRYSMOD_DEPOT_ID} {LEGACY_MANIFEST_ID}";
+            // Step 2: Run DepotDownloader with visible console
+            var outputPath = Path.Combine(depotDownloaderDir, "downloads");
+            Directory.CreateDirectory(outputPath);
             
-            progress.Report(new InstallProgressReport 
-            { 
-                Message = "Launching Steam console for depot download...\nThis may take several minutes depending on your connection speed.", 
-                Percentage = 15 
-            });
+            string arguments = $"-app {GARRYSMOD_APP_ID} -depot {GARRYSMOD_DEPOT_ID} -manifest {manifestId} -beta {LEGACY_BETA} -username \"{username}\" -dir \"{outputPath}\"";
             
-            // Create process start info
             var startInfo = new ProcessStartInfo
             {
-                FileName = steamExe,
+                FileName = depotDownloaderExe,
                 Arguments = arguments,
                 UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                WorkingDirectory = steamPath
+                CreateNoWindow = false, // Show the console window!
+                WorkingDirectory = depotDownloaderDir
             };
             
             // Start the process
             using var process = new Process();
             process.StartInfo = startInfo;
             
-            // Set up output handlers
-            var outputBuilder = new StringBuilder();
-            var errorBuilder = new StringBuilder();
-            
-            process.OutputDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    outputBuilder.AppendLine(e.Data);
-                    
-                    // Try to parse progress from Steam output
-                    UpdateProgressFromOutput(e.Data, progress);
-                }
-            };
-            
-            process.ErrorDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    errorBuilder.AppendLine(e.Data);
-                }
-            };
-            
             process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
             
-            // Wait for the process to exit
-            // Steam depot downloads can take a while, so we use a longer timeout
-            bool exited = process.WaitForExit(600000); // 10 minutes timeout
+            progress.Report(new InstallProgressReport 
+            { 
+                Message = "DepotDownloader is running. Please complete authentication in the console window...", 
+                Percentage = 30 
+            });
             
-            if (!exited)
-            {
-                process.Kill();
-                throw new TimeoutException("Steam depot download timed out after 10 minutes.");
-            }
+            // Wait for the process to exit (user handles everything in console)
+            process.WaitForExit();
             
             // Check exit code
             if (process.ExitCode != 0)
             {
-                string errorOutput = errorBuilder.ToString();
-                if (string.IsNullOrWhiteSpace(errorOutput))
-                {
-                    errorOutput = outputBuilder.ToString();
-                }
-                
-                // Check for common error patterns
-                if (errorOutput.Contains("not logged in", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("Steam is not logged in. Please log in to Steam first.");
-                }
-                else if (errorOutput.Contains("Steam Guard", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("Steam Guard authentication required. Please authenticate in Steam first.");
-                }
-                else if (errorOutput.Contains("depot not found", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("Could not find the specified depot. This may require ownership of Garry's Mod.");
-                }
-                else
-                {
-                    throw new Exception($"Steam depot download failed with exit code {process.ExitCode}.\n{errorOutput}");
-                }
+                throw new Exception($"DepotDownloader failed with exit code {process.ExitCode}. Please check the console output.");
             }
             
             progress.Report(new InstallProgressReport 
@@ -162,46 +111,38 @@ public class DepotDowngradeService
                 Percentage = 90 
             });
             
-            // Determine where Steam downloaded the depot
-            // By default, Steam places depot downloads in steamapps/content/app_<appid>/depot_<depotid>
-            string depotPath = Path.Combine(steamPath, "steamapps", "content", 
-                $"app_{GARRYSMOD_APP_ID}", $"depot_{GARRYSMOD_DEPOT_ID}");
+            // DepotDownloader puts game files directly in the downloads folder
+            string depotPath = outputPath;
             
-            if (!Directory.Exists(depotPath))
+            // Verify game files exist
+            if (!File.Exists(Path.Combine(depotPath, "gmod.exe")) && 
+                !File.Exists(Path.Combine(depotPath, "hl2.exe")))
             {
-                // Try alternative locations
-                var steamappsPath = Path.Combine(steamPath, "steamapps");
-                if (Directory.Exists(steamappsPath))
-                {
-                    var contentPath = Path.Combine(steamappsPath, "content");
-                    if (Directory.Exists(contentPath))
-                    {
-                        // Look for any app_4000 folder
-                        var appFolders = Directory.GetDirectories(contentPath, "app_4000", SearchOption.TopDirectoryOnly);
-                        if (appFolders.Length > 0)
-                        {
-                            var depotFolder = Path.Combine(appFolders[0], $"depot_{GARRYSMOD_DEPOT_ID}");
-                            if (Directory.Exists(depotFolder))
-                            {
-                                depotPath = depotFolder;
-                            }
-                        }
-                    }
-                }
-                
-                if (!Directory.Exists(depotPath))
-                {
-                    throw new DirectoryNotFoundException($"Could not find downloaded depot at expected location: {depotPath}");
-                }
+                throw new DirectoryNotFoundException($"Could not find game executables in depot path: {depotPath}");
+            }
+            
+            // Copy depot to a permanent preserved location for future restoration
+            string preservedDepotPath = Path.Combine(depotDownloaderDir, "preserved_depot");
+            if (Directory.Exists(preservedDepotPath))
+            {
+                Directory.Delete(preservedDepotPath, recursive: true);
             }
             
             progress.Report(new InstallProgressReport 
             { 
-                Message = $"Depot successfully downloaded to: {depotPath}", 
+                Message = "Preserving depot for future patch restoration...", 
+                Percentage = 95 
+            });
+            
+            CopyDirectory(depotPath, preservedDepotPath);
+            
+            progress.Report(new InstallProgressReport 
+            { 
+                Message = $"Depot successfully downloaded and preserved", 
                 Percentage = 100 
             });
             
-            return depotPath;
+            return preservedDepotPath;
         }
         catch (Exception ex)
         {
@@ -214,41 +155,37 @@ public class DepotDowngradeService
         }
     }
     
-    private void UpdateProgressFromOutput(string output, IProgress<InstallProgressReport> progress)
+    private void DownloadAndExtractDepotDownloader(string targetDir, IProgress<InstallProgressReport> progress)
     {
-        // Try to parse download progress from Steam output
-        // Steam typically outputs something like "Downloading 1234/5678 KB"
-        if (output.Contains("Downloading", StringComparison.OrdinalIgnoreCase))
+        Directory.CreateDirectory(targetDir);
+        string zipPath = Path.Combine(targetDir, "DepotDownloader.zip");
+        
+        try
         {
-            // Extract percentage if available
-            var percentMatch = System.Text.RegularExpressions.Regex.Match(output, @"(\d+)%");
-            if (percentMatch.Success && int.TryParse(percentMatch.Groups[1].Value, out int percent))
+            using (var httpClient = new HttpClient())
             {
-                // Map download progress to 20-85% range
-                int mappedPercent = 20 + (int)(percent * 0.65);
-                progress.Report(new InstallProgressReport 
-                { 
-                    Message = output, 
-                    Percentage = mappedPercent 
-                });
+                httpClient.Timeout = TimeSpan.FromMinutes(5);
+                var response = httpClient.GetAsync(DEPOTDOWNLOADER_URL).Result;
+                response.EnsureSuccessStatusCode();
+                
+                using (var fileStream = File.Create(zipPath))
+                {
+                    response.Content.CopyToAsync(fileStream).Wait();
+                }
             }
-            else
-            {
-                // Just report the message
-                progress.Report(new InstallProgressReport 
-                { 
-                    Message = output, 
-                    Percentage = -1 // Don't update percentage
-                });
-            }
-        }
-        else if (output.Contains("Depot download complete", StringComparison.OrdinalIgnoreCase))
-        {
+            
             progress.Report(new InstallProgressReport 
             { 
-                Message = "Depot download complete!", 
-                Percentage = 85 
+                Message = "Extracting DepotDownloader...", 
+                Percentage = 15 
             });
+            
+            ZipFile.ExtractToDirectory(zipPath, targetDir, overwriteFiles: true);
+            File.Delete(zipPath);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to download DepotDownloader: {ex.Message}", ex);
         }
     }
     
@@ -291,39 +228,57 @@ public class DepotDowngradeService
             var backupPath = Path.Combine(targetPath, "backup_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
             Directory.CreateDirectory(backupPath);
             
-            // List of files/folders to backup and replace
-            var itemsToReplace = new[] { "bin", "garrysmod", "platform", "sourceengine" };
+            // Get all items from the depot to copy
+            var depotItems = new List<string>();
             
-            foreach (var item in itemsToReplace)
+            // Add all directories
+            foreach (var dir in Directory.GetDirectories(depotPath))
             {
-                var sourcePath = Path.Combine(depotPath, item);
+                depotItems.Add(Path.GetFileName(dir));
+            }
+            
+            // Add all files
+            foreach (var file in Directory.GetFiles(depotPath))
+            {
+                depotItems.Add(Path.GetFileName(file));
+            }
+            
+            progress.Report(new InstallProgressReport 
+            { 
+                Message = $"Found {depotItems.Count} items to copy from depot...", 
+                Percentage = 15 
+            });
+            
+            // Backup existing items that will be replaced
+            foreach (var item in depotItems)
+            {
                 var targetItemPath = Path.Combine(targetPath, item);
                 var backupItemPath = Path.Combine(backupPath, item);
                 
-                if (Directory.Exists(sourcePath))
+                if (Directory.Exists(targetItemPath))
                 {
-                    if (Directory.Exists(targetItemPath))
-                    {
-                        // Move existing to backup
-                        progress.Report(new InstallProgressReport 
-                        { 
-                            Message = $"Backing up {item}...", 
-                            Percentage = 20 
-                        });
-                        
-                        CopyDirectory(targetItemPath, backupItemPath);
-                    }
+                    progress.Report(new InstallProgressReport 
+                    { 
+                        Message = $"Backing up {item}...", 
+                        Percentage = 20 
+                    });
+                    
+                    CopyDirectory(targetItemPath, backupItemPath);
+                }
+                else if (File.Exists(targetItemPath))
+                {
+                    File.Copy(targetItemPath, backupItemPath, overwrite: true);
                 }
             }
             
-            // Copy depot files to installation
+            // Copy ALL depot files to installation
             progress.Report(new InstallProgressReport 
             { 
                 Message = "Applying depot files to installation...", 
                 Percentage = 50 
             });
             
-            foreach (var item in itemsToReplace)
+            foreach (var item in depotItems)
             {
                 var sourcePath = Path.Combine(depotPath, item);
                 var targetItemPath = Path.Combine(targetPath, item);
@@ -332,7 +287,7 @@ public class DepotDowngradeService
                 {
                     progress.Report(new InstallProgressReport 
                     { 
-                        Message = $"Copying {item}...", 
+                        Message = $"Copying directory {item}...", 
                         Percentage = 60 
                     });
                     
@@ -346,30 +301,18 @@ public class DepotDowngradeService
                 }
                 else if (File.Exists(sourcePath))
                 {
-                    var targetFile = Path.Combine(targetPath, item);
-                    if (File.Exists(targetFile))
+                    progress.Report(new InstallProgressReport 
+                    { 
+                        Message = $"Copying file {item}...", 
+                        Percentage = 60 
+                    });
+                    
+                    if (File.Exists(targetItemPath))
                     {
-                        File.Delete(targetFile);
+                        File.Delete(targetItemPath);
                     }
-                    File.Copy(sourcePath, targetFile);
-                }
-            }
-            
-            // Copy executable files
-            var exeFiles = new[] { "gmod.exe", "hl2.exe", "steam_appid.txt" };
-            foreach (var exe in exeFiles)
-            {
-                var sourceFile = Path.Combine(depotPath, exe);
-                var targetFile = Path.Combine(targetPath, exe);
-                
-                if (File.Exists(sourceFile))
-                {
-                    if (File.Exists(targetFile))
-                    {
-                        File.Copy(targetFile, Path.Combine(backupPath, exe), overwrite: true);
-                        File.Delete(targetFile);
-                    }
-                    File.Copy(sourceFile, targetFile);
+                    
+                    File.Copy(sourcePath, targetItemPath);
                 }
             }
             
@@ -398,5 +341,60 @@ public class DepotDowngradeService
             var destDir = Path.Combine(destinationDir, dirName);
             CopyDirectory(directory, destDir);
         }
+    }
+
+    /// <summary>
+    /// Restores the bin folder from the preserved downgraded depot
+    /// This should be called before reapplying patches to ensure clean unpatched binaries
+    /// </summary>
+    public async Task RestoreBinariesFromDepotAsync(
+        string depotPath,
+        string targetPath,
+        IProgress<InstallProgressReport> progress)
+    {
+        await Task.Run(() =>
+        {
+            if (!Directory.Exists(depotPath))
+            {
+                throw new DirectoryNotFoundException($"Preserved depot not found: {depotPath}");
+            }
+
+            if (!Directory.Exists(targetPath))
+            {
+                throw new DirectoryNotFoundException($"Target installation not found: {targetPath}");
+            }
+
+            progress.Report(new InstallProgressReport
+            {
+                Message = "Restoring original binaries from depot...",
+                Percentage = 10
+            });
+
+            // Restore bin folder
+            var sourceBinPath = Path.Combine(depotPath, "bin");
+            var targetBinPath = Path.Combine(targetPath, "bin");
+
+            if (Directory.Exists(sourceBinPath))
+            {
+                progress.Report(new InstallProgressReport
+                {
+                    Message = "Restoring bin folder...",
+                    Percentage = 50
+                });
+
+                if (Directory.Exists(targetBinPath))
+                {
+                    Directory.Delete(targetBinPath, recursive: true);
+                }
+
+                CopyDirectory(sourceBinPath, targetBinPath);
+            }
+
+            progress.Report(new InstallProgressReport
+            {
+                Message = "Binaries restored successfully",
+                Percentage = 100
+            });
+        });
     }
 }

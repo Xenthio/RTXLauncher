@@ -202,6 +202,8 @@ public partial class SetupViewModel : PageViewModel
 			await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
+			// Notify that packages were installed so Advanced Install tab can refresh
+			_messenger.Send(new PackagesUpdatedMessage());
 		}
 		catch (Exception ex)
 		{

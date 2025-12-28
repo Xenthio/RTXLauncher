@@ -35,18 +35,22 @@
 			</Border>
 
 			<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
-				<Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+				<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10">
 					<TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="This RTX Install" FontWeight="Bold" Margin="0,0,0,10"/>
 
 					<TextBlock Grid.Row="1" Grid.Column="0" Text="Install Type:" FontWeight="SemiBold"/>
 					<TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RtxInstallType}"/>
 
-					<TextBlock Grid.Row="2" Grid.Column="0" Text="Install Path:"/>
-					<TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RtxInstallPath}" TextWrapping="Wrap"/>
+					<TextBlock Grid.Row="2" Grid.Column="0" Text="Game Version:" FontWeight="SemiBold"/>
+					<TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GameVersionDate}"/>
 
-				<StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
-					<Button Content="Update Install from Vanilla" Command="{Binding UpdateInstallCommand}" IsEnabled="{Binding !IsBusy}"/>
-				</StackPanel>
+					<TextBlock Grid.Row="3" Grid.Column="0" Text="Install Path:"/>
+					<TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RtxInstallPath}" TextWrapping="Wrap"/>
+
+					<StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+						<Button Content="Update Install from Vanilla" Command="{Binding UpdateInstallCommand}" IsEnabled="{Binding !IsBusy}"/>
+						<Button Content="Downgrade Game" Command="{Binding DowngradeGameCommand}" IsEnabled="{Binding !IsBusy}"/>
+					</StackPanel>
 				</Grid>
 			</Border>
 

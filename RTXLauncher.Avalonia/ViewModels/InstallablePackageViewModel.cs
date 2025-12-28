@@ -93,6 +93,8 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 	/// </summary>
 	public async Task RefreshInstalledVersionAsync()
 	{
+		// Clear cache to force reload from disk
+		InstalledPackagesService?.ClearCache();
 		await LoadInstalledVersion();
 	}
 

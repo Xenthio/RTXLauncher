@@ -131,6 +131,25 @@ public class InstalledPackagesService
 	}
 
 	/// <summary>
+	/// Gets whether the installation has been downgraded
+	/// </summary>
+	public async Task<bool> GetIsDowngradedAsync()
+	{
+		var packages = await GetInstalledPackagesAsync();
+		return packages.IsDowngraded;
+	}
+
+	/// <summary>
+	/// Sets whether the installation has been downgraded
+	/// </summary>
+	public async Task SetIsDowngradedAsync(bool isDowngraded)
+	{
+		var packages = await GetInstalledPackagesAsync();
+		packages.IsDowngraded = isDowngraded;
+		await SaveAsync();
+	}
+
+	/// <summary>
 	/// Clears the cache, forcing a reload from disk on next access
 	/// </summary>
 	public void ClearCache()
@@ -138,7 +157,7 @@ public class InstalledPackagesService
 		_cache = null;
 	}
 
-	private async Task SaveAsync()
+	public async Task SaveAsync()
 	{
 		if (_cache == null) return;
 

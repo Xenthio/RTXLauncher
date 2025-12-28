@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -19,6 +20,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	[ObservableProperty] private string _vanillaInstallType = "Error Fetching Install Type";
 	[ObservableProperty] private string _rtxInstallPath = "Error Fetching Path";
 	[ObservableProperty] private string _rtxInstallType = "Error Fetching Install Type";
+	[ObservableProperty] private string _gameVersionDate = "Unknown";
 	[ObservableProperty] private bool _isBusy;
 	[ObservableProperty] private string? _manualVanillaPath;
 	private readonly IMessenger _messenger;
@@ -28,6 +30,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	private readonly GarrysModUpdateService _garrysModUpdateService;
 	private readonly PatchingService _patchingService;
 	private readonly InstalledPackagesService _installedPackagesService;
+	private readonly DepotDowngradeService _depotDowngradeService;
 
 	// THE SCALABLE LIST OF PACKAGES
 	public ObservableCollection<InstallablePackageViewModel> Packages { get; } = new();
@@ -38,7 +41,8 @@ public partial class AdvancedInstallViewModel : PageViewModel
 				PatchingService patchingService,
 				GarrysModInstallService installService,
 				GarrysModUpdateService updateService,
-				InstalledPackagesService installedPackagesService)
+				InstalledPackagesService installedPackagesService,
+				DepotDowngradeService depotDowngradeService)
 	{
 		Header = "Advanced Install";
 
@@ -49,11 +53,18 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		_garrysModInstallService = installService;
 		_garrysModUpdateService = updateService;
 		_installedPackagesService = installedPackagesService;
+		_depotDowngradeService = depotDowngradeService;
+
+		// Listen for package updates to refresh all package displays
+		_messenger.Register<PackagesUpdatedMessage>(this, (recipient, message) =>
+		{
+			_ = RefreshAllPackagesAsync();
+		});
 
 		// To add a new package, you just add it to this list!
 		Packages.Add(new RemixPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService));
-		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger, _installedPackagesService));
-		Packages.Add(new FixesPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService, _patchingService, () => ManualVanillaPath));
+		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger, _installedPackagesService, _depotDowngradeService, _githubService, _packageInstallService));
+		Packages.Add(new FixesPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService, _patchingService, () => ManualVanillaPath, _depotDowngradeService));
 
 		// Initialize all packages
 		_ = InitializePackages();
@@ -76,11 +87,14 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		if (RtxInstallType == "unknown")
 		{
 			RtxInstallType = "There's no install here, create one!";
+			GameVersionDate = "Unknown";
 			//CreateInstallButton.Enabled = true;
 			//UpdateInstallButton.Enabled = false;
 		}
 		else
 		{
+			// Get game version date from engine.dll signature
+			GameVersionDate = GetEngineDllSignatureDate(RtxInstallPath);
 			//CreateInstallButton.Enabled = false;
 			//UpdateInstallButton.Enabled = true;
 		}
@@ -89,11 +103,60 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		//UpdateQuickInstallGroupVisibility();
 	}
 
+	private string GetEngineDllSignatureDate(string installPath)
+	{
+		try
+		{
+			// Try win64 folder first (64-bit), then fallback to bin folder (32-bit)
+			string engineDllPath = Path.Combine(installPath, "bin", "win64", "engine.dll");
+			if (!File.Exists(engineDllPath))
+			{
+				engineDllPath = Path.Combine(installPath, "bin", "engine.dll");
+			}
+
+			if (!File.Exists(engineDllPath))
+			{
+				return "Unknown (engine.dll not found)";
+			}
+
+			// Get the PE (Portable Executable) timestamp
+			using var stream = new FileStream(engineDllPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			using var reader = new BinaryReader(stream);
+
+			// Read DOS header
+			stream.Seek(0x3C, SeekOrigin.Begin);
+			int peHeaderOffset = reader.ReadInt32();
+
+			// Read PE header
+			stream.Seek(peHeaderOffset + 8, SeekOrigin.Begin); // Skip PE signature (4 bytes) and Machine (2 bytes) and NumberOfSections (2 bytes)
+			int timestamp = reader.ReadInt32();
+
+			// Convert Unix timestamp to DateTime
+			var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+			var signatureDate = epoch.AddSeconds(timestamp);
+
+			return signatureDate.ToString("MMM d, yyyy");
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"Failed to read engine.dll signature: {ex.Message}");
+			return "Unknown (read error)";
+		}
+	}
+
 	private async Task InitializePackages()
 	{
 		foreach (var package in Packages)
 		{
 			await package.InitializeAsync();
+		}
+	}
+
+	private async Task RefreshAllPackagesAsync()
+	{
+		foreach (var package in Packages)
+		{
+			await package.RefreshInstalledVersionAsync();
 		}
 	}
 
@@ -130,18 +193,21 @@ public partial class AdvancedInstallViewModel : PageViewModel
 				Percentage = 10 
 			}));
 
+			// Check if installation is downgraded to exclude bin folder
+			bool isDowngraded = await _installedPackagesService.GetIsDowngradedAsync();
+
 			var updates = await Task.Run(() => 
 			{
 				var allUpdates = new List<FileUpdateInfo>();
 				
-				// Check root directory (includes gmod.exe, hl2.exe, and bin folder)
-				var rootUpdates = _garrysModUpdateService.CheckForUpdates(vanillaPath, rtxInstallPath);
+				// Check root directory (includes gmod.exe, hl2.exe, and bin folder if not downgraded)
+				var rootUpdates = _garrysModUpdateService.CheckForUpdates(vanillaPath, rtxInstallPath, isDowngraded);
 				allUpdates.AddRange(rootUpdates);
 				
 				// Check garrysmod folder
 				var vanillaGmodPath = Path.Combine(vanillaPath, "garrysmod");
 				var rtxGmodPath = Path.Combine(rtxInstallPath, "garrysmod");
-				var gmodUpdates = _garrysModUpdateService.CheckForUpdates(vanillaGmodPath, rtxGmodPath);
+				var gmodUpdates = _garrysModUpdateService.CheckForUpdates(vanillaGmodPath, rtxGmodPath, isDowngraded);
 				allUpdates.AddRange(gmodUpdates);
 				
 				return allUpdates;
@@ -339,6 +405,194 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			IsBusy = false;
 		}
 	}
+
+	[RelayCommand]
+	private async Task DowngradeGame()
+	{
+		// Show confirmation dialog with username input
+		var confirmed = await Utilities.DialogUtility.ShowConfirmationAsync(
+			"Downgrade Garry's Mod",
+			"Downgrading the game improves stability at the cost of newer features.\n\n" +
+			"This will open DepotDownloader where you can enter your Steam password and 2FA code.\n\n" +
+			"Do you want to continue?");
+
+		if (!confirmed)
+		{
+			return;
+		}
+
+		// Show dialog for username only
+		var credentialsViewModel = new SteamCredentialsViewModel 
+		{ 
+			UsernameOnly = true  // Flag to show only username field
+		};
+		var credentialsDialog = new Views.SteamCredentialsWindow
+		{
+			DataContext = credentialsViewModel
+		};
+
+		var mainWindow = App.GetMainWindow();
+		if (mainWindow == null)
+		{
+			await Utilities.DialogUtility.ShowMessageAsync("Error",
+				"Could not show dialog: Main window not found.");
+			return;
+		}
+
+		await credentialsDialog.ShowDialog(mainWindow);
+
+		if (!credentialsDialog.Result || string.IsNullOrWhiteSpace(credentialsViewModel.Username))
+		{
+			return;
+		}
+
+		IsBusy = true;
+
+		try
+		{
+			var rtxInstallPath = GarrysModUtility.GetThisInstallFolder();
+			var rtxInstallType = GarrysModUtility.GetInstallType(rtxInstallPath);
+
+			if (rtxInstallType == "unknown")
+			{
+				await Utilities.DialogUtility.ShowMessageAsync("No RTX Install",
+					"There is no RTX installation at this location. Please create one first.");
+				return;
+			}
+
+			// Set up progress reporting
+			var progress = new Progress<InstallProgressReport>(report =>
+			{
+				_messenger.Send(new ProgressReportMessage(report));
+			});
+
+			// Download the depot (user will enter password/2FA in console)
+			string depotPath = await _depotDowngradeService.DownloadLegacyDepotAsync(
+				credentialsViewModel.Username,
+				credentialsViewModel.ManifestId,
+				progress);
+
+			// Apply the depot to the installation
+			await _depotDowngradeService.ApplyDepotToInstallationAsync(depotPath, rtxInstallPath, progress);
+
+			// Re-apply binary patches
+			((IProgress<InstallProgressReport>)progress).Report(new InstallProgressReport 
+			{ 
+				Message = "Re-applying binary patches...", 
+				Percentage = 50 
+			});
+
+			var patchesInfo = await _installedPackagesService.GetPatchesVersionAsync();
+			if (patchesInfo != null && !string.IsNullOrEmpty(patchesInfo.Source))
+			{
+				// Parse owner/repo from source
+				var parts = patchesInfo.Source.Split('/');
+				if (parts.Length == 2)
+				{
+					string patchOwner = parts[0];
+					string patchRepo = parts[1];
+					string patchBranch = patchesInfo.Version ?? "master";
+					string patchFile = "applypatch.py";
+
+					await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, rtxInstallPath, progress, patchBranch);
+				}
+			}
+
+			// Re-install fixes package
+			((IProgress<InstallProgressReport>)progress).Report(new InstallProgressReport 
+			{ 
+				Message = "Re-installing fixes package...", 
+				Percentage = 60 
+			});
+
+			var fixesInfo = await _installedPackagesService.GetFixesVersionAsync();
+			if (fixesInfo != null && !string.IsNullOrEmpty(fixesInfo.Source))
+			{
+				// Parse owner/repo from source
+				var parts = fixesInfo.Source.Split('/');
+				if (parts.Length == 2)
+				{
+					string fixesOwner = parts[0];
+					string fixesRepo = parts[1];
+
+					var fixesReleases = await _githubService.FetchReleasesAsync(fixesOwner, fixesRepo);
+					var latestFixes = fixesReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
+
+					if (latestFixes != null)
+					{
+						await _packageInstallService.InstallStandardPackageAsync(latestFixes, rtxInstallPath, PackageInstallService.DefaultIgnorePatterns, progress);
+
+						// Update version info
+						await _installedPackagesService.SetFixesVersionAsync(
+							fixesInfo.Source,
+							latestFixes.TagName,
+							latestFixes.Name ?? latestFixes.TagName);
+					}
+				}
+			}
+
+			// Re-install RTX Remix
+			((IProgress<InstallProgressReport>)progress).Report(new InstallProgressReport 
+			{ 
+				Message = "Re-installing RTX Remix...", 
+				Percentage = 80 
+			});
+
+			var remixInfo = await _installedPackagesService.GetRemixVersionAsync();
+			if (remixInfo != null && !string.IsNullOrEmpty(remixInfo.Source))
+			{
+				// Parse owner/repo from source
+				var parts = remixInfo.Source.Split('/');
+				if (parts.Length == 2)
+				{
+					string remixOwner = parts[0];
+					string remixRepo = parts[1];
+
+					var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
+					var latestRemix = remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
+
+					if (latestRemix != null)
+					{
+						await _packageInstallService.InstallRemixPackageAsync(latestRemix, rtxInstallPath, progress);
+
+						// Update version info
+						await _installedPackagesService.SetRemixVersionAsync(
+							remixInfo.Source,
+							latestRemix.TagName,
+							latestRemix.Name ?? latestRemix.TagName);
+					}
+				}
+			}
+
+			// Mark installation as downgraded and save depot path
+			await _installedPackagesService.SetIsDowngradedAsync(true);
+			var packages = await _installedPackagesService.GetInstalledPackagesAsync();
+			packages.DowngradedDepotPath = depotPath;
+			await _installedPackagesService.SaveAsync();
+
+			((IProgress<InstallProgressReport>)progress).Report(new InstallProgressReport 
+			{ 
+				Message = "Downgrade complete!", 
+				Percentage = 100 
+			});
+
+			await Utilities.DialogUtility.ShowMessageAsync("Downgrade Complete",
+				"Garry's Mod has been successfully downgraded to the legacy version.\n\n" +
+				"Binary patches, fixes, and RTX Remix have been re-applied.\n\n" +
+				"A backup of your previous installation has been created.\n\n" +
+				"NOTE: The 'Update Install from Vanilla' feature will not update engine binaries\n" +
+				"to preserve the downgraded version.");
+		}
+		catch (Exception ex)
+		{
+			await Utilities.DialogUtility.ShowMessageAsync("Downgrade Failed",
+				$"An error occurred during downgrade:\n\n{ex.Message}");
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
 }
 
 // ===================================================================
@@ -486,6 +740,9 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 					SelectedRelease.TagName,
 					SelectedRelease.Name ?? SelectedRelease.TagName);
 				await RefreshInstalledVersionAsync();
+				
+				// Notify other views that packages were updated
+				_messenger.Send(new PackagesUpdatedMessage());
 			}
 		}
 		catch (Exception ex)
@@ -505,6 +762,9 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 {
 	private readonly PatchingService _patchingService;
 	private readonly IMessenger _messenger;
+	private readonly DepotDowngradeService _depotDowngradeService;
+	private readonly GitHubService _githubService;
+	private readonly PackageInstallService _installService;
 
 	private readonly Dictionary<string, (string Owner, string Repo, string FilePath, string Branch)> _patchSources = new()
 	{
@@ -513,13 +773,16 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
     };
 
-	public PatcherPackageViewModel(PatchingService patchingService, IMessenger messenger, InstalledPackagesService installedPackagesService)
+	public PatcherPackageViewModel(PatchingService patchingService, IMessenger messenger, InstalledPackagesService installedPackagesService, DepotDowngradeService depotDowngradeService, GitHubService githubService, PackageInstallService installService)
 		: base(null, installedPackagesService) // It doesn't use GitHubService for releases, so we pass null.
 	{
 		Title = "Binary Patches";
 		ButtonText = "Apply Patches";
 		_patchingService = patchingService;
 		_messenger = messenger;
+		_depotDowngradeService = depotDowngradeService;
+		_githubService = githubService;
+		_installService = installService;
 	}
 
 	protected override async Task LoadInstalledVersion()
@@ -565,6 +828,54 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 				throw new DirectoryNotFoundException("Could not find a valid RTX GMod installation directory.");
 			}
 
+			// If installation is downgraded, restore original binaries first
+			var packages = await InstalledPackagesService!.GetInstalledPackagesAsync();
+			if (packages.IsDowngraded && !string.IsNullOrEmpty(packages.DowngradedDepotPath))
+			{
+				progress.Report(new InstallProgressReport
+				{
+					Message = "Restoring original binaries before patching...",
+					Percentage = 10
+				});
+
+				await _depotDowngradeService.RestoreBinariesFromDepotAsync(
+					packages.DowngradedDepotPath,
+					installDir,
+					progress);
+
+				// Reinstall RTX Remix since bin folder restoration wipes it out
+				var remixInfo = await InstalledPackagesService.GetRemixVersionAsync();
+				if (remixInfo != null && !string.IsNullOrEmpty(remixInfo.Source))
+				{
+					progress.Report(new InstallProgressReport
+					{
+						Message = "Reinstalling RTX Remix after binary restoration...",
+						Percentage = 30
+					});
+
+					var parts = remixInfo.Source.Split('/');
+					if (parts.Length == 2)
+					{
+						var remixReleases = await _githubService.FetchReleasesAsync(parts[0], parts[1]);
+						var latestRemix = remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
+
+						if (latestRemix != null)
+						{
+							var remixProgress = new Progress<InstallProgressReport>(report =>
+							{
+								progress.Report(new InstallProgressReport
+								{
+									Message = report.Message,
+									Percentage = 30 + (int)(report.Percentage * 0.2)
+								});
+							});
+
+							await _installService.InstallRemixPackageAsync(latestRemix, installDir, remixProgress);
+						}
+					}
+				}
+			}
+
 			var sourceInfo = _patchSources[SelectedSource];
 			await _patchingService.ApplyPatchesAsync(sourceInfo.Owner, sourceInfo.Repo, sourceInfo.FilePath, installDir, progress, sourceInfo.Branch);
 
@@ -573,6 +884,9 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 			{
 				await InstalledPackagesService.SetPatchesVersionAsync(SelectedSource, sourceInfo.Branch);
 				await RefreshInstalledVersionAsync();
+				
+				// Notify other views that packages were updated
+				_messenger.Send(new PackagesUpdatedMessage());
 			}
 		}
 		catch (Exception ex)
@@ -592,6 +906,8 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 	private readonly PatchingService _patchingService;
 	private readonly IMessenger _messenger;
 	private readonly Func<string?> _getManualVanillaPath;
+	private readonly DepotDowngradeService _depotDowngradeService;
+	private readonly InstalledPackagesService _installedPackagesService;
 	
 	// --- 1. Add your sources dictionary ---
 	private readonly Dictionary<string, (string Owner, string Repo, string InstallType)> _packageSources = new()
@@ -607,7 +923,7 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") }
 	};
 
-	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService, PatchingService patchingService, Func<string?> getManualVanillaPath)
+	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService, PatchingService patchingService, Func<string?> getManualVanillaPath, DepotDowngradeService depotDowngradeService)
 		: base(githubService, installedPackagesService)
 	{
 		Title = "Fixes Package";
@@ -615,6 +931,8 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		_messenger = messenger;
 		_patchingService = patchingService;
 		_getManualVanillaPath = getManualVanillaPath;
+		_depotDowngradeService = depotDowngradeService;
+		_installedPackagesService = installedPackagesService;
 	}
 
 	protected override async Task LoadInstalledVersion()
@@ -778,19 +1096,73 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 						Percentage = 80 
 					});
 
-					await Task.Run(() =>
+					// Check if installation is downgraded
+					var packages = await _installedPackagesService.GetInstalledPackagesAsync();
+					if (packages.IsDowngraded && !string.IsNullOrEmpty(packages.DowngradedDepotPath))
 					{
+						// Restore from downgraded depot
 						var restoreProgress = new Progress<InstallProgressReport>(report =>
 						{
 							progress.Report(new InstallProgressReport 
 							{ 
 								Message = report.Message, 
-								Percentage = 80 + (int)(report.Percentage * 0.05) 
+								Percentage = 80 + (int)(report.Percentage * 0.02) 
 							});
 						});
 
-						BinaryRestorationUtility.RestoreOriginalBinaries(installDir, restoreProgress, _getManualVanillaPath());
-					});
+						await _depotDowngradeService.RestoreBinariesFromDepotAsync(
+							packages.DowngradedDepotPath,
+							installDir,
+							restoreProgress);
+
+						var remixInfo = await _installedPackagesService.GetRemixVersionAsync();
+						if (remixInfo != null && !string.IsNullOrEmpty(remixInfo.Source))
+						{
+							progress.Report(new InstallProgressReport 
+							{ 
+								Message = "Reinstalling RTX Remix after binary restoration...", 
+								Percentage = 82 
+							});
+
+							var parts = remixInfo.Source.Split('/');
+							if (parts.Length == 2)
+							{
+								var remixReleases = await GitHubService!.FetchReleasesAsync(parts[0], parts[1]);
+								var latestRemix = remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
+
+								if (latestRemix != null)
+								{
+									var remixProgress = new Progress<InstallProgressReport>(report =>
+									{
+										progress.Report(new InstallProgressReport 
+										{ 
+											Message = report.Message, 
+											Percentage = 82 + (int)(report.Percentage * 0.03) 
+										});
+									});
+
+									await _installService.InstallRemixPackageAsync(latestRemix, installDir, remixProgress);
+								}
+							}
+						}
+					}
+					else
+					{
+						// Restore from vanilla
+						await Task.Run(() =>
+						{
+							var restoreProgress = new Progress<InstallProgressReport>(report =>
+							{
+								progress.Report(new InstallProgressReport 
+								{ 
+									Message = report.Message, 
+									Percentage = 80 + (int)(report.Percentage * 0.05) 
+								});
+							});
+
+							BinaryRestorationUtility.RestoreOriginalBinaries(installDir, restoreProgress, _getManualVanillaPath());
+						});
+					}
 				}
 
 				progress.Report(new InstallProgressReport 
@@ -838,6 +1210,9 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 					Percentage = 100 
 				});
 			}
+			
+			// Notify other views that packages were updated
+			_messenger.Send(new PackagesUpdatedMessage());
 		}
 		catch (Exception ex)
 		{
