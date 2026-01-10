@@ -15,7 +15,10 @@ Fazor is a desktop implementation of a Blazor/Razor system for building cross-pl
 
 This project requires:
 - .NET 10.0 SDK
-- The Fazor source code (referenced from /tmp/Fazor during development)
+- The Fazor source code (available at https://github.com/Xenthio/Fazor)
+- Fazor Assets (XGUI themes, fonts) - copy from Fazor repository if needed
+
+**Note:** The large Fazor asset files (XGUI themes, fonts, etc.) are not included in this repository. If you want to use XGUI themes, copy the Assets folder from the Fazor repository.
 
 ### Build Command
 
