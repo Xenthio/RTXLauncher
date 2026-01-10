@@ -1,0 +1,29 @@
+@namespace RTXLauncher.Fazor
+@using Sandbox.UI;
+@inherits Panel
+
+<root>
+	<div class="mods-page">
+		<h2>Mod Browser</h2>
+		<p>Browse and install mods for Garry's Mod RTX.</p>
+		<div class="mod-list">
+			<div class="mod-item">
+				<h3>Sample Mod 1</h3>
+				<p>Description of the mod goes here.</p>
+				<button>Install</button>
+			</div>
+			<div class="mod-item">
+				<h3>Sample Mod 2</h3>
+				<p>Description of another mod.</p>
+				<button>Install</button>
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	protected override int BuildHash()
+	{
+		return 0;
+	}
+}

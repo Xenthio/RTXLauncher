@@ -1,0 +1,26 @@
+﻿// Additional optional feature for Windows based styles.
+
+.window {  
+	.TitleBar {
+		.Control {
+			border-top: 0px;
+			border-left: 0px;
+		}
+	}
+}
+
+.button {
+	border-top: 0px;
+	border-left: 0px;
+
+	&:hover {
+		border-top: 0px;
+		border-left: 0px;
+	}
+
+	&:active {
+		border-top: 0px;
+		border-left: 0px;
+	}
+}
+ 

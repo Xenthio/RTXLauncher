@@ -1,0 +1,39 @@
+
+
+.GameMenu {
+	background-color: transparent;
+	border: 0px;
+	padding-left: 32px;
+	padding-bottom: 8px;
+	color: #C8C8C8;
+	font-size: 15px;
+	font-weight: bold;
+
+	.Button {
+		margin: 4px;
+		padding: 0px;
+		border: 0px;
+		background-color: transparent;
+
+		&:hover {
+			color: #FFFFFF;
+		}
+
+		&:active {
+			margin: 4px;
+			padding: 0px;
+			border: 0px;
+		}
+	}
+
+	.Logo {
+		width: 196px;
+		height: 32px;
+		background-image: $gamemenu-logo;
+		background-position: center;
+
+		&:hover {
+			background-image: $gamemenu-logo-hover;
+		}
+	}
+}

@@ -1,0 +1,68 @@
+.sliderroot {
+
+	> .label {
+		height:20px;
+	}
+}
+.sliderarea {
+	align-items: center;
+	background-color: $control-inset-colour;
+	border-radius: 3px;
+	padding-left: 4px;
+	padding-right: 4px;
+	height: 22px;
+}
+.slider {
+	justify-content: center;
+	margin: 0px;
+
+	> .thumb {
+		background-color: $slider-thumb-colour;
+		width: 5px;
+		height: 12px;
+		border-radius: 3px;
+	}
+
+	> .scalestepmin {
+		display: none;
+		color: $slider-step-min-colour;
+		font-size: 9px;
+	}
+
+	> .scalestepmax {
+		display: none;
+		font-size: 9px;
+		color: $slider-step-max-colour;
+	}
+
+	> .scalesteps {
+		display: none;
+		top: 17px;
+
+		> .step {
+			left: 4px;
+			background-color: $slider-step-colour;
+			width: 1px;
+			height: 3px;
+		}
+		//first and last are 4px tall
+		> .step:first-child {
+			height: 4px;
+		}
+
+		> .step:last-child {
+			height: 4px;
+		}
+	}
+
+	> .track {
+		height: 5px;
+		background-color: $slider-track-colour;
+		border-radius: 3px;
+		overflow: hidden;
+
+		> .inner {
+			background-color: $slider-track-colour-inner;
+		}
+	}
+}

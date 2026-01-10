@@ -1,0 +1,51 @@
+.messagebox-window {
+
+	.window-content {
+		padding: 10px;
+
+		.messagebox-top {
+			flex-direction: row;
+
+			.messagebox-icon {
+				width: 32px;
+				height: 32px;
+				margin-right: 12px;
+
+
+				&.information {
+				}
+
+				&.warning {
+				}
+
+				&.error {
+				}
+
+				&.question {
+				}
+
+				&.none {
+				}
+			}
+
+			.messagebox-message {
+			}
+		}
+
+		.messagebox-buttons {
+			padding-top: 12px;
+			justify-content: center;
+
+			.messagebox-button {
+				min-width: 72px;
+				margin: 0px 4px;
+
+				&:hover {
+				}
+
+				&:active {
+				}
+			}
+		}
+	}
+}

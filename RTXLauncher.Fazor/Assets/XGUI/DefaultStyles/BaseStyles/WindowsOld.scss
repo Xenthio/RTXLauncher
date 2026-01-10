@@ -1,0 +1,106 @@
+//@import "/styles/base.scss";
+//@import "/styles/form.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+.Panel {
+	color: $default-text-colour;
+	font-size: $default-text-size;
+	font-family: $default-text-font;
+	font-smooth: $default-text-smooth;
+
+	border-top: 1px solid $border-colour-top;
+	border-left: 1px solid $border-colour-left;
+	border-bottom: 1px solid $border-colour-bottom;
+	border-right: 1px solid $border-colour-right;
+	background-color: $base-colour;
+}
+
+
+
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinWindow.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinLayout.scss";
+
+// ------------------
+// Control Elements
+// ------------------
+
+// Button
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinButton.scss";
+
+// TextEntry
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinTextBox.scss";
+
+// Tabs
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinTabs.scss";
+
+// Sidebar
+//@import "/XGUI/DefaultStyles/BaseStyles/VGUI/VGUISidebar.scss";
+
+// Toolbar
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinToolbar.scss";
+
+// Slider
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinSlider.scss";
+
+// Checkbox
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinCheckBox.scss";
+
+// RadioButton
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinRadioButton.scss";
+
+// Label Types
+//@import "/XGUI/DefaultStyles/BaseStyles/VGUI/VGUILabels.scss";
+
+// ComboBox/Selector/Dropdown
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinComboBox.scss";
+
+// GroupBox
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinGroupBox.scss";
+
+// ContextMenu
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinContextMenu.scss";
+
+// SelectList
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinSelectList.scss";
+
+// ListView
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/WinListView.scss";
+
+/// ------------------
+/// Extra Elements
+/// ------------------
+
+// FileBrowserView
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/Extras/WinFileBrowserView.scss";
+
+// MessageBox
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld/Extras/WinMessageBox.scss";
+
+
+LayoutBoxInset {
+	border-bottom: 1px solid $border-colour-bottom-inset;
+	border-right: 1px solid $border-colour-right-inset;
+	border-top: 1px solid $border-colour-top-inset;
+	border-left: 1px solid $border-colour-left-inset; 
+}
+
+LayoutBox {
+	background-color: $base-colour;
+	border-top: 1px solid $border-colour-top;
+	border-left: 1px solid $border-colour-left;
+	border-bottom: 1px solid $border-colour-bottom;
+	border-right: 1px solid $border-colour-right;
+}
+
+Seperator {
+	background-color: $border-colour-bottom-inset;
+	height: 1px;
+	width: 100%; 
+}
+
+SeperatorVertical {
+	background-color: $border-colour-right-inset;
+	width: 2px;
+	height: 100%;
+	border-left: 1px solid $border-colour-left-inset;
+}

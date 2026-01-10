@@ -1,0 +1,31 @@
+.TabContainer {
+	> .tabs {
+
+		> .button {
+			border-radius: 0px;
+			min-width: 0px;
+
+			&.active {
+				//stick out and overlap other tabs
+				margin-right: -2px;
+				margin-left: -2px;
+				padding-right: 8px;
+				padding-left: 8px;
+
+				&:first-child {
+					margin-left: 0px;
+				}
+			}
+
+			&:first-child {
+				margin-left: 2px;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+	> .sheets {
+	}
+}

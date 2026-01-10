@@ -1,0 +1,583 @@
+//@import "/styles/base.scss";
+//@import "/styles/form.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+$base-colour: #A0A0A080;
+$base-colour-inset: #00000080;
+$base-colour-active: #A0A0A080;
+$base-colour-solid: #6F6F6E;
+$base-colour-solid2: #A2A2A2;
+$base-colour-solid2-active: #FF9C00; 
+
+$border-colour-top: #C8C8C8C4;
+$border-colour-left: #C8C8C8C4;
+$border-colour-bottom: #282828C4;
+$border-colour-right: #282828C4;
+
+
+$border-colour-top-inset: #282828C4;
+$border-colour-left-inset: #282828C4;
+$border-colour-bottom-inset: #C8C8C8C4;
+$border-colour-right-inset: #C8C8C8C4;
+
+
+$default-text-colour: #DDDDDDFF;
+$default-text-colour-active: #FFFFFF;
+$default-text-colour-label: #DDDDDDFF;
+$default-text-colour-info: #BEBEBEFF;
+$default-text-size: 13px;
+$default-text-font: Tahoma;
+$default-text-smooth: never;
+
+$window-title-icon: url("XGUI/Resources/icon_steam.png");
+$window-minimise-button: url("XGUI/Resources/icon_minimize.png");
+$window-maximise-button: url("XGUI/Resources/icon_maximize.png");
+$window-close-button: url("XGUI/Resources/icon_close.png");
+$window-resize-icon: url("XGUI/Resources/icon_resizer.png");
+
+$control-dropdown-arrow: url("XGUI/Resources/icon_down.png");
+
+$gamemenu-logo: url("XGUI/Resources/game_menu.png");
+$gamemenu-logo-hover: url("XGUI/Resources/game_menu_mouseover.png");
+.Panel {
+    color: $default-text-colour;
+    font-size: $default-text-size;
+    font-family: $default-text-font;
+    font-smooth: $default-text-smooth;
+}
+.GameMenu {
+    padding-left: 32px;
+    padding-bottom: 8px;
+    color: #C8C8C8;
+    font-size: 15px;
+    font-weight: bold;
+
+    .Button {
+        color: $default-text-colour-active;
+        margin: 4px;
+        padding: 0px;
+        border: 0px;
+        background-color: transparent;
+
+        &:hover {
+            color: $default-text-colour-active;
+        }
+
+        &:active {
+            margin: 4px;
+            padding: 0px;
+            border: 0px;
+        }
+    }
+
+    .Logo {
+        width: 196px;
+        height: 32px;
+        background-image: $gamemenu-logo;
+        background-position: center;
+
+        &:hover {
+            background-image: $gamemenu-logo-hover;
+        }
+    }
+}
+.Window {
+    overflow: hidden;
+    padding: 4px;
+    color: $default-text-colour;
+    border-radius:8px;
+    background-color: $base-colour;
+
+    &.unfocused {
+        .TitleBar {
+            .TitleIcon {
+                opacity: 0.24;
+            }
+
+            .TitleLabel {
+                opacity: 0.24;
+            }
+
+            .Control {
+                border-color: transparent;
+            }
+        }
+    }
+
+    .TitleBar {
+        margin-bottom: 1px;
+        flex-shrink: 0;
+
+        .TitleIcon {
+            width: 0px;
+            height: 0px;
+            display:none;
+        }
+
+        .TitleLabel {
+            padding: 6px;
+            font-weight:bold;
+            font-size:9px;
+            text-transform:uppercase;
+        }
+
+        .Control {
+            margin: 2px;
+            margin-top: 3px;
+            padding: 0;
+            margin-left: 0px;
+            width: 18px;
+            height: 18px;
+            background-position-x: 1px;
+            background-position-y: 1px;
+            border: none;
+
+            &:active {
+                background-position-x: 2px;
+                background-position-y: 2px;
+            }
+        }
+
+        .MinimiseButton {
+            background-image: $window-minimise-button;
+            background-size: 15px;
+            color: rgba(0,0,0,0);
+        }
+
+        .MaximiseButton {
+            background-image: $window-maximise-button;
+            background-size: 15px;
+            color: rgba(0,0,0,0);
+        }
+
+        .CloseButton {
+            background-image: $window-close-button;
+            background-size: 16px;
+            color: rgba(0,0,0,0);
+        }
+    }
+
+    .Resizer {
+        cursor: move;
+        width: 16px;
+        height: 16px;
+        background-image: $window-resize-icon;
+        background-repeat: no-repeat;
+        margin-top: 4px;
+    }
+}
+
+// ------------------
+// Control Elements
+// ------------------
+
+// Button
+.Button {
+    padding: 5px;
+    height: 24px;
+    align-items: center;
+    border-top: 1px solid $border-colour-top;
+    border-left: 1px solid $border-colour-left;
+    border-bottom: 1px solid $border-colour-bottom;
+    border-right: 1px solid $border-colour-right; 
+
+    &:active {
+        padding-top: 6px;
+        padding-left: 6px;
+        border-top: 1px solid $border-colour-top-inset;
+        border-left: 1px solid $border-colour-left-inset;
+        border-bottom: 1px solid $border-colour-bottom-inset;
+        border-right: 1px solid $border-colour-right-inset;
+    }
+     
+    /*
+    &:focus, &.focus {
+        > .label {
+            border: 1px solid black;
+            width: 100%;
+        }
+    }*/
+
+     
+}
+
+// TextEntry
+.TextEntry {
+    padding: 5px;
+    height: 24px;
+    align-items: center;
+    border-top: 1px solid $border-colour-top-inset;
+    border-left: 1px solid $border-colour-left-inset;
+    border-bottom: 1px solid $border-colour-bottom-inset;
+    border-right: 1px solid $border-colour-right-inset;
+    background-color: $base-colour-inset;
+
+    .content-label,
+    .prefix-label,
+    .suffix-label,
+    .placeholder {
+        padding: 0px;
+    }
+}
+
+// Tabs
+.TabContainer {
+    flex-direction: column;
+
+    > .tabs {
+
+        > .button {
+            border-top: 1px solid $border-colour-top;
+            border-left: 1px solid $border-colour-left;
+            border-bottom: 1px solid $border-colour-top;
+            border-right: 1px solid $border-colour-right;
+            font-size: $default-text-size;
+            font-family: $default-text-font;
+            font-smooth: $default-text-smooth;
+            padding: 5px;
+            // Move unselected ones down
+            height: 25px;
+            align-items: center;
+            min-width: 64px;
+            top: 3px;
+            margin-right: 1px;
+
+            &.active {
+                padding-top: 4px;
+                color: $default-text-colour-active;
+                // Offset up when selected
+                top: 1px;
+                z-index: 5;
+                border-bottom: 0px;
+                height: 27px;
+            }
+
+            &:hover {
+            }
+        }
+    }
+
+
+    > .sheets { 
+        overflow: hidden;
+        border-top: 1px solid $border-colour-top;
+        border-left: 1px solid $border-colour-left;
+        border-bottom: 1px solid $border-colour-bottom;
+        border-right: 1px solid $border-colour-right;
+        padding: 5px;
+        z-index: -5;
+    }
+}
+
+// Sidebar
+
+.Sidebar {
+
+    > .tabs {
+        padding-left: 6px;
+        padding-right: 3px;
+        border-top: 1px solid $border-colour-top-inset;
+        border-left: 1px solid $border-colour-left-inset;
+        border-bottom: 1px solid $border-colour-top-inset;
+        border-right: 1px solid $border-colour-right-inset;
+
+        > .button {
+            border: 0px;
+            font-size: $default-text-size;
+            font-family: $default-text-font;
+            font-smooth: $default-text-smooth;
+            height: 20px;
+
+            &.active {
+                padding: 5px;
+            }
+
+            &:active {
+                padding: 5px;
+            }
+
+            &:focus {
+                box-shadow: 1px 1px black;
+            }
+
+            &:hover {
+            }
+        }
+    }
+
+
+    > .sheets {
+        overflow: hidden;
+        border-top: 1px solid $border-colour-top;
+        border-left: 1px solid $border-colour-left;
+        border-bottom: 1px solid $border-colour-bottom;
+        border-right: 1px solid $border-colour-right;
+        padding: 5px;
+    }
+}
+
+// Slider
+
+.sliderroot {
+    > .label {
+        height: 20px;
+        color: $default-text-colour-label;
+
+        &.focus {
+            color: $default-text-colour-active;
+        }
+    }
+}
+.slider {
+    margin-right: 8px;
+
+    > .thumb {
+        border-top: 1px solid $border-colour-top;
+        border-left: 1px solid $border-colour-left;
+        border-bottom: 1px solid $border-colour-bottom;
+        border-right: 1px solid $border-colour-right;
+        background-color: $base-colour-solid;
+    }
+     
+
+    > .scalestepmin {
+        color: $default-text-colour-label;
+        font-size: 9px;
+    }
+
+    > .scalestepmax {
+        font-size: 9px;
+        color: $default-text-colour-label;
+    }
+
+    > .scalesteps {
+
+        > .step {
+            left: 4px;
+            background-color: $default-text-colour-label;
+            width: 1px;
+            height: 5px;
+        }
+    }
+
+    > .track {
+        height: 4px;
+        background-color: rgb(31, 31, 31);
+        border-top: 1px solid $border-colour-top-inset;
+        border-left: 1px solid $border-colour-left-inset;
+        border-bottom: 1px solid $border-colour-bottom-inset;
+        border-right: 1px solid $border-colour-right-inset;
+
+        > .inner {
+            border-radius: 0px;
+            background-color: rgb(31, 31, 31);
+            width: 50px;
+            height: 0px;
+            transition: all 0.2s ease-out;
+        }
+    }
+}
+
+
+.sliderentry {
+
+    > .slider {
+    }
+
+    .textentry:not( .one.two ) {
+        border-bottom: 1px solid $border-colour-bottom-inset;
+        border-right: 1px solid $border-colour-right-inset;
+        border-top: 1px solid $border-colour-top-inset;
+        border-left: 1px solid $border-colour-left-inset;
+
+        align-items: center;
+        padding: 5px;
+        max-width: 48px;
+        min-width: 48px;
+        width: 48px;
+        height: 24px;
+        overflow: hidden; 
+        margin-left: 16px; 
+        font-size: 13px;
+    }
+}
+
+// Info label
+.info {
+    color: $default-text-colour-info;
+    padding: 3px; 
+}
+
+// Checkbox
+.checkbox {
+    min-width: 24px;
+    height: 16px;
+    cursor: pointer;
+
+    .checkpanel, iconpanel {
+        flex-shrink: 0;
+        width: 12px;
+        height: 12px;
+        background-color: $base-colour-inset;
+        border-bottom: 1px solid $border-colour-bottom-inset;
+        border-right: 1px solid $border-colour-right-inset;
+        border-top: 1px solid $border-colour-top-inset;
+        border-left: 1px solid $border-colour-left-inset;
+        margin-right: 8px;
+        color: white;
+
+        .checklabel {
+            transform: translate(6px 1px);
+            font-family: Webdings;
+            font-size: 22px;
+            color: transparent;
+        }
+    }
+
+    .label {
+        margin-right: 10px;
+        bottom: 1px;
+        color: $default-text-colour-label;
+    }
+
+    > .checkmark {
+        padding: 1px;
+        font-size: 14px;
+        //border: 3px solid $primary;
+        border-radius: 3px;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+        color: transparent;
+        min-height: 15px;
+        margin-right: 10px;
+        pointer-events: none;
+        cursor: pointer;
+    }
+
+    &.checked {
+
+        .label {
+            margin-right: 10px;
+            color: $default-text-colour-active;
+        }
+
+        > .checkpanel, .iconpanel {
+            .checklabel {
+                font-family: Marlett;
+                font-size: 16px;
+                color: $default-text-colour-active;
+                top: -4px;
+                left: -9px;
+            }
+        }
+
+        > .checkmark {
+            //color: $primary-alt;
+            color: white;
+            background-color: transparent;
+        }
+    }
+
+    &:active {
+        color: gray;
+        transform: scale(1);
+    }
+
+    &:hover {
+    }
+}
+
+// Control Label
+
+.controllabel {
+    > .label {
+        height:24px;
+        align-items:center;
+        color: $default-text-colour-label;
+    }
+
+    &.focus {
+        > .label {
+            color: $default-text-colour-active;
+        }
+    }
+}
+
+// Selector/Dropdown
+
+.selector {
+    border-bottom: 1px solid $border-colour-bottom-inset;
+    border-right: 1px solid $border-colour-right-inset;
+    border-top: 1px solid $border-colour-top-inset;
+    border-left: 1px solid $border-colour-left-inset;
+    background-color: $base-colour-inset;
+    color: $default-text-colour-label;
+    height: 24px;
+
+    &:focus, &.focus {
+        > .button-label {
+            color: $default-text-colour;
+            border: 0px solid transparent;
+            width: auto;
+        }
+    }
+
+    &:focus:not(:active), &.focus:not(:active) {
+        box-shadow: 0px 0px 0px 0px transparent;
+    }
+
+    > .selector_indicator {
+        background-image: $control-dropdown-arrow;
+        background-repeat: no-repeat;
+        background-position: right center;
+        font-size: 0px;
+        width: 9px;
+        height: 8px;
+        position: absolute;
+        right: 4px;
+    }
+
+    &:active {
+        padding: 5px;
+    }
+}
+
+// Popup / Pane
+
+.dropdown-panel {
+    border-top: 1px solid $border-colour-top;
+    border-left: 1px solid $border-colour-left;
+    border-bottom: 1px solid $border-colour-bottom;
+    border-right: 1px solid $border-colour-right;
+    background-color: $base-colour-solid2;
+    color: $default-text-colour-active;
+
+    > .button {
+        border: 0px;
+
+        &:hover {
+            background-color: $base-colour-solid2-active;
+            color:black;
+        }
+    }
+}
+
+
+// ------------------
+// Layout Elements
+// ------------------
+
+LayoutBoxInset {
+    border-bottom: 1px solid $border-colour-bottom-inset;
+    border-right: 1px solid $border-colour-right-inset;
+    border-top: 1px solid $border-colour-top-inset;
+    border-left: 1px solid $border-colour-left-inset;
+}
+
+LayoutBox {
+    border-top: 1px solid $border-colour-top;
+    border-left: 1px solid $border-colour-left;
+    border-bottom: 1px solid $border-colour-bottom;
+    border-right: 1px solid $border-colour-right;
+}

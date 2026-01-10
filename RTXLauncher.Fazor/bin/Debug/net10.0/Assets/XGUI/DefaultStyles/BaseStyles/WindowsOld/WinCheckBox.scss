@@ -1,0 +1,53 @@
+﻿
+.checkbox {
+	align-items: center;
+
+	> .label {
+		text-overflow: ellipsis;
+		flex-grow: 1;
+	}
+
+	.checkpanel, iconpanel {
+		border-top: 1px solid $border-colour-top-inset;
+		border-left: 1px solid $border-colour-left-inset;
+		border-bottom: 1px solid $border-colour-bottom-inset;
+		border-right: 1px solid $border-colour-right-inset;
+		background-color: $base-colour-inset;
+		width: 11px;
+		height: 11px;
+		margin-right: 6px;
+		align-items: center;
+		justify-content: center;
+	}
+
+
+	&.checked {
+
+		> .checkpanel, .iconpanel {
+			.checklabel {
+				font-family: Marlett;
+				font-size: 16px;
+				color: black;
+				text-align: center;
+				margin-left: 1px;
+			}
+		}
+
+		> .checkmark {
+			//color: $primary-alt;
+			color: white;
+			background-color: transparent;
+		}
+	}
+
+	&.disabled {
+		pointer-events:none;
+		> .checkpanel, .iconpanel {
+			background-color: $base-colour;
+		}
+
+		> label {
+			color: $default-text-colour-disabled;
+		}
+	}
+}

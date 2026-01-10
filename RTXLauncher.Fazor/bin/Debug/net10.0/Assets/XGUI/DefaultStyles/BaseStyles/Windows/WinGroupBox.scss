@@ -1,0 +1,15 @@
+.group-box {
+	border: 1px solid $button-highlight;
+	padding: 5px;
+	margin-top: 8px;
+	padding-top: 14px;
+
+
+	.group-box-title {
+		padding-right: 3px;
+		padding-left: 3px;
+		position: absolute;
+		top: -9px;
+		left: 6px;
+	}
+}

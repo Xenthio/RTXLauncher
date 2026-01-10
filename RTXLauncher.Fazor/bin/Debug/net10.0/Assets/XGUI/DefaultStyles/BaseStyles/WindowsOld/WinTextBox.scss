@@ -1,0 +1,20 @@
+.textentry {
+	border-top: 1px solid $border-colour-top-inset;
+	border-left: 1px solid $border-colour-left-inset;
+	border-bottom: 1px solid $border-colour-bottom-inset;
+	border-right: 1px solid $border-colour-right-inset;
+	background-color: $base-colour-inset;
+	padding: 0px;
+	height: 22px;
+
+	&.is-multiline {
+		height: auto;
+		flex-grow: 1;
+	}
+}
+
+.self-layout {
+	>.textentry {
+		width: 100px;
+	}
+}

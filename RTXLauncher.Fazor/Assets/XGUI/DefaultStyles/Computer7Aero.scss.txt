@@ -1,0 +1,12 @@
+
+@import "/XGUI/DefaultStyles/Computer7.scss";
+
+.Window {
+	background-color: transparent;
+	background-image: none;
+	backdrop-filter: blur(8px);
+
+	> .TitleBar {
+		background-image: none;
+	}
+}

@@ -1,0 +1,49 @@
+.Button {
+	padding: 5px;
+	height: 24px;
+	align-items: center;
+	background-color: $base-colour;
+	border-top: 1px solid $border-colour-top;
+	border-left: 1px solid $border-colour-left;
+	border-bottom: 1px solid $border-colour-bottom;
+	border-right: 1px solid $border-colour-right;
+	box-shadow: 0px 0px 0px 0px transparent;
+
+	&:active {
+		/*
+		padding-top: 6px;
+		padding-left: 6px;
+		*/
+		border-top: 1px solid $border-colour-top-inset;
+		border-left: 1px solid $border-colour-left-inset;
+		border-bottom: 1px solid $border-colour-bottom-inset;
+		border-right: 1px solid $border-colour-right-inset;
+
+		> * {
+			transform: translate(1px, 0px);
+		}
+	}
+
+	&.disabled {
+		color: $default-text-colour-disabled;
+		text-shadow: 1px 1px $default-text-colour-disabled-shadow;
+	}
+	/*
+    &:focus, &.focus {
+        > .label {
+            border: 1px solid black;
+            width: 100%;
+        }
+    }*/
+
+
+	&:focus:not(:active), &.focus:not(:active) {
+		box-shadow: 0px 0px 0px 1px black;
+	}
+}
+
+.self-layout {
+	> .button {
+		min-width: 128px;
+	}
+}

@@ -1,0 +1,94 @@
+
+.sliderroot {
+	> .label {
+		height: 20px;
+		color: $default-text-colour-label;
+
+		&.focus {
+			color: $default-text-colour-active;
+		}
+	}
+}
+
+.slider {
+	margin-right: 8px;
+
+	> .thumb {
+		background-color: $base-colour;
+		border-top: 1px solid $border-colour-top;
+		border-left: 1px solid $border-colour-left;
+		border-bottom: 1px solid $border-colour-bottom;
+		border-right: 1px solid $border-colour-right;
+
+		&:hover {
+			background-color: $base-colour-alt;
+		}
+	}
+
+	&:active {
+		> .thumb {
+			background-color: $base-colour-alt;
+		}
+	}
+
+	> .scalestepmin {
+		color: $slider-step-min-colour;
+		font-size: 9px;
+	}
+
+	> .scalestepmax {
+		font-size: 9px;
+		color: $slider-step-max-colour;
+	}
+
+	> .scalesteps {
+
+		> .step {
+			left: 4px;
+			background-color: $slider-step-colour;
+			width: 1px;
+			height: 5px;
+		}
+	}
+
+	> .track {
+		height: 4px;
+		background-color: rgb(31, 31, 31);
+		border-top: 1px solid $border-colour-top-inset;
+		border-left: 1px solid $border-colour-left-inset;
+		border-bottom: 1px solid $border-colour-bottom-inset;
+		border-right: 1px solid $border-colour-right-inset;
+
+		> .inner {
+			border-radius: 0px;
+			background-color: rgb(31, 31, 31);
+			width: 50px;
+			height: 0px;
+			transition: all 0.2s ease-out;
+		}
+	}
+}
+
+
+.sliderentry {
+
+	> .slider {
+	}
+
+	.textentry:not( .one.two ) {
+		border-bottom: 1px solid $border-colour-bottom-inset;
+		border-right: 1px solid $border-colour-right-inset;
+		border-top: 1px solid $border-colour-top-inset;
+		border-left: 1px solid $border-colour-left-inset;
+		background-color: $base-colour-inset;
+		align-items: center;
+		padding: 5px;
+		max-width: 48px;
+		min-width: 48px;
+		width: 48px;
+		height: 24px;
+		overflow: hidden;
+		margin-left: 16px;
+		font-size: 13px;
+	}
+}

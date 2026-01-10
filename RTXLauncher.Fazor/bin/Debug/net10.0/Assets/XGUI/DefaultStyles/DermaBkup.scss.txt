@@ -1,0 +1,110 @@
+//@import "/styles/base.scss";
+//@import "/styles/form.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+$base-colour: #616466;
+$base-colour-inset: #3e4637;
+$base-colour-active: #958831;
+$base-colour-alt: #4C5844;
+
+$border-colour-top: #434343;
+$border-colour-left: #434343;
+$border-colour-bottom: #434343;
+$border-colour-right: #434343;
+
+
+$border-colour-top-inset: #282e22;
+$border-colour-left-inset: #282e22;
+$border-colour-bottom-inset: #889180;
+$border-colour-right-inset: #889180;
+
+
+$default-text-colour: #FFFFFF;
+$default-text-colour-active: #c4b550;
+$default-text-colour-label: #cfd6ca;
+$default-text-colour-info: #A0AA95;
+$default-text-colour-standard: #D8DED3;
+$default-text-colour-inactive: #758666;
+$default-text-colour-disabled: #282e22;
+$default-text-colour-disabled-shadow: #889180;
+$default-text-size: 12px;
+$default-text-font: Tahoma;
+$default-text-smooth: alway;
+
+$slider-step-colour: #7F8C7F;
+$slider-step-min-colour: #889180;
+$slider-step-max-colour: #889180;
+
+$window-title-icon: url("XGUI/Resources/icon_steam.png");
+$window-minimise-button: url("XGUI/Resources/icon_minimize.png");
+$window-maximise-button: url("XGUI/Resources/icon_maximize.png");
+$window-close-button: url("XGUI/Resources/icon_close.png");
+$window-resize-icon: url("XGUI/Resources/icon_resizer.png");
+
+$control-dropdown-arrow: url("XGUI/Resources/icon_down.png");
+
+$gamemenu-logo: url("XGUI/Resources/game_menu.png");
+$gamemenu-logo-hover: url("XGUI/Resources/game_menu_mouseover.png");
+
+@import "/XGUI/DefaultStyles/BaseStyles/VGUI.scss";
+
+.Window {
+	font-weight: 500;
+	border-radius: 3px;
+
+	> .TitleBar {
+		padding: 2px;
+		border-top-right-radius: 3px;
+		border-top-left-radius: 3px;
+		background-color: #6E7073;
+		border: 1px solid #858789;
+		border-bottom: 0px;
+		height: 23px;
+		align-items: center;
+		color: #B5B5B6;
+
+		> .TitleElements {
+			> .TitleIcon {
+				width: 0px;
+				height: 0px;
+			}
+
+			> .TitleLabel {
+				margin-bottom: 1px;
+			}
+
+			> .Control {
+				background-color: #E0E0E0;
+				border: 0px;
+				width: 29px;
+				height: 16px;
+				margin-right: 1px;
+				filter: drop-shadow(0px 1px 0px 0px #494C4D);
+				color: #79797A;
+				background-image: none;
+				font-family: Marlett;
+				align-items: center;
+				justify-content: center;
+				font-smooth: never;
+			}
+
+			> .MinimiseButton {
+				width: 28px;
+				border-top-left-radius: 2.1px;
+				border-bottom-left-radius: 2.1px;
+			}
+
+			> .CloseButton {
+				border-top-right-radius: 2.1px;
+				border-bottom-right-radius: 2.1px;
+			}
+		}
+	}
+
+	> .Window-Content {
+		border: 1px solid #757779;
+		border-top: 0px;
+		border-bottom-right-radius: 3px;
+		border-bottom-left-radius: 3px;
+	}
+}

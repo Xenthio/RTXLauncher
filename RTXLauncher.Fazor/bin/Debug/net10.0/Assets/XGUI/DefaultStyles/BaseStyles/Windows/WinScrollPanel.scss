@@ -1,0 +1,85 @@
+.scrollpanel {
+
+	.scrollbar {
+		.scrollbar_button {
+			height:16px;
+			width:16px;
+			flex-shrink: 0;
+			background-color: $button-face;
+			border-top: 1px solid $button-light;
+			border-left: 1px solid $button-light;
+			border-bottom: 1px solid $button-dark-shadow;
+			border-right: 1px solid $button-dark-shadow;
+
+			&:active {
+				border: 1px solid $button-shadow;
+			}
+
+			.label {
+				font-family: Marlett;
+				font-size: 14px;
+			}
+		}
+	}
+
+	.scrollbar_corner {
+		background-color: $button-face;
+	}
+
+	.scrollbar_vertical {
+
+		.scrollbar_button_up {
+			.label {
+				left: -2px;
+				top: -0px;
+				content: "5";
+			}
+		}
+
+		.scrollbar_button_down {
+			.label {
+				left: -2px;
+				top: -2px;
+				content: "6";
+			}
+		}
+	}
+
+	.scrollbar_horizontal {
+		.scrollbar_button_left {
+			.label {
+				left: -2px;
+				content: "3";
+			}
+		}
+
+		.scrollbar_button_right {
+			.label {
+				left: -2px;
+				content: "4";
+			}
+		}
+	}
+
+	.scrollbar_track {
+		background-color: $window;
+
+		&::before {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			right: 0px;
+			bottom: 0px;
+			mask-image: url("XGUI/Resources/checker1x1.png");
+			background-color: $button-face;
+		}
+	}
+
+	.scrollbar_thumb {
+		background-color: $button-face;
+		border-top: 1px solid $button-light;
+		border-left: 1px solid $button-light;
+		border-bottom: 1px solid $button-dark-shadow;
+		border-right: 1px solid $button-dark-shadow;
+	}
+}

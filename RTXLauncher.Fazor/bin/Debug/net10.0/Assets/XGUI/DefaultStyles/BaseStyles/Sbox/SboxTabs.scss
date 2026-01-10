@@ -1,0 +1,43 @@
+﻿.TabContainer {
+	flex-direction: column;
+	justify-content: flex-start;
+
+	> .tabs {
+		padding: 8px;
+		padding-top: 3px;
+		padding-bottom: 0px;
+		z-index: 1;
+		// This wrapper aligns the tabs properly
+		flex-direction: row;
+		background-color: $base-colour-alt;
+
+		> .button {
+			border: none;
+			background-image: none;
+			background-color: transparent;
+			border-radius: 0px;
+			border-top-left-radius: 4px;
+			border-top-right-radius: 4px;
+			padding: 0px;
+			padding-left: 10px;
+			padding-right: 10px;
+			height: 30px;
+			color: $default-text-colour-inactive;
+
+			&.active {
+				border-top: 1px solid $sheet-border-colour-top;
+				background-color: $sheet-colour-active;
+				color: $default-text-colour;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $sheet-colour-active;
+		padding: 5px;
+	}
+}

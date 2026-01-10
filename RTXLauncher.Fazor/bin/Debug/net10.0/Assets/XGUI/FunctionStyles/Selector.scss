@@ -1,0 +1,14 @@
+.selector {
+	flex-shrink: 0;
+	align-items: center;
+
+	> option {
+		display: none;
+	}
+}
+
+.dropdown-panel {
+	position:absolute;
+	pointer-events:all;
+	flex-direction:column;
+}

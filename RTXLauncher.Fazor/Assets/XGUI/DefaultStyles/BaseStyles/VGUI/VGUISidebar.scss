@@ -1,0 +1,49 @@
+
+.Sidebar {
+
+	> .tabs {
+		padding-left: 6px;
+		padding-right: 3px;
+		background-color: $base-colour-inset;
+		border-top: 1px solid $border-colour-top-inset;
+		border-left: 1px solid $border-colour-left-inset;
+		border-bottom: 1px solid $border-colour-top-inset;
+		border-right: 1px solid $border-colour-right-inset;
+
+		> .button {
+			background-color: $base-colour-inset;
+			border: 0px;
+			font-size: $default-text-size;
+			font-family: $default-text-font;
+			font-smooth: $default-text-smooth;
+			height: 20px;
+
+			&.active {
+				padding: 5px;
+				background-color: $base-colour-active;
+			}
+
+			&:active {
+				padding: 5px;
+			}
+
+			&:focus {
+				box-shadow: 1px 1px black;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $base-colour;
+		border-top: 1px solid $border-colour-top;
+		border-left: 1px solid $border-colour-left;
+		border-bottom: 1px solid $border-colour-bottom;
+		border-right: 1px solid $border-colour-right;
+		padding: 5px;
+	}
+}

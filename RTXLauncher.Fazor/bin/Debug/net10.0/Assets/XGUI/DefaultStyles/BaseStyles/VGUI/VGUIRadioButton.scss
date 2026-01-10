@@ -1,0 +1,100 @@
+
+.RadioButton {
+	min-width: 24px;
+	height: 16px;
+	cursor: pointer;
+
+	.checkpanel, iconpanel {
+		flex-shrink: 0;
+		width: 15px;
+		height: 15px;
+		margin-right: 4px;
+		color: white;	
+
+		.checklabel {
+			position: absolute;
+			z-index: 100;
+			font-family: Marlett;
+			font-size: 12px;
+			color: transparent;
+		}
+
+		.radio-seg1 {
+			position: absolute;
+			font-family: Marlett;
+			font-size: 12px;
+			color: $border-colour-top-inset;
+			content: "j";
+		}
+
+		.radio-seg2 {
+			position: absolute;
+			font-family: Marlett;
+			font-size: 12px;
+			color: $border-colour-bottom-inset;
+			content: "k";
+		}
+
+		.radio-seg3 {
+			position: absolute;
+			font-family: Marlett;
+			font-size: 12px;
+			color: $base-colour-inset;
+			content: "n";
+		}
+	}
+
+	.label {
+		margin-right: 10px;
+		bottom: 1px;
+		color: $default-text-colour-label;
+	}
+
+	> .checkmark {
+		padding: 1px;
+		font-size: 14px;
+		//border: 3px solid $primary;
+		border-radius: 3px;
+		text-align: center;
+		justify-content: center;
+		align-items: center;
+		color: transparent;
+		min-height: 15px;
+		margin-right: 10px;
+		pointer-events: none;
+		cursor: pointer;
+	}
+
+	&.checked {
+
+		> .label {
+			margin-right: 10px;
+			color: $default-text-colour-active;
+		}
+
+		> .checkpanel, .iconpanel {
+			.checklabel {
+				position: absolute;
+				z-index: 100;
+				font-family: Marlett;
+				font-size: 12px;
+				color: $default-text-colour-active;
+				content: "h";
+			}
+		}
+
+		> .checkmark {
+			//color: $primary-alt;
+			color: white;
+			background-color: transparent;
+		}
+	}
+
+	&:active {
+		color: gray;
+		transform: scale(1);
+	}
+
+	&:hover {
+	}
+}

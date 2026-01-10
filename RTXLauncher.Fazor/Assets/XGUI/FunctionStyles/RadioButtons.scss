@@ -1,0 +1,42 @@
+﻿// Checkbox
+.RadioButtons {
+	flex-direction: column;
+}
+
+
+.RadioButton {
+
+	.checkpanel, iconpanel {
+
+		.checklabel {
+			opacity: 0;
+		}
+	}
+
+	.label {
+	}
+
+	> .checkmark {
+	}
+
+	&.checked {
+
+		.label {
+		}
+
+		> .checkpanel, .iconpanel {
+			.checklabel {
+				opacity: 1;
+			}
+		}
+
+		> .checkmark {
+		}
+	}
+
+	&:active {
+	}
+
+	&:hover {
+	}
+}

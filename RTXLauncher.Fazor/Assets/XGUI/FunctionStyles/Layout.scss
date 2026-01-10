@@ -1,0 +1,29 @@
+.self-layout {
+	&.self-layout-row {
+		flex-direction: row;
+		margin-bottom: 8px;
+	}
+}
+
+.margin {
+	margin: 8px;
+}
+
+.row {
+	flex-direction: row;
+}
+
+.column {
+	flex-direction: column;
+}
+
+// For ImXGUI
+.window-content-panel {
+	> .button {
+		margin-bottom: 6px;
+	}
+
+	> .label {
+		margin-bottom: 6px;
+	}
+}

@@ -1,0 +1,368 @@
+﻿//@import "/styles/base.scss";
+//@import "/styles/form.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+$accent-colour: #005FB8;
+$accent-colour-2: #0078D7;
+
+$border-colour: #0078D7;
+
+$base-colour: #F0F0F0;
+$base-colour-inset: #FFFFFF;
+$base-colour-active: #00047C;
+
+$sheet-colour: #F3F3F3;
+$sheet-colour-active: #F9F9F9;
+$sheet-border-colour-top: #E5E5E5;
+$sheet-border-colour-left: #E5E5E5;
+$sheet-border-colour-bottom: #E5E5E5;
+$sheet-border-colour-right: #E5E5E5;
+
+$control-colour: #FDFDFD;
+$control-colour-inset: #FFFFFF;
+$control-colour-hover: #E0EEF9;
+$control-colour-active: #CCE4F7;
+$control-colour-focus: #FDFDFD;
+$control-colour-open: #CCE4F7;
+
+$control-border-colour-top: #D0D0D0;
+$control-border-colour-left: #D0D0D0;
+$control-border-colour-bottom: #BABABA;
+$control-border-colour-right: #D0D0D0;
+
+$control-border-colour-top-hover: #0078D4;
+$control-border-colour-left-hover: #0078D4;
+$control-border-colour-bottom-hover: #006BBE;
+$control-border-colour-right-hover: #0078D4;
+
+$control-border-colour-top-active: #005499;
+$control-border-colour-left-active: #005499;
+$control-border-colour-bottom-active: #005499;
+$control-border-colour-right-active: #005499;
+
+$control-border-colour-top-focus: #0078D4;
+$control-border-colour-left-focus: #0078D4;
+$control-border-colour-bottom-focus: #006BBE;
+$control-border-colour-right-focus: #0078D4;
+
+$control-border-colour-top-open: #005FB7;
+$control-border-colour-left-open: #005FB7;
+$control-border-colour-bottom-open: #005FB7;
+$control-border-colour-right-open: #005FB7;
+
+$groupbox-border-colour: #DCDCDC;
+
+$border-colour-top: #D0D0D0;
+$border-colour-left: #D0D0D0;
+$border-colour-bottom: #BABABA;
+$border-colour-right: #D0D0D0;
+
+$border-colour-top-outer: #FFFFFF;
+$border-colour-left-outer: #FFFFFF;
+$border-colour-bottom-outer: #000000;
+$border-colour-right-outer: #000000;
+
+$window-titlebar-colour: #F1F3F9;
+$window-titlebar-colour-inactive: #F3F3F3;
+$window-titlebar-text-colour: #000000;
+$window-titlebar-text-colour-inactive: #919191;
+$window-title-text-weight: normal;
+$window-title-text-size: 12px;
+
+$border-colour-top-window: #AEAEAE;
+$border-colour-left-window: #A7A7A7;
+$border-colour-bottom-window: #9E9E9E;
+$border-colour-right-window: #A7A7A7;
+
+$border-colour-top-outer-window: #DFDFDF;
+$border-colour-left-outer-window: #DFDFDF;
+$border-colour-bottom-outer-window: #000000;
+$border-colour-right-outer-window: #000000;
+
+$border-colour-top-inset: #000000;
+$border-colour-left-inset: #000000;
+$border-colour-bottom-inset: #DFDFDF;
+$border-colour-right-inset: #DFDFDF;
+
+$border-colour-top-outer-inset: #808080;
+$border-colour-left-outer-inset: #808080;
+$border-colour-bottom-outer-inset: #FFFFFF;
+$border-colour-right-outer-inset: #FFFFFF;
+
+$slider-track-colour: #E7EAEA;
+$slider-track-border-colour-top: #D6D6D6;
+$slider-track-border-colour-left: #D6D6D6;
+$slider-track-border-colour-bottom: #D6D6D6;
+$slider-track-border-colour-right: #D6D6D6;
+
+$slider-step-colour: #C4C4C4;
+$slider-step-min-colour: #C4C4C4;
+$slider-step-max-colour: #C4C4C4;
+
+$slider-thumb-colour: #0078D7;
+$slider-thumb-border-colour-top: #0078D7;
+$slider-thumb-border-colour-left: #0078D7;
+$slider-thumb-border-colour-bottom: #0078D7;
+$slider-thumb-border-colour-right: #0078D7;
+
+$default-text-size: 12px;
+$default-text-font: Segoe UI Variable;
+$default-text-smooth: auto;
+
+$default-text-colour: #000000;
+$default-text-colour-active: #000000;
+$default-text-colour-alt: #FFFFFF;
+
+$outer-boxshadow: 1px 0px 0px 0px $border-colour-right-outer, 1px 1px 0px 0px $border-colour-right-outer, 1px -1px 0px 0px $border-colour-right-outer, -1px 1px 0px 0px $border-colour-bottom-outer, -1px 0px 0px 0px $border-colour-left-outer, 0px -1px 0px 0px $border-colour-top-outer, -1px -1px 0px 0px $border-colour-top-outer;
+$outer-boxshadow-inset: 1px 0px 0px 0px $border-colour-right-outer-inset, 1px 1px 0px 0px $border-colour-right-outer-inset, 1px -1px 0px 0px $border-colour-right-outer-inset, -1px 1px 0px 0px $border-colour-bottom-outer-inset, -1px 0px 0px 0px $border-colour-left-outer-inset, 0px -1px 0px 0px $border-colour-top-outer-inset, -1px -1px 0px 0px $border-colour-top-outer-inset;
+$outer-boxshadow-window: 1px 0px 0px 0px $border-colour-right-outer-window, 1px 1px 0px 0px $border-colour-right-outer-window, 1px -1px 0px 0px $border-colour-right-outer-window, -1px 1px 0px 0px $border-colour-bottom-outer-window, -1px 0px 0px 0px $border-colour-left-outer-window, 0px -1px 0px 0px $border-colour-top-outer-window, -1px -1px 0px 0px $border-colour-top-outer-window;
+$outer-boxshadow-tab: 1px 0px 0px 0px $border-colour-right-outer, -1px 0px 0px 0px $border-colour-left-outer, 0px -1px 0px 0px $border-colour-top-outer;
+
+
+@import "/XGUI/DefaultStyles/BaseStyles/WindowsOld.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/Windows+VisualStyleQuirks.scss";
+
+.Window {
+	font-weight: normal;
+	border-radius: 8.01px;
+	box-shadow: 0px 0px 24px 1px, rgba(0,0,0,0.3);
+
+	&.unfocused {
+		> .TitleBar {
+			> .Control {
+				color: $window-titlebar-text-colour-inactive;
+			}
+		}
+	}
+
+	.TitleBar {
+		padding: 0px;
+		height: 30px;
+
+		.Control {
+			color: $window-titlebar-text-colour;
+			width: 45px;
+			height: 29px;
+			border: none;
+			border-radius: 0px;
+			font-size: 10px;
+			top: -1px;
+			transition: all 0.2s linear;
+			background-color: #F1F3F900;
+
+			&:hover {
+				transition: all 0.2s linear;
+				background-color: #E7E9EF;
+			}
+
+			&:active {
+				transition: all 0.2s linear;
+				background-color: #EAEDF3;
+				border: none;
+			}
+		}
+
+		.CloseButton {
+			margin-left: 0px;
+			margin-right: 0px;
+			font-family: "Segoe Fluent Icons";
+
+			.label {
+				content: "";
+				font-size: 20px;
+				transform: scale(0.5, 0.5);
+			}
+
+
+			&:hover {
+				background-color: #C42B1C;
+				color: white;
+			}
+
+			&:active {
+				background-color: #C84031;
+			}
+		}
+
+		.MinimiseButton {
+			font-family: "Segoe Fluent Icons";
+
+			.label {
+				content: "";
+			}
+		}
+
+		.MaximiseButton {
+			font-family: "Segoe Fluent Icons";
+
+			.label {
+				content: "";
+			}
+		}
+	}
+}
+
+.checkbox {
+	.checkpanel, iconpanel {
+		transition: all 0.15s linear;
+		border-top: 0.25px solid #626262;
+		border-left: 0.25px solid #626262;
+		border-bottom: 0.25px solid #626262;
+		border-right: 0.25px solid #626262;
+		border-radius: 3px;
+		background-color: #F3F3F3;
+		width: 13px;
+		height: 13px;
+		min-width: 13px;
+		min-height: 13px;
+
+		&:hover {
+			transition: all 0.15s linear;
+			background-color: #EAEAEA;
+
+			&:active {
+				transition: all 0.15s linear;
+				background-color: #E2E2E2;
+				border-top: 0.25px solid #C3C3C3;
+				border-left: 0.25px solid #C3C3C3;
+				border-bottom: 0.25px solid #C3C3C3;
+				border-right: 0.25px solid #C3C3C3;
+			}
+		}
+	}
+
+	&.checked {
+
+		> .checkpanel, .iconpanel {
+			transition: all 0.15s linear;
+			border: none;
+			background-color: $accent-colour;
+
+			.checklabel {
+				font-family: "Segoe Fluent Icons";
+				font-size: 9px;
+				color: white;
+				content: "";
+			}
+		}
+
+		> .checkmark {
+			//color: $primary-alt;
+			color: white;
+			background-color: transparent;
+		}
+	}
+}
+
+.button {
+	border-radius: 4px;
+	transition: all 0.3s linear;
+
+	&:hover {
+		transition: all 0.3s linear;
+	}
+
+	&:active {
+		transition: all 0.2s linear;
+	}
+}
+
+.textentry,
+.textbox {
+	border-radius: 1px;
+	border: solid 0.25px #ECECEC;
+	border-bottom: solid 0.25px #838383;
+	transition: all 0.3s linear;
+
+	&:hover {
+		transition: all 0.3s linear;
+	}
+
+	&:active {
+		transition: all 0.2s linear;
+	}
+
+	&:focus {
+		padding-top: 1px;
+		transition: all 0.2s linear;
+		border-bottom: solid 2px #0067C0;
+	}
+}
+.TabContainer {
+
+	> .tabs {
+
+		> .button {
+			transition: all 0s linear;
+			border-right: 0; // Remove right border
+
+			&:hover {
+			}
+
+			&.active {
+				border-right: 1px solid $sheet-border-colour-right;
+			}
+			// Last child should always have right border
+			&:last-child {
+				border-right: 1px solid $sheet-border-colour-right;
+			}
+		}
+	}
+
+
+	> .sheets {
+	}
+}
+
+.slider {
+	> .thumb {
+		color: $slider-thumb-colour;
+		height: 14px;
+		margin-bottom: 5px;
+
+		> .thumbicon {
+			font-family: 'Segoe UI Symbol';
+			font-size: 18px;
+			transform: translate(-4px, 1px);
+			content: "⏷";
+		}
+
+		&:hover {
+			background-color: #171717;
+			color: #171717;
+			border-color: #171717;
+		}
+
+		&:active {
+			background-color: #CCCCCC;
+			color: #CCCCCC;
+			border-color: #CCCCCC;
+		}
+	}
+}
+.button {
+	&.selector {
+		border-radius: 2px;
+	}
+}
+.selector {
+	border-top: 0.25px solid $control-border-colour-top;
+	border-left: 0.25px solid $control-border-colour-left;
+	border-bottom: 0.25px solid $control-border-colour-bottom;
+	border-right: 0.25px solid $control-border-colour-right;
+
+	> .selector_indicator {
+		border: 0px;
+		background-color: transparent;
+		content: "";
+		font-size:10px;
+		font-family: "Segoe Fluent Icons";
+		top:2px;
+		align-items: center;
+	}
+}
+
+
+.dropdown-panel {
+	box-shadow: 2px 2px 5px 0px, rgba(0,0,0,0.7);
+}

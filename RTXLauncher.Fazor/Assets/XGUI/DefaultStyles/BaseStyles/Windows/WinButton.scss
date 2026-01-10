@@ -1,0 +1,57 @@
+.Button {
+	color: $button-text;
+	height: 21px;
+	align-items: center;
+	justify-content: center;
+	border-top: 1px solid $button-highlight;
+	border-left: 1px solid $button-highlight;
+	border-bottom: 1px solid $button-dark-shadow;
+	border-right: 1px solid $button-dark-shadow;
+	background-color: $button-face;
+	padding: 6px;
+
+	> .label {
+		//text-overflow: ellipsis;
+		//overflow:hidden;
+		//flex-grow: 1;
+	}
+
+	.iconpanel {
+		margin-right: 2px;
+	}
+
+	&:active {
+		border-top: 1px solid $button-dark-shadow;
+		border-left: 1px solid $button-dark-shadow;
+		border-bottom: 1px solid $button-highlight;
+		border-right: 1px solid $button-highlight;
+
+		&:focus, &.focus {
+		}
+	}
+
+
+	&.forceinset {
+		border-top: 1px solid $button-dark-shadow;
+		border-left: 1px solid $button-dark-shadow;
+		border-bottom: 1px solid $button-highlight;
+		border-right: 1px solid $button-highlight;
+
+		&:focus, &.focus {
+		}
+	}
+
+	&.disabled {
+		pointer-events: none; 
+
+		> label {
+			color: $grey-text;
+		}
+	}
+}
+
+.self-layout {
+	>.button {
+		min-width: 73px;
+	}
+}

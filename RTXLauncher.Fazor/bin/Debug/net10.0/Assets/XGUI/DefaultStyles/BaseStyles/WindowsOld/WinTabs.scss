@@ -1,0 +1,65 @@
+﻿.TabContainer {
+	margin: 6px;
+	flex-direction: column;
+	justify-content: flex-start;
+
+	> .tabs {
+		z-index: 1;
+		// This wrapper aligns the tabs properly
+		flex-direction: row;
+		min-width: 0px;
+
+		> .button {
+			background-color: $sheet-colour;
+			border-top: 1px solid $sheet-border-colour-top;
+			border-left: 1px solid $sheet-border-colour-left;
+			border-bottom: 1px solid $sheet-border-colour-top;
+			border-right: 1px solid $sheet-border-colour-right;
+			font-size: $default-text-size;
+			font-family: $default-text-font;
+			font-smooth: $default-text-smooth;
+			border-radius: 0px;
+			border-top-left-radius: 3px;
+			border-top-right-radius: 3px;
+			padding: 0px;
+			padding-left: 6px;
+			padding-right: 6px;
+			padding-bottom: 1px;
+			// Move unselected ones down
+			height: 18px;
+			align-items: center;
+			min-width: 64px;
+			top: 4px;
+			z-index: -10;
+
+			> .label {
+				text-align: center;
+				flex-grow: 1;
+			}
+
+			&.active {
+				padding-bottom: 3px;
+				color: $default-text-colour-active;
+				background-color: $sheet-colour-active;
+				// Offset up when selected
+				top: 1px;
+				z-index: 15000;
+				border-bottom: 0px;
+				height: 21px;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $sheet-colour-active;
+		border-top: 1px solid $sheet-border-colour-top;
+		border-left: 1px solid $sheet-border-colour-left;
+		border-bottom: 1px solid $sheet-border-colour-bottom;
+		border-right: 1px solid $sheet-border-colour-right;
+		padding: 5px;
+	}
+}

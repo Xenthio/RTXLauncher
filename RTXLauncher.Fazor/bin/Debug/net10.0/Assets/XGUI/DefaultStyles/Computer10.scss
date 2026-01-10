@@ -1,0 +1,576 @@
+﻿@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+//////////////
+
+$default-text-size: 12px;
+$default-text-font: "Segoe UI";
+$default-text-smooth: always;
+
+$window-title-text-size: 12px;
+$window-title-text-weight: normal;
+
+//////////////
+
+$active-title: #99B4D1;
+$title-text: #000000;
+$inactive-title: #BFCDDB;
+$inactive-title-text: #000000;
+
+$active-border: #C0C0C0;
+$inactive-border: #C0C0C0;
+
+$window: #FFFFFF;
+$window-text: #000000;
+$window-frame: #000000;
+
+$scrollbar: #C0C0C0;
+
+$menu: #FFFFFF;
+$menu-text: #000000;
+
+$app-workspace: #808080;
+
+$info-text: #000000;
+$info-window: #FFFFFF;
+
+$highlight: #0078D7;
+$highlight-text: #FFFFFF;
+$highlight-tint: #7FBBEB;
+
+$grey-text: #808080;
+
+$button-face: #F0F0F0;
+$button-shadow: #A1A1A1;
+$button-text: #000000;
+$button-highlight: #FDFDFD;
+$button-dark-shadow: #6A6A6A;
+$button-light: #E3E3E3;
+
+$background: #008080;
+
+@import "/XGUI/DefaultStyles/BaseStyles/Windows.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/Windows+VisualStyleQuirks.scss";
+//@import "/XGUI/DefaultStyles/BaseStyles/Windows+Grooves.scss";
+//@import "/XGUI/DefaultStyles/BaseStyles/Windows+ButtonInset.scss";
+
+// -------------------------------------- //
+//       Windows 10 Specific Styles       //
+// -------------------------------------- //
+
+$control-colour: #E1E1E1;
+$control-colour-inset: #FFFFFF;
+$control-colour-hover: #E5F1FB;
+$control-colour-active: #CCE4F7;
+$control-colour-focus: #FDFDFD;
+$control-colour-open: #CCE4F7;
+
+$border-colour-window: #000000DD; 
+
+$control-border-colour: #ADADAD;
+
+$control-border-colour-hover: #0078D7;
+
+$control-border-colour-active: #005499;
+
+$control-border-colour-focus: #0078D4;
+
+$control-border-colour-open: #005FB7;
+
+$style-background: #F9F9F9;
+$style-background-alt: #F3F3F3;
+$style-border: #D9D9D9;
+$style-line: #D7D7D7;
+$style-accent: #005FB8;
+$style-border-simple: #D6D6D6;
+
+// -------------------------------------- //
+
+xguirootpanel {
+	> .Window {
+		box-shadow: 0px 0px 24px 1px, rgba(0,0,0,0.3);
+		/*	$border-colour-top-window: #AEAEAE;
+		$border-colour-left-window: #A7A7A7;
+		$border-colour-bottom-window: #9E9E9E;
+		$border-colour-right-window: #A7A7A7;*/
+
+		border: 1px solid $border-colour-window;
+
+		&.unfocused {
+			> .TitleBar {
+				background-color: $style-background-alt;
+				color: #919191;
+
+				> .Control {
+					color: #919191;
+				}
+			}
+		}
+		/*
+		.titlebackground {
+			backdrop-filter: blur(50);
+			background-color: #F3F3F365;
+			mix-blend-mode: lighten;
+		}
+		*/
+
+		> .TitleBar {
+			padding: 0px;
+			height: 30px;
+			background-color: #FFFFFF;
+
+			.Control {
+				width: 45px;
+				height: 29px;
+				border: none;
+				border-radius: 0px;
+				font-size: 10px;
+				top: -1px;
+				transition: all 0.2s linear;
+				background-color: #F1F3F900;
+
+				&:hover {
+					transition: all 0.2s linear;
+					background-color: #E7E9EF;
+				}
+
+				&:active {
+					transition: all 0.2s linear;
+					background-color: #EAEDF3;
+					border: none;
+				}
+			}
+
+			.TitleIcon {
+				margin-left: 8px;
+				margin-top: 1px;
+			}
+
+			.CloseButton {
+				margin-left: 0px;
+				margin-right: 0px;
+				font-family: "Segoe MDL2 Assets";
+
+				.label {
+					content: "";
+					font-size: 20px;
+					transform: scale(0.5, 0.5);
+				}
+
+
+				&:hover {
+					background-color: #C42B1C;
+					color: white;
+				}
+
+				&:active {
+					background-color: #C84031;
+				}
+			}
+
+			.MinimiseButton {
+				font-family: "Segoe MDL2 Assets";
+
+				.label {
+					content: "";
+				}
+			}
+
+			.MaximiseButton {
+				font-family: "Segoe MDL2 Assets";
+
+				.label {
+					content: "";
+				}
+			}
+		}
+	}
+}
+
+.button {
+	background-color: $control-colour;
+	border: 1px solid $control-border-colour;
+	transition: all 0.3s linear;
+
+	&:hover {
+		background-color: $control-colour-hover;
+		border: 1px solid $control-border-colour-hover;
+		transition: all 0.3s linear;
+	}
+
+	&:active {
+		background-color: $control-colour-active;
+		border: 1px solid $control-border-colour-active;
+		transition: all 0.2s linear;
+	}
+
+	&.forceinset {
+		background-color: $control-colour-active;
+		border: 1px solid $control-border-colour-active;
+		transition: all 0.2s linear;
+	}
+}
+
+.checkbox {
+	.checkpanel, iconpanel {
+		transition: all 0.15s linear;
+		border-top: 0.25px solid #333333;
+		border-left: 0.25px solid #333333;
+		border-bottom: 0.25px solid #333333;
+		border-right: 0.25px solid #333333;
+		background-color: #F3F3F3;
+		width: 13px;
+		height: 13px;
+		min-width: 13px;
+		min-height: 13px;
+
+		&:hover {
+			transition: all 0.15s linear;
+
+			&:active {
+				transition: all 0.15s linear;
+				border-top: 0.25px solid #C3C3C3;
+				border-left: 0.25px solid #C3C3C3;
+				border-bottom: 0.25px solid #C3C3C3;
+				border-right: 0.25px solid #C3C3C3;
+			}
+		}
+	}
+
+	&.checked {
+
+		> .checkpanel, .iconpanel {
+			transition: all 0.15s linear; 
+
+			.checklabel {
+				font-family: "Segoe MDL2 Assets";
+				font-size: 11px;
+				color: #484848;
+				content: "";
+			}
+		}
+
+		> .checkmark {
+			//color: $primary-alt;
+			color: white;
+			background-color: transparent;
+		}
+	}
+}
+
+.dropdown-panel {
+	box-shadow: 2px 2px 5px 0px, rgba(0,0,0,0.7);
+
+	> .button { 
+		height: 15px;
+		border: 0px; 
+	}
+}
+
+.textentry,
+.textbox {
+	border: solid 0.25px #7A7A7A;
+	transition: all 0.3s linear;
+	padding-top: 1px;
+
+	&:hover {
+		transition: all 0.3s linear;
+	}
+
+	&:active {
+		transition: all 0.2s linear;
+	}
+
+	&:focus {
+		border-bottom-left-radius: 1px;
+		border-bottom-right-radius: 1px;
+		transition: all 0.2s linear;
+		border: solid 0.25px #0078D7;
+	}
+}
+
+.slider {
+	> .thumb {
+		color: $highlight;
+		background-color: $highlight;
+		border: 1px solid $highlight;
+		height: 14px;
+		margin-bottom: 5px;
+
+		> .thumbicon {
+			font-family: 'Segoe UI Symbol';
+			font-size: 18px;
+			transform: translate(-4px, 1px);
+			content: "⏷";
+		}
+
+		&:hover {
+			background-color: #171717;
+			color: #171717;
+			border-color: #171717;
+		}
+
+		&:active {
+			background-color: #CCCCCC;
+			color: #CCCCCC;
+			border-color: #CCCCCC;
+		}
+	}
+
+	> .track {
+		border: 1px solid $style-border-simple;
+		background-color: #E7EAEA;
+	}
+}
+
+
+.TabContainer {
+
+	> .tabs {
+
+		> .button {
+			background-color: $style-background-alt;
+			border: 1px solid $style-border;
+			border-radius: 0px;
+			transition: all 0s linear;
+			border-right: 0; // Remove right border
+
+			&:hover {
+			}
+
+			&.active {
+				background-color: $style-background;
+				border-right: 1px solid $style-border;
+				margin-right: -3px;
+			}
+			// Last child should always have right border
+			&:last-child {
+				border-right: 1px solid $style-border;
+			}
+		}
+	}
+
+
+	> .sheets {
+		background-color: $style-background;
+		border: 1px solid $style-border;
+	}
+}
+
+.selector {
+	> .selector_indicator {
+		border: 0px;
+		background-color: transparent;
+		content: "";
+		font-size: 10px;
+		font-family: "Segoe MDL2 Assets";
+		top: 2px;
+		align-items: center;
+	}
+}
+
+.listview {
+	border: 1px solid #828790;
+
+	.listview-header {
+		background-color: transparent;
+		border: 0px;
+
+		.sort-indicator {
+			font-family: "Segoe MDL2 Assets";
+			color: #000000;
+			content: ""; // Sort icon
+			font-size: 12px;
+			margin-left: 4px;
+
+			&.sort-up {
+				content: ""; // Up arrow
+			}
+
+			&.sort-down {
+				content: ""; // Down arrow
+			}
+		}
+
+		.listview-header-column {
+			background-color: transparent;
+			border: 0px;
+			border-right: 1px solid $style-border;
+			height: 24px;
+			padding: 4px;
+
+
+			&:hover {
+				background-color: #D9EBF9;
+			}
+
+			&:not(:last-child) {
+				margin-right: -1px;
+			}
+		}
+	}
+
+	.listview-icon-container {
+		& .listview-icon-item {
+			align-items: center;
+			width: 74px;
+			min-height: 74px;
+			height: auto;
+
+			.listview-icon {
+				margin-bottom: 5px;
+			}
+
+			.label {
+				word-break: normal;
+				align-self: stretch;
+			}
+		}
+	}
+
+	.listview-container {
+
+
+		.listview-item {
+			border-radius: 2px;
+
+			&:hover {
+				background-color: #B3DDFF66;
+			}
+
+			&.selected {
+				&::before {
+					border-radius: 1px;
+					border: 1px solid #0078D4;
+					position: absolute;
+					top: 0px;
+					left: 0px;
+					right: 0px;
+					bottom: 0px;
+					z-index: 5;
+				}
+
+				background-color: #B3DDFFAA; // #CEE8FF
+
+				&:hover {
+					background-color: #B3DDFFEE;
+				}
+
+
+				.listview-icon {
+					.icon-image {
+						background-tint: white;
+					}
+				}
+
+				.listview-text {
+					&:before {
+						border: none;
+					}
+
+					background-color: transparent;
+					color: $button-text;
+				}
+				// Likely the name of the item
+				:first-child {
+					&:not(.TextEntry) {
+						.label {
+							background-color: transparent;
+							color: $button-text;
+						}
+					}
+				}
+			}
+
+			.listview-cell {
+
+				&:not(:last-child) {
+					border-right: 1px solid $style-border;
+				}
+
+				&:not(:last-child) {
+					margin-right: -1px;
+				}
+			}
+		}
+	}
+}
+.group-box {
+	border: 1px solid #DCDCDC;
+}
+.ContextMenu {
+	border-radius: 4px;
+	background-color: $style-background;
+	border: 1px solid $style-border;
+	padding: 2px 5px;
+
+	.Menu-Separator {
+		border: 0px;
+		background-color: $style-line;
+		height: 1px;
+	}
+
+	.MenuItem {
+		height: 21px;
+		border-radius: 3px;
+
+		/*
+		.ItemText {
+			top: 1px;
+		}
+		*/
+
+		&:hover {
+			background-color: $button-face;
+			color: $button-text;
+		}
+
+		&.open {
+			background-color: $button-face;
+			color: $button-text;
+		}
+	}
+}
+
+
+.toolbar {
+	background-color: $menu;
+
+	&.menu-toolbar {
+		background-color: $menu;
+	}
+
+	.menu-item {
+		margin: 0px;
+		border-radius: 0px;
+		transition: all 0s linear;
+		border: 0px;
+
+		&:hover {
+			transition: all 0s linear;
+			background-color: #F5F5F5;
+			border: 0px;
+		}
+	}
+
+	.toolbar-button {
+		background-color: $control-colour00;
+		border-radius: 1px;
+
+		&:hover {
+			background-color: #C6E2F9AA;
+			border: 1px solid #94CCFAAA;
+		}
+
+		&:active {
+			background-color: #A0C8F7AA;
+			border: 1px solid #94CCFAAA;
+		}
+	}
+}
+
+
+Seperator {
+	height: 2px;
+	border-top: 1px solid $button-shadow;
+	background-color: white;
+}

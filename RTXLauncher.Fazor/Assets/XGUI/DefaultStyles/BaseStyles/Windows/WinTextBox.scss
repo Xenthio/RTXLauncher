@@ -1,0 +1,20 @@
+.textentry {
+	border-top: 1px solid $button-shadow;
+	border-left: 1px solid $button-shadow;
+	border-bottom: 1px solid $button-highlight;
+	border-right: 1px solid $button-highlight;
+	background-color: $window;
+	padding: 0px;
+	height: 22px;
+
+	&.is-multiline {
+		height: auto;
+		flex-grow: 1;
+	}
+}
+
+.self-layout {
+	>.textentry {
+		width: 100px;
+	}
+}

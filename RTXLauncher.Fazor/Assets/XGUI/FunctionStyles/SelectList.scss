@@ -1,0 +1,19 @@
+selectlist {
+    overflow-y: scroll;
+    overflow-x: hidden;
+    flex-direction: column;
+
+    .listoption {
+        flex-shrink: 0;
+    }
+
+    listoptgroup {
+        flex-shrink: 0;
+        width: 100%;
+        flex-direction: column;
+
+        .group-title {
+            top: 0px;
+        }
+    }
+}

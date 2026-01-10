@@ -1,0 +1,170 @@
+.toolbar-container {
+	margin-top: 1px;
+	border-top: 1px solid $border-colour-top;
+	border-left: 1px solid $border-colour-left;
+	border-bottom: 1px solid $border-colour-bottom-inner;
+	border-right: 1px solid $border-colour-right-inner;
+
+	.toolbar {
+		border-bottom: 1px solid $border-colour-bottom;
+
+		&:last-child {
+			border-bottom: none;
+		}
+	}
+}
+
+.toolbar-drag-handle {
+	width: 3px;
+	height: 85%;
+	position: absolute;
+	left: 2px;
+	align-items: center;
+	justify-content: center;
+	background-color: $base-colour;
+	border-top: 1px solid $border-colour-top;
+	border-left: 1px solid $border-colour-left;
+	border-bottom: 1px solid $border-colour-bottom-inner;
+	border-right: 1px solid $border-colour-right-inner;
+	margin-right: 4px;
+}
+
+.toolbar {
+	padding: 0px;
+
+	.toolbar-items {
+		height: 100%;
+	}
+
+	&.vertical {
+		border-right: 1px solid $border-colour-right;
+		border-bottom: none;
+	}
+
+	&.has-drag-handle {
+
+		.toolbar-items {
+			margin-left: 9px;
+		}
+
+		.menu-item {
+			height: 20px;
+		}
+	}
+
+
+
+	.menu-item {
+		flex-shrink: 0;
+		margin: 1px, 0px;
+		height: 18px;
+		padding: 0px;
+		padding-left: 5px;
+		padding-right: 7px;
+		background-color: transparent;
+		border: 1px solid transparent;
+		cursor: pointer;
+
+		&:hover {
+			border-top: 1px solid $border-colour-top-inner;
+			border-left: 1px solid $border-colour-left-inner;
+			border-bottom: 1px solid $border-colour-bottom-inner;
+			border-right: 1px solid $border-colour-right-inner;
+		}
+
+		&:active {
+			border-top: 1px solid $border-colour-top-inset;
+			border-left: 1px solid $border-colour-left-inset;
+			border-bottom: 1px solid $border-colour-bottom-inset;
+			border-right: 1px solid $border-colour-right-inset;
+		}
+	}
+
+	.toolbar-button {
+		height: auto;
+		min-width: 54px;
+		background-color: transparent;
+		border: 1px solid transparent;
+		cursor: pointer;
+		flex-direction: column;
+		margin: 0px;
+		padding-left: 0px;
+		padding-right: 0px;
+		flex-shrink: 0;
+
+		&:hover {
+			border-top: 1px solid $border-colour-bottom-inset;
+			border-left: 1px solid $border-colour-right-inset;
+			border-bottom: 1px solid $border-colour-top-inset;
+			border-right: 1px solid $border-colour-left-inset;
+		}
+
+		&:active {
+			border-top: 1px solid $border-colour-top-inset;
+			border-left: 1px solid $border-colour-left-inset;
+			border-bottom: 1px solid $border-colour-bottom-inset;
+			border-right: 1px solid $border-colour-right-inset;
+		}
+
+		.xgui-icon-panel {
+			margin: 2px;
+			margin-bottom: 1px;
+		}
+
+		.label {
+			bottom: 1px;
+		}
+	}
+
+	.toolbar-separator {
+		flex-shrink: 0;
+		width: 1px;
+		height: 88%;
+		background-color: $border-colour-left;
+		margin: 2px 2px;
+	}
+
+	&.toolbar-drop-target {
+		background-color: $base-colour;
+		filter: brightness(150%);
+	}
+}
+
+// Menu Toolbar Specific
+.menu-toolbar { 
+
+	.menu-item { 
+	}
+}
+
+// Command Toolbar Specific
+.command-toolbar { 
+	.toolbar-button {
+		padding: 0px 4px; 
+
+		&.view-button.active {
+			border-top: 1px solid $control-border-colour-top-active;
+			border-left: 1px solid $control-border-colour-left-active;
+			border-bottom: 1px solid $control-border-colour-bottom-active;
+			border-right: 1px solid $control-border-colour-right-active;
+			background-color: darken($base-colour, 5%);
+		}
+	}
+}
+
+// Address Toolbar Specific
+.address-toolbar {
+	.address-label {
+		padding: 0 4px;
+		display: flex;
+		align-items: center;
+		color: $default-text-colour;
+		font-size: $default-text-size;
+		font-family: $default-text-font;
+	}
+
+	.go-button {
+		width: 30px;
+		margin-left: 2px;
+	}
+}

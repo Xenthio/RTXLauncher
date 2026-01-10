@@ -1,0 +1,41 @@
+﻿.window {
+    pointer-events: all;
+	> .TitleBar {
+		> .TitleElements {
+			width: 100%;
+
+			> .TitleSpacer {
+				flex-grow: 1;
+			}
+
+			> .Control {
+				flex-shrink: 0;
+			}
+		}
+
+		> .TitleBackground {
+			z-index: -10;
+			position: absolute;
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	> .window-content {
+		flex-direction: column;
+		flex-grow: 1;
+	}
+	
+	// Hide borders when using OS window decorations (native chrome)
+	&.osdecorated {
+		border: none !important;
+		border-width: 0 !important;
+		border-image: none !important;
+		
+		> .window-content {
+			border: none !important;
+			border-width: 0 !important;
+			border-image: none !important;
+		}
+	}
+}

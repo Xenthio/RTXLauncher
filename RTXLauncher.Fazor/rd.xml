@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="RTXLauncher.Fazor" Dynamic="Required All" />
+    <Assembly Name="RTXLauncher.Core" Dynamic="Required All" />
+    <Assembly Name="Fazor.UI" Dynamic="Required All" />
+    <Assembly Name="Sandbox.UI" Dynamic="Required All" />
+    <Assembly Name="Sandbox.UI.Skia" Dynamic="Required All" />
+    <Assembly Name="Microsoft.AspNetCore.Components" Dynamic="Required All" />
+  </Application>
+</Directives>

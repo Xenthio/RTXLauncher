@@ -1,0 +1,74 @@
+
+@import "/XGUI/DefaultStyles/BaseStyles/VGUI.scss";
+.Window {
+	border: 0px;
+	border-radius: 8px;
+
+	.TitleBar {
+		background-color: transparent;
+
+		.TitleIcon {
+			width: 0px;
+			height: 0px;
+			display: none;
+		}
+
+		.TitleLabel {
+			padding: 6px;
+			font-weight: bold;
+			font-size: 9px;
+			text-transform: uppercase;
+		}
+
+		.Control {
+			border: none;
+		}
+	}
+}
+.checkbox {
+	.checkpanel, iconpanel {
+		width: 12px;
+		height: 12px;
+		background-color: $base-colour-inset;
+		border-bottom: 1px solid $border-colour-bottom-inset;
+		border-right: 1px solid $border-colour-right-inset;
+		border-top: 1px solid $border-colour-top-inset;
+		border-left: 1px solid $border-colour-left-inset;
+		border-radius: 0px;
+	}
+
+	.checklabel {
+		transform: translate(6px 1px);
+	}
+
+	&.checked {
+		> .checkpanel, .iconpanel {
+
+			.checklabel {
+				font-family: Marlett;
+				font-size: 16px;
+				color: $default-text-colour-active;
+				top: 1px;
+				left: 1px;
+/*				top: -4px;
+				left: -9px;*/
+			}
+		}
+	}
+}
+
+.selector {
+	background-color: $base-colour-inset;
+}
+
+.dropdown-panel {
+	background-color: $base-colour-solid2;
+	color: $default-text-colour-active;
+
+	> .button {
+		&:hover {
+			background-color: $base-colour-solid2-active;
+			color: black;
+		}
+	}
+}

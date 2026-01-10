@@ -1,0 +1,11 @@
+﻿.controllabel {
+	flex-direction: column;
+
+	&.cl-row {
+		>.label {
+			min-width:64px;
+		}
+
+		flex-direction: row;
+	}
+}

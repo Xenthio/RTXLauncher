@@ -1,0 +1,62 @@
+.treeview {
+	flex-direction: column;
+	position: relative; // For potential absolute positioned elements later
+
+	.treeview-item-container {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.treeview-node {
+		flex-shrink: 0; // Prevent nodes from shrinking
+		flex-direction: column; // Each node contains its header and children container vertically
+
+		.treeview-node-header {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			flex-shrink: 0;
+		}
+
+		.treeview-expander {
+			width: 9px;
+			height: 9px;
+			margin: 0px 4px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 10px; // For text expanders
+
+			&.empty {
+				// Style for nodes with no children (e.g., make it invisible or a different icon)
+				// For now, it will just be empty text. Could use visibility: hidden;
+				// Or use a specific icon like a dot.
+				// color: transparent; // Makes text expander invisible
+			}
+			// Example using before pseudo-elements for + / -
+			// &.collapsed::before { content: '+'; }
+			// &.expanded::before { content: '-'; }
+		}
+
+		.treeview-icon {
+			margin-right: 4px;
+			width: 16px;
+			height: 16px;
+			flex-shrink: 0;
+		}
+
+		.treeview-label {
+			white-space: nowrap;
+			flex-shrink: 0;
+		}
+
+		.treeview-children-container {
+			align-items: flex-start;
+			flex-direction: column;
+			display: flex; // Will be toggled to none/flex
+			.treeview-node {
+				margin-left: 3px;
+			}
+		}
+	}
+}

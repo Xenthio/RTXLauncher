@@ -1,0 +1,59 @@
+﻿.TabContainer {
+	margin: 6px;
+	flex-direction: column;
+	justify-content: flex-start;
+
+	> .tabs {
+		z-index: 1;
+		// This wrapper aligns the tabs properly
+		flex-direction: row;
+		min-width: 0px;
+
+		> .button {
+			border-top: 1px solid $button-highlight;
+			border-left: 1px solid $button-highlight;
+			border-bottom: 1px solid $button-highlight;
+			border-right: 1px solid $button-dark-shadow;
+			border-radius: 0px;
+			border-top-left-radius: 3px;
+			border-top-right-radius: 3px;
+			padding: 0px;
+			padding-left: 6px;
+			padding-right: 6px;
+			padding-bottom: 1px;
+			// Move unselected ones down
+			height: 18px;
+			align-items: center;
+			min-width: 64px;
+			top: 4px;
+			z-index: -10;
+
+			> .label {
+				text-align: center;
+				flex-grow: 1;
+			}
+
+			&.active {
+				padding-bottom: 3px;
+				// Offset up when selected
+				top: 1px;
+				z-index: 15000;
+				border-bottom: 0px;
+				height: 21px;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $button-face;
+		border-top: 1px solid $button-highlight;
+		border-left: 1px solid $button-highlight;
+		border-bottom: 1px solid $button-dark-shadow;
+		border-right: 1px solid $button-dark-shadow;
+		padding: 5px;
+	}
+}

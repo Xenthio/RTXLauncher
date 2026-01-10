@@ -1,0 +1,33 @@
+.TextBox,
+.TextEntry,
+.textentry {
+	padding: 5px;
+	height: 24px;
+	align-items: center;
+	background-color: $base-colour-inset;
+	border-top: 1px solid $border-colour-top-inset;
+	border-left: 1px solid $border-colour-left-inset;
+	border-bottom: 1px solid $border-colour-bottom-inset;
+	border-right: 1px solid $border-colour-right-inset;
+
+
+	&.is-multiline {
+		height: auto;
+		flex-grow: 1;
+	}
+
+	.content-label,
+	.prefix-label,
+	.suffix-label,
+	.placeholder {
+		padding: 0px;
+	}
+}
+
+.self-layout {
+	> .TextBox,
+	> .TextEntry,
+	> .textentry {
+		width: 128px;
+	}
+}

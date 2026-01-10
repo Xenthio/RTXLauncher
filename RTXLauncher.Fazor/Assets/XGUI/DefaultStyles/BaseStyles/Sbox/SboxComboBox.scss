@@ -1,0 +1,62 @@
+
+.selector {
+	background-image: none;
+	border-radius:4px;
+	background-color: $control-inset-colour;
+	border: 0px;
+	height: 21px;
+	justify-content: flex-start;
+
+	> .selector_indicator {
+		background-repeat: no-repeat;
+		background-position: right center;
+		width: 15px;
+		height: 16px;
+		right: 0px;
+		position: absolute;
+		align-items: center;
+		font-family: Marlett;
+		font-size: 15px;
+	}
+
+	&.open {
+		background-color: $control-colour-open;
+
+		&:focus, &.focus {
+			border: 0px;
+		}
+	}
+}
+
+// Popup / Pane
+
+.dropdown-panel {
+	background-color: $base-colour-inset;
+	border: 1px solid $border-colour;
+	font-size: $default-text-size;
+	font-family: $default-text-font;
+	font-smooth: $default-text-smooth;
+	color: $default-text-colour;
+	pointer-events: all;
+
+	> .button {
+		background-color: $base-colour-inset;
+		border: 0px;
+		border-radius: 0px;
+		height: 13px;
+		justify-content: flex-start;
+		transition: all 0s none;
+
+		&:hover {
+			color: white;
+			background-color: $base-colour-active;
+			transition: all 0s none;
+		}
+	}
+}
+
+.self-layout {
+	> .selector {
+		min-width: 121px;
+	}
+}

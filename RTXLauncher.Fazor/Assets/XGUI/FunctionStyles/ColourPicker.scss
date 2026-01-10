@@ -1,0 +1,126 @@
+.colourpicker {
+	> .colourwidget {
+		min-width: 48px;
+		border: 1px solid #111111;
+		margin-left: 4px;
+	}
+
+	> .floatinput {
+		min-width: 32px;
+		margin-right: 2px;
+	}
+}
+
+.colour-popup-panel {
+	position: absolute;
+	min-width: 200px;
+	min-height: 200px;
+	pointer-events: all;
+	padding: 4px;
+
+	
+}
+
+.colour-widget {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px;
+
+	.colour-picker {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.colour-map {
+		position: relative;
+		aspect-ratio: 1;
+		cursor: crosshair;
+		pointer-events: all;
+
+		.colour-map-overlay {
+			pointer-events: none;
+			position: absolute;
+			width: 100%;
+			height: 100%;
+
+			&.main {
+				z-index: 1;
+			}
+
+			&.white {
+				z-index: 2; 
+			}
+
+			&.black {
+				z-index: 3;
+				background: linear-gradient(to bottom, 
+					#FFFFFF, 
+					#E6E6E6, 
+					#CCCCCC, 
+					#B3B3B3, 
+					#999999, 
+					#808080, 
+					#666666, 
+					#4D4D4D, 
+					#333333, 
+					#1A1A1A, 
+					#000000
+				);
+				mix-blend-mode: multiply;
+			}
+		}
+
+		.picker-thumb {
+			z-index: 3;
+			position: absolute;
+			width: 12px;
+			height: 12px;
+			border: 2px solid white;
+			border-radius: 50%;
+			transform: translate(-50%, -50%);
+			pointer-events: none;
+			box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+		}
+	}
+
+	.hue-slider {
+		pointer-events: all;
+		position: relative;
+		width: 100%;
+		height: 20px;
+		background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+		cursor: pointer;
+
+		.hue-thumb {
+			position: absolute;
+			width: 6px;
+			height: 20px;
+			border: 1px solid rgba(0,0,0,0.5);
+			transform: translateX(-50%);
+			pointer-events: none;
+		}
+	}
+
+	.preview-swatch {
+		width: 100%;
+		height: 30px;
+		border: 1px solid #111111;
+	}
+
+	.swatch-grid {
+		flex-wrap: wrap;
+
+		.swatch {
+			border: 1px solid #111111;
+			height: 17px;
+			width: 17px;
+			cursor: pointer;
+
+			&:hover {
+				transform: scale(1.1);
+			}
+		}
+	}
+}

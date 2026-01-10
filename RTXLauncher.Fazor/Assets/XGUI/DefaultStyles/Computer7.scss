@@ -1,0 +1,576 @@
+﻿//@import "/styles/base.scss";
+//@import "/styles/form.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+
+//////////////
+
+$default-text-size: 12px;
+$default-text-font: "Segoe UI";
+$default-text-smooth: auto;
+
+$alt-text-font: "Microsoft Sans Serif";
+
+$window-title-text-size: 12px;
+$window-title-text-weight: normal;
+
+//////////////
+
+$active-title: #99B4D1;
+$title-text: #000000;
+$inactive-title: #BFCDDB;
+$inactive-title-text: #434E54;
+
+$active-border: #B4B4B4;
+$inactive-border: #F4F7FC;
+
+$window: #FFFFFF;
+$window-text: #000000;
+$window-frame: #000000;
+
+$scrollbar: #C0C0C0;
+
+$menu: #F0F0F0;
+$menu-text: #646464;
+
+$app-workspace: #ABABAB;
+
+$info-text: #000000;
+$info-window: #FFFFFF;
+
+$highlight: #339AF4;
+$highlight-text: #FFFFFF;
+$highlight-tint: #98B5E2;
+
+$grey-text: #6D6D6D;
+
+$button-face: #F0F0F0;
+$button-face-alt: #000000;
+$button-shadow: #A0A0A0;
+$button-text: #000000;
+$button-highlight: #FFFFFF;
+$button-dark-shadow: #696969;
+$button-light: #E3E3E3;
+
+$background: #000000;
+
+@import "/XGUI/DefaultStyles/BaseStyles/Windows.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/Windows+VisualStyleQuirks.scss";
+
+
+
+.button {
+	border-image: url("XGUI/Resources/7/control.png");
+	background-image: url("XGUI/Resources/7/control_background.png");
+	background-size: contain;
+	background-position: center; 
+
+	&:hover {
+		border-image: url("XGUI/Resources/7/control_hover.png");
+		background-image: url("XGUI/Resources/7/control_background_hover.png");
+	}
+
+	&:active {
+		border-image: url("XGUI/Resources/7/control_active.png");
+		background-image: url("XGUI/Resources/7/control_background_active.png");
+	}
+}
+
+.Window-Font-Alt {
+	//font-family: Tahoma;
+	//font-size: 12px;
+}
+
+.Window {
+	border: none;
+	background-color: transparent;
+	background: linear-gradient(to bottom, #00000000 6%, $button-face 6% );
+
+	&.unfocused {
+		.TitleBar {
+			background-color: transparent;
+			border-image: url("XGUI/Resources/7/title_unfocused.png");
+			background: url("XGUI/Resources/7/title_bg_unfocused.png");
+			border-image-width-left: 5px;
+			border-image-width-right: 5px;
+			border-image-width-top: 5px;
+			border-image-width-bottom: 5px;
+
+			.Control {
+				border-image: url("XGUI/Resources/7/title_control_unfocused.png");
+				background: url("XGUI/Resources/7/title_control_bg_unfocused.png");
+				border-image-width-left: 2px;
+				border-image-width-right: 2px;
+				border-image-width-top: 2px;
+				border-image-width-bottom: 2px;
+			}
+		}
+
+		> .window-content {
+			border-image: url("XGUI/Resources/7/window_content_unfocused.png");
+			border-image-width-top: 1px;
+			border-image-width-left: 8px;
+			border-image-width-right: 8px;
+			border-image-width-bottom: 8px;
+			background-color: $button-face;
+		}
+	}
+
+	&.minimised {
+		.TitleBar {
+			.MinimiseButton {
+				> .label {
+					content: "";
+					background: url("XGUI/Resources/7/restore_icon.png");
+				}
+			}
+		}
+	}
+
+	&.maximised {
+		.TitleBar {
+			.MaximiseButton {
+				> .label {
+					content: "";
+					background: url("XGUI/Resources/7/restore_icon.png");
+				}
+			}
+		}
+	}
+
+	.TitleBar {
+		height: 28px;
+		padding: 4px;
+		padding-top: 8px;
+		padding-bottom: 0px;
+		border-image: url("XGUI/Resources/7/title.png");
+		border-image-width-left: 5px;
+		border-image-width-right: 5px;
+		border-image-width-top: 5px;
+		border-image-width-bottom: 5px;
+		background-color: transparent;
+		background: url("XGUI/Resources/7/title_bg.png");
+		background-size: contain;
+
+		.Control {
+			margin-left: 2px;
+			width: 31px;
+			height: 17px;
+			border-image: url("XGUI/Resources/7/title_control.png");
+			background: url("XGUI/Resources/7/title_control_bg.png");
+			border-image-width-left: 2px;
+			border-image-width-right: 2px;
+			border-image-width-top: 2px;
+			border-image-width-bottom: 2px;
+
+
+			&:hover {
+				border-image: url("XGUI/Resources/7/title_control_hover.png");
+				background: url("XGUI/Resources/7/title_control_bg_hover.png");
+			}
+
+			&:active {
+				border-image: url("XGUI/Resources/7/title_control_active.png");
+				background: url("XGUI/Resources/7/title_control_bg_active.png");
+			}
+		}
+
+		.MinimiseButton {
+			> .label {
+				background: url("XGUI/Resources/7/minimise_icon.png");
+				background-position: center;
+				background-size: cover;
+				width: 13px;
+				height: 13px;
+				content: "";
+			}
+		}
+
+		.MaximiseButton {
+			> .label {
+				background: url("XGUI/Resources/7/maximise_icon.png");
+				background-position: center;
+				background-size: cover;
+				width: 13px;
+				height: 13px;
+				content: "";
+			}
+		}
+
+		.CloseButton {
+			border: none;
+			border-image: url("XGUI/Resources/7/title_control_close.png");
+			background: url("XGUI/Resources/7/title_control_close_bg.png");
+			border-image-width-left: 2px;
+			border-image-width-right: 2px;
+			border-image-width-top: 2px;
+			border-image-width-bottom: 2px;
+			width: 31px;
+			height: 17px;
+
+			> .label {
+				background: url("XGUI/Resources/7/close_icon.png");
+				background-position: center;
+				background-size: cover;
+				width: 13px;
+				height: 13px;
+				content: "";
+			}
+
+			&:hover {
+				border-image: url("XGUI/Resources/7/title_control_close_hover.png");
+				background: url("XGUI/Resources/7/title_control_close_bg_hover.png");
+			}
+
+			&:active {
+				border-image: url("XGUI/Resources/7/title_control_close_active.png");
+				background: url("XGUI/Resources/7/title_control_close_bg_active.png");
+			}
+		}
+	}
+
+	> .window-content {
+		border-image: url("XGUI/Resources/7/window_content.png");
+		border-image-width-top: 1px;
+		border-image-width-left: 8px;
+		border-image-width-right: 8px;
+		border-image-width-bottom: 8px;
+		background-color: $button-face;
+	}
+}
+
+.checkbox {
+	.checkpanel, iconpanel {
+		transition: all 0.15s linear;
+		border: none;
+		background-image: url("XGUI/Resources/7/checkbox.png");
+		width: 13px;
+		height: 13px;
+		min-width: 13px;
+		min-height: 13px;
+
+		&:hover {
+			transition: all 0.15s linear;
+			background-image: url("XGUI/Resources/7/checkbox_hover.png");
+
+			&:active {
+				transition: all 0.15s linear;
+				background-image: url("XGUI/Resources/7/checkbox_active.png");
+			}
+		}
+	}
+
+	&.checked {
+
+		> .checkpanel, .iconpanel {
+			transition: all 0.15s linear;
+			background-image: url("XGUI/Resources/7/checkbox_checked.png");
+
+			&:hover {
+				transition: all 0.15s linear;
+				background-image: url("XGUI/Resources/7/checkbox_checked_hover.png");
+
+				&:active {
+					transition: all 0.15s linear;
+					background-image: url("XGUI/Resources/7/checkbox_checked_active.png");
+				}
+			}
+
+			.checklabel { 
+				content: "";
+			}
+		}
+	}
+}
+
+
+.radiobutton { 
+
+	.checkpanel, iconpanel { 
+		bottom:1px;
+		transition: all 0.15s linear;
+		border: none;
+		background-image: url("XGUI/Resources/7/radiobutton.png");
+		width: 13px;
+		height: 13px;
+		min-width: 13px;
+		min-height: 13px;
+
+		> .label {
+			display: none;
+		}
+
+		&:hover {
+			transition: all 0.15s linear;
+			background-image: url("XGUI/Resources/7/radiobutton_hover.png");
+
+			&:active {
+				transition: all 0.15s linear;
+				background-image: url("XGUI/Resources/7/radiobutton_active.png");
+			}
+		}
+	}
+
+	&.checked {
+
+		> .checkpanel, .iconpanel {
+			transition: all 0.15s linear;
+			background-image: url("XGUI/Resources/7/radiobutton_checked.png");
+
+			&:hover {
+				transition: all 0.15s linear;
+				background-image: url("XGUI/Resources/7/radiobutton_checked_hover.png");
+
+				&:active {
+					transition: all 0.15s linear;
+					background-image: url("XGUI/Resources/7/radiobutton_checked_active.png");
+				}
+			}
+
+			.checklabel {
+				content: "";
+			}
+		}
+	}
+}
+
+.TabContainer {
+
+	> .tabs {
+
+		> .button {
+			height: 19px;
+			border-radius: 0px;
+			border-image: url("XGUI/Resources/7/tab.png");
+			border-image-width-top: 2px;
+			border-image-width-left: 2px;
+			border-image-width-right: 2px;
+			border-image-width-bottom: 2px;
+			background: url("XGUI/Resources/7/tab_bg.png");
+			margin-bottom: 1px;
+
+			&.active {
+				border-image: url("XGUI/Resources/7/tab_active.png");
+				background: url("XGUI/Resources/7/tab_bg_active.png");
+				padding-bottom: 3px;
+				background-color: $window;
+				border-image-width-top: 2px;
+				border-image-width-left: 2px;
+				border-image-width-right: 2px;
+				border-image-width-bottom: 2px;
+				// Offset up when selected
+				top: 2px;
+				z-index: 15000;
+			}
+		}
+	}
+
+
+	> .sheets {
+		border: 1px solid #898C95;
+		background-color: $window;
+	}
+}
+
+
+.textentry,
+.textbox {
+	border-radius: 3px;
+	border: solid 0.25px #ECECEC;
+	border-top: solid 0.25px #ABADB3;
+	border-right: solid 0.25px #DBDFE6;
+	border-left: solid 0.25px #DBDFE6;
+	border-bottom: solid 0.25px #E3E9EF;
+	transition: all 0.3s linear;
+
+	&:hover {
+		transition: all 0.3s linear;
+		border-top: solid 0.25px #5794BF;
+		border-left: solid 0.25px #B7D5EA;
+		border-right: solid 0.25px #B7D5EA;
+		border-bottom: solid 0.25px #C7E2F1;
+	}
+
+	&:active {
+		transition: all 0.2s linear;
+	}
+
+	&:focus {
+		padding-top: 1px;
+		transition: all 0.2s linear;
+		border-top: solid 0.25px #3D7BAD;
+		border-left: solid 0.25px #B5CFE7;
+		border-right: solid 0.25px #B5CFE7;
+		border-bottom: solid 0.25px #B7D9ED;
+	}
+}
+
+.selector {
+
+	> .selector_indicator {
+		border: 0px;
+		background-color: transparent;
+	}
+
+	&.open {
+		border-image: url("XGUI/Resources/7/control_active.png");
+		background-image: url("XGUI/Resources/7/control_background_active.png");
+	}
+
+	&:hover {
+		border-image: url("XGUI/Resources/7/control_hover.png");
+		background-image: url("XGUI/Resources/7/control_background_hover.png");
+	}
+
+	&:active {
+		border-image: url("XGUI/Resources/7/control_active.png");
+		background-image: url("XGUI/Resources/7/control_background_active.png");
+	}
+}
+
+.dropdown-panel {
+	border: 1px solid #979797;
+
+	> .button {
+		border: none;
+		background-image: none;
+	}
+}
+
+.contextmenu {
+	.menu-separator {
+		background-color: white;
+		border-top: 1px solid #E0E0E0;
+	}
+}
+
+
+.slider {
+	> .thumb {
+		background-color: transparent;
+		border: none;
+		background-image: url("XGUI/Resources/7/slider_thumb.png");
+
+		&:hover {
+			background-image: url("XGUI/Resources/7/slider_thumb_hover.png");
+		}
+
+		&:active {
+			background-image: url("XGUI/Resources/7/slider_thumb_active.png");
+		}
+	}
+}
+
+.listview {
+	border: 1px solid #828790;
+}
+
+.toolbar {
+	background-image: url("XGUI/Resources/7/menu-toolbar.png");
+	background-color: #D3DAED;
+	background-repeat: repeat-x;
+	border: 0px;
+
+	.menu-item {
+		height: 18px;
+		padding-left: 8px;
+		padding-right: 8px;
+		border: none;
+		background-image: none;
+
+		&:hover {
+			border: none;
+			background-image: none;
+			background-color: $highlight;
+			color: $highlight-text;
+		}
+
+		&:active {
+			border: none;
+			background-image: none;
+		}
+	}
+
+	.toolbar-button {
+		border-image: url("XGUI/Resources/7/toolbar_button.png");
+		background-image: none;
+
+		&:hover {
+			//border-image: url("XGUI/Resources/7/toolbar_button_hover.png");
+			//background-image: url("XGUI/Resources/7/toolbar_button_hover_bg.png");
+		}
+
+		&:active {
+			border: none;
+			background-image: none;
+		}
+	}
+
+	.toolbar-split-button {
+		&:hover {
+			.toolbar-button {
+				border: none;
+				background-image: none;
+			}
+		}
+
+		.toolbar-button {
+			border: none;
+			background-image: none;
+
+			&:hover {
+				border: none;
+				background-image: none;
+			}
+
+			&:active {
+				border: none;
+				background-image: none;
+			}
+		}
+	}
+
+	.toolbar-drag-handle {
+		background-image: url("XGUI/Resources/7/toolbar_handle.png");
+		background-color: transparent;
+		border: none;
+		background-repeat: repeat;
+		height: 100%;
+	}
+}
+
+.toolbar-container {
+	background-image: url("XGUI/Resources/7/menu-toolbar.png");
+	background-color: #D3DAED;
+	background-repeat: repeat-x;
+	margin-top: 0px;
+	border: 1px solid #E8ECF6;
+	border-top: 1px solid #A9BFD6;
+	border-bottom: 1px solid #888D99;
+
+	.toolbar {
+		background-image: none;
+		background-color: transparent;
+		border-bottom: 1px solid transparent;
+		/*border-bottom: 1px solid $active-border;
+
+		&:not(:first-child) {
+			border-top: 1px solid $inactive-border;
+		}
+
+		&:last-child {
+			border-bottom: 1px solid $active-border;
+		}*/
+
+		&.has-drag-handle {
+
+			.menu-item {
+				height: 21px;
+			}
+		}
+	}
+}
+.menu-toolbar {
+	flex-grow: 1;
+	border-bottom: 1px solid #B6BCCC;
+}

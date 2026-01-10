@@ -1,0 +1,73 @@
+
+.selector {
+	border-bottom: 1px solid $border-colour-bottom-inset;
+	border-right: 1px solid $border-colour-right-inset;
+	border-top: 1px solid $border-colour-top-inset;
+	border-left: 1px solid $border-colour-left-inset;
+	background-color: $base-colour-inset;
+	height: 21px;
+	justify-content: flex-start;
+
+	> .selector_indicator {
+		background-color: $base-colour;
+		border-top: 1px solid $border-colour-top;
+		border-left: 1px solid $border-colour-left;
+		border-bottom: 1px solid $border-colour-bottom;
+		border-right: 1px solid $border-colour-right;
+		background-repeat: no-repeat;
+		background-position: right center;
+		width: 15px;
+		height: 16px;
+		right: 0px;
+		position: absolute;
+		align-items: center;
+		font-family: Marlett;
+		font-size: 15px;
+	}
+
+	&.open {
+		border-top: 1px solid $control-border-colour-top-open;
+		border-left: 1px solid $control-border-colour-left-open;
+		border-bottom: 1px solid $control-border-colour-bottom-open;
+		border-right: 1px solid $control-border-colour-right-open;
+		background-color: $control-colour-open;
+
+		&:focus, &.focus {
+			border: 0px;
+		}
+	}
+}
+
+// Popup / Pane
+
+.dropdown-panel { 
+	background-color: $base-colour-inset;
+	border: 1px solid $border-colour;
+	font-size: $default-text-size;
+	font-family: $default-text-font;
+	font-smooth: $default-text-smooth;
+	color: $default-text-colour;
+	pointer-events: all;
+
+	> .button {
+		background-color: $base-colour-inset;
+		border: 0px;
+		border-radius: 0px;
+		height: 13px;
+		justify-content: flex-start;
+		transition: all 0s none;
+
+		&:hover {
+			color: white;
+			background-color: $base-colour-active;
+			transition: all 0s none;
+		}
+	}
+}
+
+
+.self-layout {
+	>.selector {
+		min-width: 121px;
+	}
+}

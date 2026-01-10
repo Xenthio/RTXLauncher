@@ -1,0 +1,33 @@
+@namespace RTXLauncher.Fazor
+@using Sandbox.UI;
+@inherits Panel
+
+<root>
+	<div class="settings-page">
+		<h2>Settings</h2>
+		<div class="setting-item">
+			<label>Install Location:</label>
+			<textentry placeholder="Select installation path..." />
+		</div>
+		<div class="setting-item">
+			<label>Theme:</label>
+			<combobox default="Computer11">
+				<option value="Computer95">Windows 95</option>
+				<option value="Computer11">Windows 11</option>
+				<option value="ComputerXP">Windows XP</option>
+				<option value="Derma">Derma</option>
+			</combobox>
+		</div>
+		<div class="setting-item">
+			<check>Enable Debug Mode</check>
+		</div>
+		<button>Save Settings</button>
+	</div>
+</root>
+
+@code {
+	protected override int BuildHash()
+	{
+		return 0;
+	}
+}

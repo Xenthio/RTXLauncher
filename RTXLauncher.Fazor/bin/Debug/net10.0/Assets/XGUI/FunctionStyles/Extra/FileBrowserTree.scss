@@ -1,0 +1,51 @@
+﻿// Additional styling for FileBrowserTree to make it more Windows 95-like
+.file-browser-tree {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	overflow: scroll;
+	flex-grow: 1;
+
+
+	.tree-node {
+		flex-direction: column; 
+		flex-shrink: 0;
+
+		.tree-node-content {
+			padding: 1px 2px;
+
+			&.selected {
+
+				.node-label {
+				}
+			}
+
+			&:hover:not(.selected) {
+			}
+
+			.expand-icon {
+				min-width: 16px;
+				min-height: 16px;
+				margin-right: 2px;
+			}
+
+			.folder-icon {
+				min-width: 16px;
+				min-height: 16px;
+				margin-right: 4px;
+			}
+
+			.node-label {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+		}
+
+		.tree-node-children {
+			margin-left: 16px;
+			flex-direction: column;
+		}
+	}
+}

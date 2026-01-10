@@ -1,0 +1,31 @@
+@namespace RTXLauncher.Fazor
+@using Sandbox.UI;
+@inherits Panel
+
+<root>
+	<div class="install-page">
+		<h2>Install Garry's Mod RTX</h2>
+		<p>This page will guide you through installing Garry's Mod RTX.</p>
+		<div class="install-steps">
+			<div class="step">
+				<h3>Step 1: Verify Installation Path</h3>
+				<p>Ensure Garry's Mod is installed in the correct location.</p>
+			</div>
+			<div class="step">
+				<h3>Step 2: Download RTX Files</h3>
+				<p>Download the necessary RTX shader files and assets.</p>
+			</div>
+			<div class="step">
+				<h3>Step 3: Install</h3>
+				<button>Start Installation</button>
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	protected override int BuildHash()
+	{
+		return 0;
+	}
+}

@@ -1,0 +1,190 @@
+@using global::Fazor.UI;
+@using Sandbox;
+@using Sandbox.UI;
+@using RTXLauncher.Core.Models;
+@using RTXLauncher.Core.Services;
+@using System;
+@using System.Collections.Generic;
+@using System.Diagnostics;
+@using System.IO;
+@namespace RTXLauncher.Fazor
+@inherits Window
+@attribute [StyleSheet("/XGUI/DefaultStyles/Computer11.scss")]
+@attribute [StyleSheet("MainWindow.scss")]
+
+<root title="Garry's Mod RTX Launcher" hasminimise="true" hasmaximise="true" hasclose="true" 
+      windowwidth="870" windowheight="600">
+	<div class="window-content">
+		<!-- Top Bar with Logo and Progress -->
+		<div class="top-bar">
+			<div class="logo-area">
+				<img src="/Assets/gmodrtx.png" style="height: 64px; width: auto;" />
+			</div>
+			<div class="progress-area">
+				<div class="status-text">@statusMessage</div>
+				<progressbar value="@progressValue" max="100" />
+				<button @onclick="ToggleLog">@(showLog ? "Hide Log" : "Show Log")</button>
+			</div>
+		</div>
+
+		<!-- Main Content Area -->
+		<div class="main-content">
+			<!-- Sidebar Navigation -->
+			<div class="sidebar">
+				<div class="nav-item @(selectedPage == "settings" ? "selected" : "")" @onclick='() => SelectPage("settings")'>
+					<label>Settings</label>
+				</div>
+				<div class="nav-item @(selectedPage == "install" ? "selected" : "")" @onclick='() => SelectPage("install")'>
+					<label>Install</label>
+				</div>
+				<div class="nav-item @(selectedPage == "update" ? "selected" : "")" @onclick='() => SelectPage("update")'>
+					<label>Update</label>
+				</div>
+				<div class="nav-item @(selectedPage == "mods" ? "selected" : "")" @onclick='() => SelectPage("mods")'>
+					<label>Mods</label>
+				</div>
+			</div>
+
+			<!-- Content Display Area -->
+			<div class="content-display">
+				@if (showLog)
+				{
+					<div class="log-viewer">
+						<div class="log-content">
+							@foreach (var logEntry in fullLog)
+							{
+								<div class="log-entry">@logEntry</div>
+							}
+						</div>
+						<button @onclick="SaveLog">Save Log to File</button>
+					</div>
+				}
+				else
+				{
+					@switch (selectedPage)
+					{
+						case "settings":
+							<SettingsPage />
+							break;
+						case "install":
+							<InstallPage />
+							break;
+						case "update":
+							<UpdatePage />
+							break;
+						case "mods":
+							<ModsPage />
+							break;
+						default:
+							<div class="welcome-page">
+								<h1>Welcome to Garry's Mod RTX Launcher</h1>
+								<p>Select an option from the sidebar to get started.</p>
+							</div>
+							break;
+					}
+				}
+			</div>
+		</div>
+
+		<!-- Bottom Buttons -->
+		<div class="bottom-buttons">
+			<button @onclick="OpenInstallFolder">Open Install Folder</button>
+			<button @onclick="LaunchGame">Launch Game</button>
+			<button @onclick="CloseWindow">Close</button>
+		</div>
+	</div>
+</root>
+
+@code {
+	private string selectedPage = "settings";
+	private int progressValue = 0;
+	private string statusMessage = "Welcome to the Garry's Mod RTX Launcher!";
+	private bool showLog = false;
+	private List<string> fullLog = new List<string>() { 
+		"Welcome to the Garry's Mod RTX Launcher!", 
+		"Fazor version - Experimental build"
+	};
+	
+	// Services
+	private SettingsService settingsService = new SettingsService();
+	private SettingsData? settingsData;
+
+	public MainWindow()
+	{
+		// Initialize settings
+		settingsData = settingsService.LoadSettings();
+	}
+
+	private void SelectPage(string page)
+	{
+		selectedPage = page;
+		StateHasChanged();
+	}
+
+	private void ToggleLog()
+	{
+		showLog = !showLog;
+		StateHasChanged();
+	}
+
+	private void SaveLog()
+	{
+		try
+		{
+			var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "RTXLauncher_Log.txt");
+			File.WriteAllLines(logPath, fullLog);
+			AddLogMessage($"Log saved to: {logPath}");
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error saving log: {ex.Message}");
+		}
+	}
+
+	private void OpenInstallFolder()
+	{
+		try
+		{
+			if (settingsData != null && !string.IsNullOrEmpty(settingsData.ManuallySpecifiedInstallPath) && Directory.Exists(settingsData.ManuallySpecifiedInstallPath))
+			{
+				Process.Start(new ProcessStartInfo
+				{
+					FileName = settingsData.ManuallySpecifiedInstallPath,
+					UseShellExecute = true
+				});
+			}
+			else
+			{
+				AddLogMessage("Install folder not found or not set.");
+			}
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error opening install folder: {ex.Message}");
+		}
+	}
+
+	private void LaunchGame()
+	{
+		AddLogMessage("Launch game functionality - to be implemented");
+		// TODO: Implement game launch logic
+	}
+
+	private void CloseWindow()
+	{
+		// Close this window
+		Close();
+	}
+
+	private void AddLogMessage(string message)
+	{
+		fullLog.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
+		statusMessage = message;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return HashCode.Combine(selectedPage, progressValue, statusMessage, showLog, fullLog.Count);
+	}
+}

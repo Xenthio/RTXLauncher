@@ -1,0 +1,49 @@
+//@import "/styles/base.scss";
+//@import "/styles/form.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+
+$base-colour: rgba(76,88,68,255);
+$base-colour-inset: #3e4637;
+$base-colour-active: #958831;
+$base-colour-alt: #4C5844;
+
+$border-colour-top: #889180;
+$border-colour-left: #889180;
+$border-colour-bottom: #282e22;
+$border-colour-right: #282e22;
+
+
+$border-colour-top-inset: #282e22;
+$border-colour-left-inset: #282e22;
+$border-colour-bottom-inset: #889180;
+$border-colour-right-inset: #889180;
+
+
+$default-text-colour: #FFFFFF;
+$default-text-colour-active: #c4b550;
+$default-text-colour-label: #cfd6ca;
+$default-text-colour-info: #A0AA95;
+$default-text-colour-standard: #D8DED3;
+$default-text-colour-inactive: #758666;
+$default-text-colour-disabled: #282e22;
+$default-text-colour-disabled-shadow: #889180;
+$default-text-size: 13px;
+$default-text-font: Tahoma;
+$default-text-smooth: never;
+
+$slider-step-colour: #7F8C7F;
+$slider-step-min-colour: #889180;
+$slider-step-max-colour: #889180;
+
+$window-title-icon: url("XGUI/Resources/icon_steam.png");
+$window-minimise-button: url("XGUI/Resources/icon_minimize.png");
+$window-maximise-button: url("XGUI/Resources/icon_maximize.png");
+$window-close-button: url("XGUI/Resources/icon_close.png");
+$window-resize-icon: url("XGUI/Resources/icon_resizer.png");
+
+$control-dropdown-arrow: url("XGUI/Resources/icon_down.png");
+
+$gamemenu-logo: url("XGUI/Resources/game_menu.png");
+$gamemenu-logo-hover: url("XGUI/Resources/game_menu_mouseover.png");
+
+@import "/XGUI/DefaultStyles/BaseStyles/VGUI.scss";

@@ -1,0 +1,67 @@
+.Button {
+	height: 21px;
+	align-items: center;
+	justify-content: center;
+	border-top: 1px solid $control-border-colour-top;
+	border-left: 1px solid $control-border-colour-left;
+	border-bottom: 1px solid $control-border-colour-bottom;
+	border-right: 1px solid $control-border-colour-right;
+	background-color: $control-colour;
+	padding: 6px;
+
+	> .label {
+		//text-overflow: ellipsis;
+		//overflow:hidden;
+		//flex-grow: 1;
+	}
+
+	.iconpanel {
+		margin-right: 2px;
+	}
+
+
+	&:focus, &.focus {
+		border-top: 1px solid $control-border-colour-top-focus;
+		border-left: 1px solid $control-border-colour-left-focus;
+		border-bottom: 1px solid $control-border-colour-bottom-focus;
+		border-right: 1px solid $control-border-colour-right-focus;
+		background-color: $control-colour-focus;
+	}
+
+	&:hover {
+		border-top: 1px solid $control-border-colour-top-hover;
+		border-left: 1px solid $control-border-colour-left-hover;
+		border-bottom: 1px solid $control-border-colour-bottom-hover;
+		border-right: 1px solid $control-border-colour-right-hover;
+		background-color: $control-colour-hover;
+	}
+
+	&:active {
+		border-top: 1px solid $control-border-colour-top-active;
+		border-left: 1px solid $control-border-colour-left-active;
+		border-bottom: 1px solid $control-border-colour-bottom-active;
+		border-right: 1px solid $control-border-colour-right-active;
+		background-color: $control-colour-active;
+
+		&:focus, &.focus {
+		}
+	}
+
+
+	&.forceinset {
+		border-top: 1px solid $control-border-colour-top-active;
+		border-left: 1px solid $control-border-colour-left-active;
+		border-bottom: 1px solid $control-border-colour-bottom-active;
+		border-right: 1px solid $control-border-colour-right-active;
+		background-color: $control-colour-active;
+
+		&:focus, &.focus {
+		}
+	}
+}
+
+.self-layout {
+	>.button {
+		min-width: 73px;
+	}
+}

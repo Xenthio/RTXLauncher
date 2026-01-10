@@ -1,0 +1,43 @@
+.messagebox-window { 
+
+	.window-content { 
+
+		.messagebox-top { 
+
+			.messagebox-icon {
+				 
+
+				&.information {
+				}
+
+				&.warning {
+				}
+
+				&.error {
+				}
+
+				&.question {
+				}
+
+				&.none {
+				}
+			}
+
+			.messagebox-message {
+				white-space:pre;
+			}
+		}
+
+		.messagebox-buttons {
+
+			.messagebox-button {
+
+				&:hover {
+				}
+
+				&:active {
+				}
+			}
+		}
+	}
+}

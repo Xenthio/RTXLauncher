@@ -1,0 +1,29 @@
+@namespace RTXLauncher.Fazor
+@using Sandbox.UI;
+@inherits Panel
+
+<root>
+	<div class="update-page">
+		<h2>Update RTX Components</h2>
+		<p>Check for and install updates to your RTX installation.</p>
+		<div class="update-info">
+			<div class="info-item">
+				<label>Current Version:</label>
+				<span>1.0.0</span>
+			</div>
+			<div class="info-item">
+				<label>Latest Version:</label>
+				<span>Checking...</span>
+			</div>
+		</div>
+		<button>Check for Updates</button>
+		<button>Update Now</button>
+	</div>
+</root>
+
+@code {
+	protected override int BuildHash()
+	{
+		return 0;
+	}
+}

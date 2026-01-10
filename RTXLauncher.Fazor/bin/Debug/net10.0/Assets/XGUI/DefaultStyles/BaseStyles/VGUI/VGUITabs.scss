@@ -1,0 +1,58 @@
+
+.TabContainer {
+	flex-direction: column;
+
+	> .tabs {
+
+		> .button {
+			background-color: $base-colour;
+			border-top: 1px solid $border-colour-top;
+			border-left: 1px solid $border-colour-left;
+			border-bottom: 1px solid $border-colour-top;
+			border-right: 1px solid $border-colour-right;
+			font-size: $default-text-size;
+			font-family: $default-text-font;
+			font-smooth: $default-text-smooth;
+			padding: 5px;
+			// Move unselected ones down
+			height: 25px;
+			align-items: center;
+			min-width: 64px;
+			top: 3px;
+			margin-right: 1px;
+
+			&:active {
+
+
+				> * {
+					transform: translate(0px, 0px);
+				}
+			}
+
+			&.active {
+				padding-top: 4px;
+				color: $default-text-colour-active;
+				// Offset up when selected
+				top: 1px;
+				z-index: 5;
+				border-bottom: 0px;
+				height: 27px;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $base-colour;
+		border-top: 1px solid $border-colour-top;
+		border-left: 1px solid $border-colour-left;
+		border-bottom: 1px solid $border-colour-bottom;
+		border-right: 1px solid $border-colour-right;
+		padding: 5px;
+		z-index: -5;
+	}
+}

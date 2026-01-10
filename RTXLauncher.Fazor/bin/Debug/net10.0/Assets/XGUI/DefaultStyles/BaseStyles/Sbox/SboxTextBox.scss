@@ -1,0 +1,17 @@
+.textentry {
+	background-color: $control-inset-colour;
+	height: 22px;
+	border-radius: 3px;
+	padding: 8px;
+
+	&:hover {
+		background-color: $control-inset-colour-hover;
+	}
+}
+
+.self-layout {
+	> .textentry,
+	> .textbox {
+		width: 100px;
+	}
+}

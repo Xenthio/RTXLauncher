@@ -1,0 +1,70 @@
+.ContextMenu {
+	background-color: $base-colour;
+	border-top: 1px solid $border-colour-top-window;
+	border-left: 1px solid $border-colour-left-window;
+	border-bottom: 1px solid $border-colour-bottom-window;
+	border-right: 1px solid $border-colour-right-window;
+	background-color: $base-colour;
+	padding: 2px;
+
+	.MenuItem {
+		min-width: 100px;
+		height: 17px;
+		align-items: center;
+
+		.ItemText {
+			margin-right: 16px;
+			top: 1px;
+		}
+
+		.ItemArrow {
+			right: 0px;
+			position: absolute;
+			font-size: 17px;
+		}
+
+		.ItemIcon {
+			margin-left: 2px;
+			margin-right: 3px;
+			width: 16px;
+			height: 16px;
+		}
+
+		&.open {
+			background-color: $window-titlebar-colour;
+			color: $window-titlebar-text-colour;
+		}
+
+		&:hover {
+			background-color: $window-titlebar-colour;
+			color: $window-titlebar-text-colour;
+		}
+	}
+
+	.Menu-Separator {
+		background-color: $border-colour-bottom-inner-inset;
+		height: 2px; 
+		align-self:center;
+		width: 100%; 
+		border-top: 1px solid $border-colour-top-inset;
+		margin-top:3px;
+		margin-bottom:4px;
+	}
+
+	&.Large {
+		padding: 0px;
+		padding-top: 1px;
+		padding-bottom: 1px;
+
+		.MenuItem {
+			margin: 1px;
+			height: 20px;
+			min-width: 136px;
+
+			.ItemIcon {
+				margin-left: 6px;
+				margin-right: 6px;
+			}
+		}
+	}
+}

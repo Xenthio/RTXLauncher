@@ -1,0 +1,36 @@
+
+@import "/XGUI/DefaultStyles/BaseStyles/VGUI-Source.scss";
+
+.Button {
+	background-color: transparent;
+
+	&.selector {
+		background-color: $base-colour-inset;
+	}
+}
+
+
+LayoutBoxInset {
+}
+
+.TabContainer {
+	flex-direction: column;
+
+	> .tabs {
+
+		> .button {
+			background-color: transparent;
+		}
+	}
+
+
+	> .sheets {
+		background-color: transparent;
+	}
+}
+
+.slider {
+	> .thumb {
+		background-color: $base-colour-solid;
+	}
+}
