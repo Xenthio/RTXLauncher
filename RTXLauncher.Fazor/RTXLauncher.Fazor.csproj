@@ -24,8 +24,8 @@
 
   <ItemGroup>
     <!-- Fazor dependencies from local source -->
-    <ProjectReference Include="/tmp/Fazor/src/Fazor.UI/Fazor.UI.csproj" />
-    <ProjectReference Include="/tmp/Fazor/src/Fazor.Build/Fazor.Build.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\UITest\src\Fazor.UI\Fazor.UI.csproj" />
+    <ProjectReference Include="..\..\UITest\src\Fazor.Build\Fazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,5 +49,5 @@
   </ItemGroup>
 
   <!-- Import Fazor build targets for Razor and SCSS -->
-  <Import Project="/tmp/Fazor/src/Fazor.Build/build/Fazor.Build.targets" />
+  <Import Project="..\..\UITest\src\Fazor.Build\build\Fazor.Build.targets" />
 </Project>

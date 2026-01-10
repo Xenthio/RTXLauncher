@@ -69,3 +69,5 @@ RTXLauncher.WinForms/bin/Publish/win-x64/settings.xml
 /RTXLauncher.Avalonia/bin
 *.user
 Fazor/Generated/
+/RTXLauncher.Fazor/bin
+/RTXLauncher.Fazor/Fazor/Generated

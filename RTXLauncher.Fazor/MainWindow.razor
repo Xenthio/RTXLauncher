@@ -110,6 +110,9 @@
 
 	public MainWindow()
 	{
+		// Load Fazor default theme
+		SetTheme("Assets/themes/Fazor.Defaults.scss");
+		
 		// Initialize settings
 		settingsData = settingsService.LoadSettings();
 	}
