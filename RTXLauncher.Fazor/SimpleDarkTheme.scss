@@ -1,0 +1,577 @@
+// Avalonia Simple Dark Theme - Matching official Avalonia Simple theme colors
+// Based on Avalonia.Themes.Simple/Accents/Base.xaml Dark theme
+
+//////////////
+
+$default-text-size: 12px;
+$default-text-font: "Segoe UI", "Inter", sans-serif;
+$default-text-smooth: always;
+
+$window-title-text-size: 12px;
+$window-title-text-weight: normal;
+
+//////////////
+
+// Direct color mapping from Avalonia Simple Dark theme
+$theme-background: #282828;         // ThemeBackgroundColor
+$theme-border-low: #505050;          // ThemeBorderLowColor  
+$theme-border-mid: #808080;          // ThemeBorderMidColor
+$theme-border-high: #A0A0A0;         // ThemeBorderHighColor
+$theme-control-low: #282828;         // ThemeControlLowColor
+$theme-control-mid: #505050;         // ThemeControlMidColor
+$theme-control-mid-high: #686868;    // ThemeControlMidHighColor
+$theme-control-high: #808080;        // ThemeControlHighColor
+$theme-control-very-high: #EFEBEF;   // ThemeControlVeryHighColor
+$theme-control-highlight-low: #A8A8A8;  // ThemeControlHighlightLowColor
+$theme-control-highlight-mid: #828282;  // ThemeControlHighlightMidColor
+$theme-control-highlight-high: #505050; // ThemeControlHighlightHighColor
+$theme-foreground: #DEDEDE;          // ThemeForegroundColor
+$highlight: #119EDA;                 // HighlightColor
+$highlight2: #096085;                // HighlightColor2
+$highlight-accent: #CC119EDA;        // ThemeAccentColor
+
+// Additional derived colors
+$window-text: $theme-foreground;
+$button-text: $theme-foreground;
+$grey-text: $theme-control-high;
+$window: $theme-background;
+$background: $theme-background;
+
+// -------------------------------------- //
+
+// Root Panel
+rootpanel {
+    background-color: $background;
+    color: $theme-foreground;
+    font-family: $default-text-font;
+    font-size: $default-text-size;
+}
+
+// Window styling  
+.window, xguirootpanel > .Window {
+    background-color: $window;
+    border-radius: 0px;
+    box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.5);
+    border: 1px solid $theme-border-low;
+
+    &.unfocused {
+        > .TitleBar {
+            background-color: $theme-control-low;
+            color: $theme-control-high;
+
+            > .Control {
+                color: $theme-control-high;
+            }
+        }
+    }
+
+    > .TitleBar {
+        padding: 0px;
+        height: 30px;
+        background-color: $theme-control-mid;
+        color: $theme-foreground;
+        border-bottom: 1px solid $theme-border-low;
+
+        .Control {
+            width: 45px;
+            height: 29px;
+            border: none;
+            border-radius: 0px;
+            font-size: 10px;
+            transition: all 0.1s linear;
+            background-color: transparent;
+            color: $theme-foreground;
+
+            &:hover {
+                background-color: $theme-control-mid-high;
+            }
+
+            &:active {
+                background-color: $theme-control-highlight-high;
+            }
+        }
+
+        .TitleIcon {
+            margin-left: 8px;
+            margin-top: 1px;
+        }
+
+        .CloseButton {
+            margin-left: 0px;
+            margin-right: 0px;
+
+            &:hover {
+                background-color: #C42B1C;
+                color: white;
+            }
+
+            &:active {
+                background-color: #A52818;
+            }
+        }
+    }
+}
+
+// Button styling
+button, .button {
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    border-radius: 3px;
+    color: $theme-foreground;
+    padding: 6px 12px;
+    font-size: $default-text-size;
+    transition: all 0.1s linear;
+
+    &:hover {
+        background-color: $theme-control-mid-high;
+        border-color: $theme-border-high;
+    }
+
+    &:active {
+        background-color: $theme-control-highlight-high;
+        border-color: $theme-border-mid;
+    }
+
+    &:disabled {
+        background-color: $theme-control-low;
+        color: $theme-control-mid;
+        border-color: $theme-border-low;
+    }
+}
+
+// CheckBox styling
+checkbox, .checkbox {
+    color: $theme-foreground;
+
+    .checkpanel, iconpanel {
+        transition: all 0.1s linear;
+        border: 1px solid $theme-border-mid;
+        border-radius: 3px;
+        background-color: $theme-control-mid;
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+
+        &:hover {
+            background-color: $theme-control-mid-high;
+            border-color: $theme-border-high;
+        }
+
+        &:active {
+            background-color: $theme-control-highlight-high;
+        }
+    }
+
+    &.checked {
+        > .checkpanel, .iconpanel {
+            border: 1px solid $highlight;
+            background-color: $highlight;
+
+            .checklabel {
+                color: white;
+            }
+        }
+
+        &:hover {
+            > .checkpanel, .iconpanel {
+                background-color: lighten($highlight, 5%);
+            }
+        }
+    }
+}
+
+// RadioButton styling
+.radiobutton {
+    color: $theme-foreground;
+
+    .checkpanel, iconpanel {
+        transition: all 0.1s linear;
+        border: 1px solid $theme-border-mid;
+        border-radius: 8px;
+        background-color: $theme-control-mid;
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+        justify-content: center;
+        align-items: center;
+
+        > .checklabel {
+            width: 6px;
+            height: 6px;
+            background-color: white;
+            border-radius: 8px;
+        }
+    }
+
+    &:hover {
+        .checkpanel, iconpanel {
+            background-color: $theme-control-mid-high;
+            border-color: $theme-border-high;
+        }
+    }
+
+    &:active {
+        .checkpanel, iconpanel {
+            background-color: $theme-control-highlight-high;
+        }
+    }
+
+    &.checked {
+        > .checkpanel, .iconpanel {
+            border: 1px solid $highlight;
+            background-color: $highlight;
+
+            .checklabel {
+                background-color: white;
+            }
+        }
+
+        &:hover {
+            > .checkpanel, .iconpanel {
+                background-color: lighten($highlight, 5%);
+            }
+        }
+    }
+}
+
+// TextEntry / TextBox styling
+textentry, .textentry, textbox, .textbox, input[type="text"], textarea {
+    background-color: $theme-control-mid;
+    border-radius: 3px;
+    border: 1px solid $theme-border-mid;
+    color: $theme-foreground;
+    padding: 6px 8px;
+    font-size: $default-text-size;
+    transition: all 0.1s linear;
+
+    &:hover {
+        border-color: $theme-border-high;
+    }
+
+    &:focus {
+        border-color: $highlight;
+        outline: none;
+    }
+
+    &:disabled {
+        background-color: $theme-control-low;
+        color: $theme-control-mid;
+        border-color: $theme-border-low;
+    }
+}
+
+// ComboBox / Select styling
+combobox, select, .combobox, .selector {
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    color: $theme-foreground;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-size: $default-text-size;
+    transition: all 0.1s linear;
+
+    &:hover {
+        background-color: $theme-control-mid-high;
+        border-color: $theme-border-high;
+    }
+
+    &:focus {
+        border-color: $highlight;
+    }
+}
+
+// SelectList / ListBox styling
+selectlist, .selectlist {
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    border-radius: 3px;
+
+    listoption, .listoption {
+        color: $theme-foreground;
+        padding: 6px 12px;
+        background-color: transparent;
+        transition: all 0.1s linear;
+
+        &:hover {
+            background-color: $theme-control-mid-high;
+        }
+
+        &.selected, &:active {
+            background-color: $highlight;
+            color: white;
+        }
+    }
+}
+
+// ProgressBar styling
+progressbar, .progressbar {
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+
+    .progressbar-fill {
+        background-color: $highlight;
+        height: 100%;
+    }
+}
+
+// Slider styling
+.slider {
+    > .thumb {
+        background-color: $highlight;
+        border: 1px solid $highlight;
+        width: 16px;
+        height: 16px;
+        border-radius: 8px;
+
+        &:hover {
+            background-color: lighten($highlight, 5%);
+            border-color: lighten($highlight, 5%);
+        }
+
+        &:active {
+            background-color: darken($highlight, 5%);
+            border-color: darken($highlight, 5%);
+        }
+    }
+
+    > .track {
+        border: 1px solid $theme-border-mid;
+        background-color: $theme-control-mid;
+        height: 4px;
+    }
+}
+
+// TabContainer styling
+.TabContainer {
+    > .tabs {
+        background-color: $theme-control-low;
+        border-bottom: 1px solid $theme-border-low;
+
+        > .button {
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 0px;
+            color: $theme-control-high;
+            transition: all 0.1s linear;
+
+            &:hover {
+                background-color: $theme-control-mid;
+                color: $theme-foreground;
+            }
+
+            &.active {
+                background-color: transparent;
+                border-bottom: 2px solid $highlight;
+                color: $theme-foreground;
+            }
+        }
+    }
+
+    > .sheets {
+        background-color: $theme-background;
+        border: 1px solid $theme-border-low;
+        border-top: none;
+    }
+}
+
+// Label styling
+label, .label {
+    color: $theme-foreground;
+    font-size: $default-text-size;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: $theme-foreground;
+    font-weight: 600;
+}
+
+// Panel/Border styling
+.panel, .border {
+    background-color: $window;
+    border: 1px solid $theme-border-mid;
+    border-radius: 3px;
+}
+
+.panel-inset, .border-inset {
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    border-radius: 3px;
+}
+
+// Scrollbar Styling
+::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+    background-color: $theme-control-low;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: $theme-control-mid;
+    border-radius: 0px;
+    border: 2px solid $theme-control-low;
+
+    &:hover {
+        background-color: $theme-control-mid-high;
+    }
+
+    &:active {
+        background-color: $theme-control-high;
+    }
+}
+
+::-webkit-scrollbar-track {
+    background-color: $theme-control-low;
+}
+
+// Context Menu
+.ContextMenu {
+    border-radius: 3px;
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    padding: 4px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+
+    .Menu-Separator {
+        border: 0px;
+        background-color: $theme-border-low;
+        height: 1px;
+        margin: 4px 0;
+    }
+
+    .MenuItem {
+        min-height: 24px;
+        border-radius: 2px;
+        color: $theme-foreground;
+        padding: 4px 8px;
+
+        &:hover {
+            background-color: $theme-control-mid-high;
+        }
+
+        &.open, &:active {
+            background-color: $theme-control-highlight-high;
+        }
+    }
+}
+
+// ListView
+.listview {
+    border: 1px solid $theme-border-mid;
+    background-color: $theme-control-mid;
+
+    .listview-header {
+        background-color: $theme-control-low;
+        border-bottom: 1px solid $theme-border-low;
+
+        .listview-header-column {
+            background-color: transparent;
+            border-right: 1px solid $theme-border-low;
+            height: 24px;
+            padding: 4px 8px;
+            color: $theme-foreground;
+
+            &:hover {
+                background-color: $theme-control-mid-high;
+            }
+        }
+    }
+
+    .listview-container {
+        .listview-item {
+            border-radius: 2px;
+            color: $theme-foreground;
+            padding: 4px 8px;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+
+            &.selected {
+                background-color: rgba($highlight, 0.3);
+                border: 1px solid $highlight;
+
+                &:hover {
+                    background-color: rgba($highlight, 0.4);
+                }
+            }
+        }
+    }
+}
+
+// Additional styles
+.secondary-text {
+    color: $theme-control-high;
+    font-size: 11px;
+}
+
+.divider {
+    height: 1px;
+    background-color: $theme-border-low;
+    margin: 10px 0;
+}
+
+// Dropdown panels
+.dropdown-panel {
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-mid;
+    border-radius: 3px;
+
+    > .button {
+        border: none;
+    }
+}
+
+// Toolbar
+.toolbar {
+    background-color: $theme-control-low;
+    border-bottom: 1px solid $theme-border-low;
+
+    &.menu-toolbar {
+        background-color: $theme-control-low;
+    }
+
+    .menu-item {
+        margin: 0px;
+        border-radius: 0px;
+        border: none;
+        color: $theme-foreground;
+        transition: all 0.1s linear;
+
+        &:hover {
+            background-color: $theme-control-mid;
+        }
+
+        &:active {
+            background-color: $theme-control-mid-high;
+        }
+    }
+
+    .toolbar-button {
+        background-color: transparent;
+        border-radius: 2px;
+        color: $theme-foreground;
+
+        &:hover {
+            background-color: $theme-control-mid;
+            border: 1px solid $theme-border-mid;
+        }
+
+        &:active {
+            background-color: $theme-control-mid-high;
+        }
+    }
+}
+
+// Separator
+Seperator, .separator {
+    height: 1px;
+    background-color: $theme-border-low;
+    margin: 4px 0;
+}
