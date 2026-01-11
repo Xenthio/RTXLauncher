@@ -43,33 +43,49 @@
 
 			<!-- Content Display Area -->
 			<div class="content-area">
-				@if (currentPageIndex == 0)
+				@if (!showLog)
 				{
-					<SettingsPage />
+					@if (currentPageIndex == 0)
+					{
+						<SettingsPage />
+					}
+					else if (currentPageIndex == 1)
+					{
+						<MountingPage />
+					}
+					else if (currentPageIndex == 2)
+					{
+						<InstallPage />
+					}
+					else if (currentPageIndex == 3)
+					{
+						<AdvancedInstallPage />
+					}
+					else if (currentPageIndex == 4)
+					{
+						<AboutPage />
+					}
+					else if (currentPageIndex == 5)
+					{
+						<LauncherSettingsPage />
+					}
+					else if (currentPageIndex == 6)
+					{
+						<ModsPage />
+					}
 				}
-				else if (currentPageIndex == 1)
+				else
 				{
-					<MountingPage />
-				}
-				else if (currentPageIndex == 2)
-				{
-					<InstallPage />
-				}
-				else if (currentPageIndex == 3)
-				{
-					<AdvancedInstallPage />
-				}
-				else if (currentPageIndex == 4)
-				{
-					<AboutPage />
-				}
-				else if (currentPageIndex == 5)
-				{
-					<LauncherSettingsPage />
-				}
-				else if (currentPageIndex == 6)
-				{
-					<ModsPage />
+					<!-- Expandable Log Viewer -->
+					<div class="log-viewer">
+						<div class="log-content">
+							@foreach (var logEntry in fullLog)
+							{
+								<div class="log-entry">@logEntry</div>
+							}
+						</div>
+						<button @onclick="SaveLog">Save Log to File</button>
+					</div>
 				}
 			</div>
 		</div>
