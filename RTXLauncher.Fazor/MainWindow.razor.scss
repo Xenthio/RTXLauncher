@@ -1,6 +1,4 @@
 // Main Window Styling for RTX Launcher Fazor
-// Import Simple Dark Theme (matches Avalonia's SimpleTheme Dark variant)
-@import "/SimpleDarkTheme.scss";
 
 .window-content {
     display: flex;
@@ -14,7 +12,7 @@
 .top-bar {
     display: flex;
     flex-direction: row;
-    border-bottom: 1px solid $theme-border-low;
+    border-bottom: 1px solid #505050;
     padding-bottom: 10px;
     gap: 10px;
 }
@@ -47,8 +45,8 @@
 .status-text {
     font-size: 13px;
     min-height: 20px;
-    color: $theme-foreground;
-    display: flex;
+    color: #DEDEDE;
+    display: flex; 
     align-items: center;
 }
 
@@ -65,10 +63,7 @@
     }
 
     .content-area {
-        flex: 1;
-        background-color: $theme-control-mid;
-        border: 1px solid $theme-border-low;
-        border-radius: 3px;
+        flex: 1; 
         padding: 10px;
         overflow: auto;
         display: flex;
@@ -92,7 +87,7 @@
         font-family: "Consolas", "Courier New", monospace;
         padding: 5px;
         overflow: auto;
-        border: 1px solid $theme-border-low;
+        border: 1px solid #505050;
         border-radius: 3px;
     }
     
@@ -119,24 +114,24 @@
     h1 {
         font-size: 24px;
         margin-bottom: 15px;
-        color: $theme-foreground;
+        color: #DEDEDE;
     }
     
     h2 {
         font-size: 18px;
         margin-bottom: 10px;
-        color: $theme-foreground;
+        color: #DEDEDE;
     }
     
     h3 {
         font-size: 14px;
         margin-bottom: 5px;
-        color: $theme-foreground;
+        color: #DEDEDE;
     }
     
     p {
         margin-bottom: 10px;
-        color: $theme-foreground;
+        color: #DEDEDE;
         line-height: 1.5;
     }
     
@@ -152,7 +147,7 @@
         display: block;
         margin-bottom: 5px;
         font-weight: 600;
-        color: $theme-foreground;
+        color: #DEDEDE;
     }
 }
 
@@ -164,19 +159,19 @@
 
 .step, .mod-item {
     padding: 10px;
-    background-color: $theme-control-mid;
-    border: 1px solid $theme-border-low;
+    background-color: #2A2A2A;
+    border: 1px solid #505050;
     border-radius: 3px;
     
     h3 {
         margin-bottom: 5px;
-        color: $theme-foreground;
+        color: #DEDEDE;
         font-size: 14px;
         font-weight: 600;
     }
     
     p {
-        color: $theme-foreground;
+        color: #DEDEDE;
         margin: 5px 0;
     }
 }
@@ -187,11 +182,11 @@
     label {
         font-weight: 600;
         margin-right: 10px;
-        color: $theme-foreground;
+        color: #DEDEDE;
     }
     
     span {
-        color: $theme-foreground;
+        color: #DEDEDE;
     }
 }
 

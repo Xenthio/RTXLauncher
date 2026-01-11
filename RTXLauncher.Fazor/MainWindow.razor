@@ -44,7 +44,7 @@
 			</selectlist>
 
 			<!-- Content Display Area -->
-			<div class="content-area">
+			<div class="content-area simple-border">
 				@if (!showLog)
 				{
 					@if (currentPageIndex == 0)
@@ -135,12 +135,13 @@
 			// Map friendly names to SCSS files
 			string themeFile = themeName switch
 			{
-				"SimpleDark" => "SimpleDarkTheme.scss",
+				"Simple" => "/Assets/SimpleDarkTheme.scss",
 				"Computer95" => "/XGUI/DefaultStyles/Computer95.scss",
 				"Computer11" => "/XGUI/DefaultStyles/Computer11.scss",
 				"ComputerXP" => "/XGUI/DefaultStyles/ComputerXP.scss",
 				"Derma" => "/XGUI/DefaultStyles/Derma.scss",
-				_ => "SimpleDarkTheme.scss"
+				"OliveGreen"=> "/XGUI/DefaultStyles/OliveGreen.scss",
+				_ => "/XGUI/DefaultStyles/OliveGreen.scss"
 			};
 			
 			SetTheme(themeFile);

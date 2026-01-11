@@ -43,10 +43,10 @@ $highlight-tint: #096085;
 $grey-text: #808080;
 
 $button-face: #505050;
-$button-shadow: #282828;
+$button-shadow: #808080;
 $button-text: #DEDEDE;
-$button-highlight: #686868;
-$button-dark-shadow: #000000;
+$button-highlight: #808080;
+$button-dark-shadow: #808080;
 $button-light: #808080;
 
 $background: #282828;
@@ -67,12 +67,15 @@ $theme-control-mid-high: #686868;
 $theme-foreground: #DEDEDE; // Alias for $window-text
 
 // Window styling overrides
-xguirootpanel {
-    >.Window {
+.Window {
         border-radius: 0px;
         box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.5);
         border: 1px solid $theme-border-low;
         background-color: $window;
+
+        .window-content {
+            background-color: $window;
+        }
 
         &.unfocused {
             >.TitleBar {
@@ -131,7 +134,7 @@ xguirootpanel {
             }
         }
     }
-}
+
 
 // Button styling overrides
 .button {
@@ -281,11 +284,12 @@ xguirootpanel {
 }
 
 // ComboBox / Select styling
+.combobox,
 .selector {
+	min-height: 22px;
     >.selector_indicator {
         border: 0px;
-        background-color: transparent;
-        content: "";
+        background-color: transparent; 
         font-size: 10px;
         top: 2px;
         align-items: center;
@@ -412,4 +416,14 @@ progressbar,
             background-color: $theme-control-mid-high;
         }
     }
+}
+
+
+.simple-border {
+	border: 1px solid #808080;
+	border-radius: 3px;
+}
+
+.simple-border-bottom {
+	border-bottom: 1px solid #808080;
 }
