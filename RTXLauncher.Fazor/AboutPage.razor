@@ -1,0 +1,66 @@
+#nullable enable
+@using System.Collections.Generic;
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Services
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="about-page" style="flex-direction:column;">
+	<groupbox text="The Garry's Mod RTX Launcher">
+		<label>Based on the original by CR, written by Xenthio and CR.</label>
+		<label>Current Version: @currentVersion</label>
+	</groupbox>
+	
+	<groupbox text="Updates">
+		<textentry multiline="true" readonly="true" value="@releaseNotes" style="height: 200px;" />
+		
+		<div class="update-controls">
+			<combobox @bind-value="selectedUpdateSource">
+				@foreach (var source in updateSources)
+				{
+					<option value="@source">@source</option>
+				}
+			</combobox>
+			<button @onclick="InstallUpdate" disabled="@isCheckingForUpdates">Install</button>
+			<button @onclick="CheckForUpdates" disabled="@isCheckingForUpdates">Check for Updates</button>
+		</div>
+	</groupbox>
+</root>
+
+@code {
+	private string currentVersion = "1.0.0";
+	private string releaseNotes = "No updates available.";
+	private bool isCheckingForUpdates = false;
+	private List<string> updateSources = new() { "Stable", "Beta", "Experimental" };
+	private string selectedUpdateSource = "Stable";
+	private GitHubService? gitHubService;
+
+	public AboutPage()
+	{
+		gitHubService = new GitHubService();
+		currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+	}
+
+	private async void CheckForUpdates()
+	{
+		isCheckingForUpdates = true;
+		releaseNotes = "Checking for updates...";
+		StateHasChanged();
+		
+		await System.Threading.Tasks.Task.Delay(1000);
+		releaseNotes = "No updates available at this time.";
+		isCheckingForUpdates = false;
+		StateHasChanged();
+	}
+
+	private void InstallUpdate()
+	{
+		System.Console.WriteLine($"Installing update from {selectedUpdateSource}...");
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(currentVersion, releaseNotes, isCheckingForUpdates);
+	}
+}

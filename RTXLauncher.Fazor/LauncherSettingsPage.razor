@@ -1,0 +1,56 @@
+#nullable enable
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Services
+@using RTXLauncher.Core.Models
+@using System.Collections.Generic
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="launcher-settings-page">
+	<groupbox text="Launcher Settings">
+		@if (settingsData != null)
+		{
+			<check @bind-value="@settingsData.CheckForUpdatesOnLaunch">
+				Check for updates on launch
+			</check>
+			
+			<div class="setting-item">
+				<label>Theme:</label>
+				<combobox @bind-value="selectedTheme">
+					@foreach (var theme in themes)
+					{
+						<option value="@theme">@theme</option>
+					}
+				</combobox>
+			</div>
+		}
+	</groupbox>
+</root>
+
+@code {
+	private SettingsService settingsService = new SettingsService();
+	private SettingsData? settingsData;
+	private List<string> themes = new() { "Computer95", "Computer11", "ComputerXP", "Derma" };
+	private string selectedTheme = "Computer11";
+
+	public LauncherSettingsPage()
+	{
+		settingsData = settingsService.LoadSettings();
+		// TODO: Load actual theme from settings
+	}
+
+	public override void OnDeleted()
+	{
+		base.OnDeleted();
+		if (settingsData != null)
+		{
+			settingsService.SaveSettings(settingsData);
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(settingsData?.CheckForUpdatesOnLaunch, selectedTheme);
+	}
+}

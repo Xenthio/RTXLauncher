@@ -33,9 +33,12 @@
 			<!-- Sidebar Navigation -->
 			<selectlist @ref="navigationList">
 				<listoption @onclick="@(() => ShowPage(0))">Settings</listoption>
-				<listoption @onclick="@(() => ShowPage(1))">Install</listoption>
-				<listoption @onclick="@(() => ShowPage(2))">Update</listoption>
-				<listoption @onclick="@(() => ShowPage(3))">Mods</listoption>
+				<listoption @onclick="@(() => ShowPage(1))">Mounting</listoption>
+				<listoption @onclick="@(() => ShowPage(2))">Setup</listoption>
+				<listoption @onclick="@(() => ShowPage(3))">Advanced Install</listoption>
+				<listoption @onclick="@(() => ShowPage(4))">About</listoption>
+				<listoption @onclick="@(() => ShowPage(5))">Launcher Settings</listoption>
+				<listoption @onclick="@(() => ShowPage(6))">Mods</listoption>
 			</selectlist>
 
 			<!-- Content Display Area -->
@@ -46,13 +49,25 @@
 				}
 				else if (currentPageIndex == 1)
 				{
-					<InstallPage />
+					<MountingPage />
 				}
 				else if (currentPageIndex == 2)
 				{
-					<UpdatePage />
+					<InstallPage />
 				}
 				else if (currentPageIndex == 3)
+				{
+					<AdvancedInstallPage />
+				}
+				else if (currentPageIndex == 4)
+				{
+					<AboutPage />
+				}
+				else if (currentPageIndex == 5)
+				{
+					<LauncherSettingsPage />
+				}
+				else if (currentPageIndex == 6)
 				{
 					<ModsPage />
 				}

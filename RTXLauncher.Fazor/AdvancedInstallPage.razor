@@ -1,0 +1,72 @@
+#nullable enable
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Services
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="advanced-install-page">
+	<groupbox text="Advanced Installation Options">
+		<label>Manual installation and configuration for advanced users.</label>
+		
+		<div class="install-option">
+			<label>Install RTX Remix:</label>
+			<button @onclick="InstallRemix" disabled="@isBusy">Install</button>
+		</div>
+		
+		<div class="install-option">
+			<label>Install Fixes Package:</label>
+			<button @onclick="InstallFixes" disabled="@isBusy">Install</button>
+		</div>
+		
+		<div class="install-option">
+			<label>Apply Patches:</label>
+			<button @onclick="ApplyPatches" disabled="@isBusy">Apply</button>
+		</div>
+		
+		<label class="status">@status</label>
+	</groupbox>
+</root>
+
+@code {
+	private bool isBusy = false;
+	private string status = "Ready";
+
+	private async void InstallRemix()
+	{
+		isBusy = true;
+		status = "Installing RTX Remix...";
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		status = "RTX Remix installed";
+		isBusy = false;
+		StateHasChanged();
+	}
+
+	private async void InstallFixes()
+	{
+		isBusy = true;
+		status = "Installing fixes package...";
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		status = "Fixes package installed";
+		isBusy = false;
+		StateHasChanged();
+	}
+
+	private async void ApplyPatches()
+	{
+		isBusy = true;
+		status = "Applying patches...";
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		status = "Patches applied";
+		isBusy = false;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(isBusy, status);
+	}
+}
