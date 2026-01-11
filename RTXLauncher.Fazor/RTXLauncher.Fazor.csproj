@@ -10,7 +10,7 @@
 
   <!-- Disable console window on Windows -->
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <!-- Release configuration -->
