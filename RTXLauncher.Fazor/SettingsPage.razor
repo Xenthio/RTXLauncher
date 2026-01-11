@@ -12,10 +12,10 @@
 @inherits Panel
 
 <root class="settings-page">
-	<autolayout>
+	<div class="auto-layout column">
 		<!-- Resolution Group -->
 		<groupbox text="Resolution">
-			<autolayout>
+			<div class="auto-layout column">
 				<combobox @bind-value="selectedResolution" style="width: 250px;">
 					@foreach (var res in resolutions)
 					{
@@ -33,24 +33,24 @@
 						<textentry type="number" @bind-value="@settingsData.Height" placeholder="Height" style="width: 100px;" />
 					</div>
 				}
-			</autolayout>
+			</div>
 		</groupbox>
 
 		<!-- Garry's Mod Settings -->
 		<groupbox text="Garry's Mod">
-			<autolayout>
+			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
 					<check @bind-value="@settingsData.LoadWorkshopAddons">Load Workshop Addons</check>
 				}
-			</autolayout>
+			</div>
 		</groupbox>
 
 		<!-- Linux Settings (only visible on Linux) -->
 		@if (IsLinux && settingsData != null)
 		{
 			<groupbox text="Linux Settings">
-				<autolayout>
+				<div class="auto-layout column">
 					<!-- Proton Version Selection -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Proton Version:</label>
@@ -92,7 +92,7 @@
 
 					<!-- Proton Logging -->
 					<check @bind-value="@settingsData.LinuxEnableProtonLog">Enable Proton Logging (PROTON_LOG=1)</check>
-				</autolayout>
+				</div>
 			</groupbox>
 		}
 
@@ -100,7 +100,7 @@
 		@if (settingsData != null)
 		{
 			<groupbox text="Advanced Settings">
-				<autolayout>
+				<div class="auto-layout column">
 					<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
 					<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>
 					
@@ -108,10 +108,10 @@
 						<label>Custom Launch Options:</label>
 						<textentry @bind-value="@settingsData.CustomLaunchOptions" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
 					</div>
-				</autolayout>
+				</div>
 			</groupbox>
 		}
-	</autolayout>
+	</div>
 </root>
 
 @code {
