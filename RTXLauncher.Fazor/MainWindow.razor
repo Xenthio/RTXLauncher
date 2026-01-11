@@ -1,6 +1,8 @@
+#nullable enable
 @using global::Fazor.UI;
 @using Sandbox;
 @using Sandbox.UI;
+@using global::Fazor.Controls;
 @using RTXLauncher.Core.Models;
 @using RTXLauncher.Core.Services;
 @using System;
@@ -9,7 +11,7 @@
 @using System.IO;
 @namespace RTXLauncher.Fazor
 @inherits Window
-@attribute [StyleSheet("MainWindow.scss")]
+@attribute [StyleSheet("MainWindow.razor.scss")]
 
 <root title="Garry's Mod RTX Launcher" hasminimise="true" hasmaximise="true" hasclose="true" 
       windowwidth="870" windowheight="600">
@@ -29,58 +31,30 @@
 		<!-- Main Content Area -->
 		<div class="main-content">
 			<!-- Sidebar Navigation -->
-			<div class="sidebar">
-				<div class="nav-item @(selectedPage == "settings" ? "selected" : "")" @onclick='() => SelectPage("settings")'>
-					<label>Settings</label>
-				</div>
-				<div class="nav-item @(selectedPage == "install" ? "selected" : "")" @onclick='() => SelectPage("install")'>
-					<label>Install</label>
-				</div>
-				<div class="nav-item @(selectedPage == "update" ? "selected" : "")" @onclick='() => SelectPage("update")'>
-					<label>Update</label>
-				</div>
-				<div class="nav-item @(selectedPage == "mods" ? "selected" : "")" @onclick='() => SelectPage("mods")'>
-					<label>Mods</label>
-				</div>
-			</div>
+			<selectlist @ref="navigationList">
+				<listoption @onclick="@(() => ShowPage(0))">Settings</listoption>
+				<listoption @onclick="@(() => ShowPage(1))">Install</listoption>
+				<listoption @onclick="@(() => ShowPage(2))">Update</listoption>
+				<listoption @onclick="@(() => ShowPage(3))">Mods</listoption>
+			</selectlist>
 
 			<!-- Content Display Area -->
-			<div class="content-display">
-				@if (showLog)
+			<div class="content-area">
+				@if (currentPageIndex == 0)
 				{
-					<div class="log-viewer">
-						<div class="log-content">
-							@foreach (var logEntry in fullLog)
-							{
-								<div class="log-entry">@logEntry</div>
-							}
-						</div>
-						<button @onclick="SaveLog">Save Log to File</button>
-					</div>
+					<SettingsPage />
 				}
-				else
+				else if (currentPageIndex == 1)
 				{
-					@switch (selectedPage)
-					{
-						case "settings":
-							<SettingsPage />
-							break;
-						case "install":
-							<InstallPage />
-							break;
-						case "update":
-							<UpdatePage />
-							break;
-						case "mods":
-							<ModsPage />
-							break;
-						default:
-							<div class="welcome-page">
-								<h1>Welcome to Garry's Mod RTX Launcher</h1>
-								<p>Select an option from the sidebar to get started.</p>
-							</div>
-							break;
-					}
+					<InstallPage />
+				}
+				else if (currentPageIndex == 2)
+				{
+					<UpdatePage />
+				}
+				else if (currentPageIndex == 3)
+				{
+					<ModsPage />
 				}
 			</div>
 		</div>
@@ -95,7 +69,6 @@
 </root>
 
 @code {
-	private string selectedPage = "settings";
 	private int progressValue = 0;
 	private string statusMessage = "Welcome to the Garry's Mod RTX Launcher!";
 	private bool showLog = false;
@@ -108,18 +81,22 @@
 	private SettingsService settingsService = new SettingsService();
 	private SettingsData? settingsData;
 
+	// Navigation
+	private SelectList? navigationList;
+	private int currentPageIndex = 0;
+
 	public MainWindow()
 	{
 		// Load Fazor default theme
-		SetTheme("Assets/themes/Fazor.Defaults.scss");
+		SetTheme("XGUI/DefaultStyles/Computer11.scss");
 		
 		// Initialize settings
 		settingsData = settingsService.LoadSettings();
 	}
 
-	private void SelectPage(string page)
+	private void ShowPage(int pageIndex)
 	{
-		selectedPage = page;
+		currentPageIndex = pageIndex;
 		StateHasChanged();
 	}
 
@@ -187,6 +164,6 @@
 
 	protected override int BuildHash()
 	{
-		return HashCode.Combine(selectedPage, progressValue, statusMessage, showLog, fullLog.Count);
+		return HashCode.Combine(progressValue, statusMessage, showLog, fullLog.Count, currentPageIndex);
 	}
 }

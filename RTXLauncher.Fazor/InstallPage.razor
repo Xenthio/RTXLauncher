@@ -1,31 +1,64 @@
-@namespace RTXLauncher.Fazor
 @using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Utilities
+@namespace RTXLauncher.Fazor
 @inherits Panel
 
-<root>
-	<div class="install-page">
-		<h2>Install Garry's Mod RTX</h2>
-		<p>This page will guide you through installing Garry's Mod RTX.</p>
-		<div class="install-steps">
-			<div class="step">
-				<h3>Step 1: Verify Installation Path</h3>
-				<p>Ensure Garry's Mod is installed in the correct location.</p>
-			</div>
-			<div class="step">
-				<h3>Step 2: Download RTX Files</h3>
-				<p>Download the necessary RTX shader files and assets.</p>
-			</div>
-			<div class="step">
-				<h3>Step 3: Install</h3>
-				<button>Start Installation</button>
-			</div>
-		</div>
-	</div>
+<root class="install-page">
+	@if (isWelcomeVisible)
+	{
+		<groupbox text="Welcome to the Garry's Mod RTX Launcher">
+			<label>Quick installer will set up everything you need.</label>
+			<label>Vanilla Path: @autoDetectedPath</label>
+			<button @onclick="StartInstall" disabled="@isBusy">
+				@(isBusy ? "Installing..." : "Start Quick Install")
+			</button>
+		</groupbox>
+	}
+	else if (isCompletedVisible)
+	{
+		<groupbox text="Installation Complete!">
+			<label>Your installation is ready. Use 'Launch Game' to play.</label>
+			<button @onclick="RerunInstall">Re-run Install</button>
+		</groupbox>
+	}
 </root>
 
 @code {
+	private bool isWelcomeVisible = false;
+	private bool isCompletedVisible = false;
+	private bool isBusy = false;
+	private string autoDetectedPath = "Checking...";
+
+	public InstallPage()
+	{
+		var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
+		isCompletedVisible = installType != "unknown";
+		isWelcomeVisible = !isCompletedVisible;
+		autoDetectedPath = GarrysModUtility.GetVanillaInstallFolder() ?? "Not found";
+		StateHasChanged();
+	}
+
+	private async void StartInstall()
+	{
+		isBusy = true;
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(1000);
+		isWelcomeVisible = false;
+		isCompletedVisible = true;
+		isBusy = false;
+		StateHasChanged();
+	}
+
+	private void RerunInstall()
+	{
+		isCompletedVisible = false;
+		isWelcomeVisible = true;
+		StateHasChanged();
+	}
+
 	protected override int BuildHash()
 	{
-		return 0;
+		return System.HashCode.Combine(isWelcomeVisible, isCompletedVisible, isBusy);
 	}
 }

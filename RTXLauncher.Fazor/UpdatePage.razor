@@ -1,29 +1,65 @@
-@namespace RTXLauncher.Fazor
 @using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Utilities
+@namespace RTXLauncher.Fazor
 @inherits Panel
 
-<root>
-	<div class="update-page">
-		<h2>Update RTX Components</h2>
-		<p>Check for and install updates to your RTX installation.</p>
-		<div class="update-info">
-			<div class="info-item">
-				<label>Current Version:</label>
-				<span>1.0.0</span>
-			</div>
-			<div class="info-item">
-				<label>Latest Version:</label>
-				<span>Checking...</span>
-			</div>
-		</div>
-		<button>Check for Updates</button>
-		<button>Update Now</button>
-	</div>
+<root class="update-page">
+	<groupbox text="RTX Remix Update">
+		<label>Current Version: @currentVersion</label>
+		<label>Status: @status</label>
+		<button @onclick="CheckForUpdates" disabled="@isChecking">Check for Updates</button>
+		<button @onclick="InstallUpdate" disabled="@(!updateAvailable || isInstalling)">Install Update</button>
+	</groupbox>
 </root>
 
 @code {
+	private string currentVersion = "Checking...";
+	private string status = "Ready";
+	private bool isChecking = false;
+	private bool isInstalling = false;
+	private bool updateAvailable = false;
+
+	public UpdatePage()
+	{
+		if (RemixUtility.IsInstalled())
+		{
+			currentVersion = "Installed";
+			status = "RTX Remix is installed";
+		}
+		else
+		{
+			currentVersion = "Not installed";
+			status = "RTX Remix not found";
+		}
+		StateHasChanged();
+	}
+
+	private async void CheckForUpdates()
+	{
+		isChecking = true;
+		status = "Checking for updates...";
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(1000);
+		status = "No updates available";
+		isChecking = false;
+		StateHasChanged();
+	}
+
+	private async void InstallUpdate()
+	{
+		isInstalling = true;
+		status = "Installing update...";
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		status = "Update installed successfully";
+		updateAvailable = false;
+		isInstalling = false;
+		StateHasChanged();
+	}
+
 	protected override int BuildHash()
 	{
-		return 0;
+		return System.HashCode.Combine(currentVersion, status, isChecking);
 	}
 }

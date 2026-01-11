@@ -41,36 +41,19 @@
     flex: 1;
     gap: 10px;
     overflow: hidden;
-}
 
-.sidebar {
-    width: 200px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.nav-item {
-    padding: 10px;
-    cursor: pointer;
-    border: 1px solid gray;
-    border-radius: 3px;
-    
-    &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+    .selectlist {
+        width: 200px;
+        flex-shrink: 0;
     }
-    
-    &.selected {
-        background-color: rgba(100, 150, 255, 0.3);
-    }
-}
 
-.content-display {
-    flex: 1;
-    border: 1px solid gray;
-    border-radius: 3px;
-    padding: 10px;
-    overflow: auto;
+    .content-area {
+        flex: 1;
+        border: 1px solid gray;
+        border-radius: 3px;
+        padding: 10px;
+        overflow: auto;
+    }
 }
 
 .log-viewer {
@@ -101,6 +84,7 @@
 
 // Page specific styles
 .welcome-page, .settings-page, .install-page, .update-page, .mods-page {
+    flex-direction: column;
     h1, h2 {
         margin-bottom: 10px;
     }
@@ -113,7 +97,7 @@
 .setting-item {
     margin-bottom: 15px;
     
-    label {
+    >.label {
         display: block;
         margin-bottom: 5px;
         font-weight: bold;

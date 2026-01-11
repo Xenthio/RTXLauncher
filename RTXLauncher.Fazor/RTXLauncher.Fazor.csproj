@@ -25,6 +25,7 @@
   <ItemGroup>
     <!-- Fazor dependencies from local source -->
     <ProjectReference Include="..\..\UITest\src\Fazor.UI\Fazor.UI.csproj" />
+    <ProjectReference Include="..\..\UITest\src\Fazor.Controls\Fazor.Controls.csproj" />
     <ProjectReference Include="..\..\UITest\src\Fazor.Build\Fazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
