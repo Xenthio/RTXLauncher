@@ -1,0 +1,261 @@
+// Avalonia Simple Theme Color Palette
+// Matches the default SimpleTheme from Avalonia UI
+
+// Base Colors (light neutral palette)
+$simple-background: #F0F0F0;
+$simple-foreground: #000000;
+$simple-border: #ACACAC;
+$simple-accent: #0078D4;
+$simple-accent-hover: #106EBE;
+$simple-accent-pressed: #005A9E;
+
+// Control Backgrounds
+$simple-control-background: #FFFFFF;
+$simple-control-background-hover: #F5F5F5;
+$simple-control-background-pressed: #E5E5E5;
+$simple-control-background-disabled: #F0F0F0;
+
+// Text Colors
+$simple-text: #000000;
+$simple-text-secondary: #6B6B6B;
+$simple-text-disabled: #A0A0A0;
+$simple-text-on-accent: #FFFFFF;
+
+// Border Colors
+$simple-border-normal: #ACACAC;
+$simple-border-hover: #7A7A7A;
+$simple-border-pressed: #606060;
+$simple-border-disabled: #D0D0D0;
+
+// Root Panel Styling
+rootpanel {
+    background-color: $simple-background;
+    color: $simple-text;
+    font-family: "Segoe UI", "Tahoma", sans-serif;
+    font-size: 12px;
+}
+
+// Window Styling
+.window {
+    background-color: $simple-background;
+    
+    .window-title {
+        background-color: $simple-accent;
+        color: $simple-text-on-accent;
+        font-weight: normal;
+        padding: 5px 10px;
+    }
+    
+    .window-content {
+        background-color: $simple-background;
+    }
+}
+
+// Button Styling
+button, .button {
+    background-color: $simple-control-background;
+    border: 1px solid $simple-border-normal;
+    color: $simple-text;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    
+    &:hover {
+        background-color: $simple-control-background-hover;
+        border-color: $simple-border-hover;
+    }
+    
+    &:active, &.pressed {
+        background-color: $simple-control-background-pressed;
+        border-color: $simple-border-pressed;
+    }
+    
+    &:disabled {
+        background-color: $simple-control-background-disabled;
+        color: $simple-text-disabled;
+        border-color: $simple-border-disabled;
+    }
+    
+    &.primary {
+        background-color: $simple-accent;
+        color: $simple-text-on-accent;
+        border-color: $simple-accent;
+        
+        &:hover {
+            background-color: $simple-accent-hover;
+            border-color: $simple-accent-hover;
+        }
+        
+        &:active {
+            background-color: $simple-accent-pressed;
+            border-color: $simple-accent-pressed;
+        }
+    }
+}
+
+// TextBox / TextEntry Styling
+textentry, .textentry, input[type="text"], textarea {
+    background-color: $simple-control-background;
+    border: 1px solid $simple-border-normal;
+    color: $simple-text;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    
+    &:hover {
+        border-color: $simple-border-hover;
+    }
+    
+    &:focus {
+        border-color: $simple-accent;
+        outline: none;
+    }
+    
+    &:disabled {
+        background-color: $simple-control-background-disabled;
+        color: $simple-text-disabled;
+        border-color: $simple-border-disabled;
+    }
+}
+
+// CheckBox Styling
+checkbox, .checkbox {
+    color: $simple-text;
+    
+    .checkbox-box {
+        background-color: $simple-control-background;
+        border: 1px solid $simple-border-normal;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+    }
+    
+    &:hover .checkbox-box {
+        border-color: $simple-border-hover;
+    }
+    
+    &.checked .checkbox-box {
+        background-color: $simple-accent;
+        border-color: $simple-accent;
+    }
+    
+    &:disabled .checkbox-box {
+        background-color: $simple-control-background-disabled;
+        border-color: $simple-border-disabled;
+    }
+}
+
+// ComboBox / Select Styling
+combobox, select, .combobox {
+    background-color: $simple-control-background;
+    border: 1px solid $simple-border-normal;
+    color: $simple-text;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    
+    &:hover {
+        border-color: $simple-border-hover;
+    }
+    
+    &:focus {
+        border-color: $simple-accent;
+    }
+}
+
+// SelectList / ListBox Styling
+selectlist, .selectlist {
+    background-color: $simple-control-background;
+    border: 1px solid $simple-border-normal;
+    border-radius: 3px;
+    
+    listoption, .listoption {
+        color: $simple-text;
+        padding: 6px 12px;
+        
+        &:hover {
+            background-color: $simple-control-background-hover;
+        }
+        
+        &.selected {
+            background-color: $simple-accent;
+            color: $simple-text-on-accent;
+        }
+    }
+}
+
+// ProgressBar Styling
+progressbar, .progressbar {
+    background-color: $simple-control-background-pressed;
+    border: 1px solid $simple-border-normal;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+    
+    .progressbar-fill {
+        background-color: $simple-accent;
+        height: 100%;
+    }
+}
+
+// Label Styling
+label, .label {
+    color: $simple-text;
+    font-size: 12px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: $simple-text;
+    font-weight: 600;
+}
+
+// Panel/Border Styling
+.panel, .border {
+    background-color: $simple-background;
+    border: 1px solid $simple-border-normal;
+    border-radius: 3px;
+}
+
+.panel-inset, .border-inset {
+    background-color: $simple-control-background;
+    border: 1px solid $simple-border-normal;
+    border-radius: 3px;
+}
+
+// Scrollbar Styling
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+    background-color: $simple-background;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: $simple-border-normal;
+    border-radius: 6px;
+    border: 2px solid $simple-background;
+    
+    &:hover {
+        background-color: $simple-border-hover;
+    }
+    
+    &:active {
+        background-color: $simple-border-pressed;
+    }
+}
+
+::-webkit-scrollbar-track {
+    background-color: $simple-background;
+}
+
+// Additional Simple Theme Specific Styles
+.secondary-text {
+    color: $simple-text-secondary;
+    font-size: 11px;
+}
+
+.divider {
+    height: 1px;
+    background-color: $simple-border-normal;
+    margin: 10px 0;
+}
+

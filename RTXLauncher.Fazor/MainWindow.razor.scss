@@ -1,4 +1,7 @@
 // Main Window Styling for RTX Launcher Fazor
+// Import Simple Theme (matches Avalonia's SimpleTheme)
+@import "SimpleTheme.scss";
+
 .window-content {
     display: flex;
     flex-direction: column;
@@ -11,7 +14,7 @@
 .top-bar {
     display: flex;
     flex-direction: row;
-    border-bottom: 1px solid gray;
+    border-bottom: 1px solid $simple-border-normal;
     padding-bottom: 10px;
     gap: 10px;
 }
@@ -28,11 +31,15 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
+    justify-content: center;
 }
 
 .status-text {
-    font-size: 14px;
+    font-size: 13px;
     min-height: 20px;
+    color: $simple-text;
+    display: flex;
+    align-items: center;
 }
 
 .main-content {
@@ -49,7 +56,8 @@
 
     .content-area {
         flex: 1;
-        border: 1px solid gray;
+        background-color: $simple-control-background;
+        border: 1px solid $simple-border-normal;
         border-radius: 3px;
         padding: 10px;
         overflow: auto;
@@ -63,11 +71,13 @@
     
     .log-content {
         flex: 1;
-        background-color: black;
-        color: lime;
-        font-family: monospace;
+        background-color: #000000;
+        color: #00FF00;
+        font-family: "Consolas", "Courier New", monospace;
         padding: 5px;
         overflow: auto;
+        border: 1px solid $simple-border-normal;
+        border-radius: 3px;
     }
     
     .log-entry {
@@ -85,38 +95,65 @@
 // Page specific styles
 .welcome-page, .settings-page, .install-page, .update-page, .mods-page {
     flex-direction: column;
-    h1, h2 {
+    
+    h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: $simple-text;
+    }
+    
+    h2 {
+        font-size: 18px;
         margin-bottom: 10px;
+        color: $simple-text;
+    }
+    
+    h3 {
+        font-size: 14px;
+        margin-bottom: 5px;
+        color: $simple-text;
     }
     
     p {
         margin-bottom: 10px;
+        color: $simple-text;
+        line-height: 1.5;
     }
 }
 
 .setting-item {
     margin-bottom: 15px;
     
-    >.label {
+    > label, > .label {
         display: block;
         margin-bottom: 5px;
-        font-weight: bold;
+        font-weight: 600;
+        color: $simple-text;
     }
 }
 
 .install-steps, .mod-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
 }
 
 .step, .mod-item {
     padding: 10px;
-    border: 1px solid gray;
+    background-color: $simple-control-background;
+    border: 1px solid $simple-border-normal;
     border-radius: 3px;
     
     h3 {
         margin-bottom: 5px;
+        color: $simple-text;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    p {
+        color: $simple-text;
+        margin: 5px 0;
     }
 }
 
@@ -124,7 +161,14 @@
     margin-bottom: 10px;
     
     label {
-        font-weight: bold;
+        font-weight: 600;
         margin-right: 10px;
+        color: $simple-text;
+    }
+    
+    span {
+        color: $simple-text;
     }
 }
+
+
