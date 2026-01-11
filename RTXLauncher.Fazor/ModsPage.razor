@@ -1,88 +1,257 @@
 @using Sandbox.UI;
 @using global::Fazor.Controls;
+@using RTXLauncher.Core.Models
+@using RTXLauncher.Core.Services
 @using System.Collections.Generic
+@using System.Linq
 @namespace RTXLauncher.Fazor
 @inherits Panel
 
 <root class="mods-page">
-	<div class="search-area">
-		<textentry placeholder="Search for mods..." @bind-value="searchText" />
-		<button @onclick="SearchMods">Search</button>
-	</div>
-	
-	<div class="mod-list">
-		@foreach (var mod in mods)
+	<div class="auto-layout column" style="gap: 10px;">
+		<!-- Search and Filter Area -->
+		<div class="search-filter-area" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+			<textentry placeholder="Search for mods..." value="@queryOptions.SearchText" OnTextEdited="@OnSearchTextChanged" style="flex: 1;" />
+			<combobox value="@selectedSortOption" ValueChanged="@OnSortOptionChanged" style="width: 180px;">
+				@foreach (var sort in sortOptions)
+				{
+					<option value="@sort.Value">@sort.Key</option>
+				}
+			</combobox>
+			<button @onclick="ApplyFilters" disabled="@isBusy">@(isBusy ? "Loading..." : "Apply Filters")</button>
+		</div>
+
+		<!-- ModDB Notice -->
+		<label style="text-align: center; color: gray; font-size: 11px;">Mods sourced from ModDB. For more mods, visit https://www.moddb.com/games/garrys-mod-10/mods</label>
+
+		<!-- Mod Grid -->
+		@if (isBusy)
 		{
-			<div class="mod-item">
-				<label class="mod-title">@mod.Title</label>
-				<label class="mod-author">by @mod.Author</label>
-				<button @onclick="() => InstallMod(mod)">Install</button>
+			<label style="text-align: center;">Loading mods...</label>
+		}
+		else if (mods.Count == 0)
+		{
+			<label style="text-align: center;">No mods found. Try adjusting your search criteria.</label>
+		}
+		else
+		{
+			<div class="mod-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+				@foreach (var mod in mods)
+				{
+					<div class="mod-card" style="width: 200px; border: 1px solid gray; border-radius: 4px; padding: 10px;">
+						<div class="mod-content" style="display: flex; flex-direction: column; gap: 5px;">
+							<!-- Image placeholder -->
+							<div class="mod-image" style="height: 120px; background: #333; display: flex; align-items: center; justify-content: center;">
+								@if (mod.IsInstalled)
+								{
+									<label style="color: lawngreen; font-weight: bold;">✔ Installed</label>
+								}
+							</div>
+							
+							<!-- Title -->
+							<label class="mod-title" style="font-weight: bold;">@mod.Title</label>
+							
+							<!-- Stats -->
+							<div style="display: flex; flex-direction: row; gap: 5px; font-size: 12px; color: gray;">
+								@if (mod.TotalVisits.HasValue)
+								{
+									<label>👁 @mod.TotalVisits.Value.ToString("N0")</label>
+									<label>•</label>
+								}
+								@if (!string.IsNullOrEmpty(mod.Author))
+								{
+									<label>@mod.Author</label>
+								}
+							</div>
+							
+							<!-- Genre and Date -->
+							@if (!string.IsNullOrEmpty(mod.Genre))
+							{
+								<label style="font-size: 11px;">@mod.Genre</label>
+							}
+							@if (mod.ReleaseDate.HasValue)
+							{
+								<label style="font-size: 11px;">Released: @mod.ReleaseDate.Value.ToString("d")</label>
+							}
+							
+							<!-- View Details Button -->
+							<button @onclick="@(() => ViewModDetails(mod))" style="margin-top: 10px;">View Details</button>
+						</div>
+					</div>
+				}
 			</div>
 		}
-	</div>
-	
-	<div class="pagination">
-		<button @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
-		<label>Page @currentPage</label>
-		<button @onclick="NextPage">Next</button>
+
+		<!-- Pagination -->
+		<div class="pagination" style="display: flex; flex-direction: row; gap: 10px; align-items: center; justify-content: center; margin-top: 10px;">
+			<button @onclick="PreviousPage" disabled="@(!canGoToPreviousPage || isBusy)">Previous</button>
+			<label>Page @queryOptions.Page</label>
+			<button @onclick="NextPage" disabled="@(!canGoToNextPage || isBusy)">Next</button>
+		</div>
 	</div>
 </root>
 
 @code {
-	private class ModItem
-	{
-		public string Title { get; set; } = "";
-		public string Author { get; set; } = "";
-	}
+	private IModService? modService;
+	private AddonInstallService? addonInstallService;
+	private InstalledModsService? installedModsService;
 	
-	private string searchText = "";
-	private int currentPage = 1;
-	private List<ModItem> mods = new();
+	private ModQueryOptions queryOptions = new ModQueryOptions();
+	private List<ModItemViewModel> mods = new();
+	private bool isBusy = false;
+	private bool canGoToPreviousPage = false;
+	private bool canGoToNextPage = false;
+	
+	private Dictionary<string, string> sortOptions = new Dictionary<string, string>
+	{
+		{ "Popular (All Time)", "visitstotal-desc" },
+		{ "Popular (Today)", "ranktoday-asc" },
+		{ "Newest First", "dateup-desc" },
+		{ "Oldest First", "dateup-asc" },
+		{ "Name (A-Z)", "name-asc" }
+	};
+	private string selectedSortOption = "visitstotal-desc";
 
 	public ModsPage()
 	{
+		// Initialize services
+		addonInstallService = new AddonInstallService();
+		installedModsService = new InstalledModsService();
+		modService = new ModDBModService(addonInstallService, installedModsService);
+		
+		// Load initial mods
 		LoadMods();
 	}
 
-	private void LoadMods()
+	private async void LoadMods()
 	{
-		mods = new List<ModItem>
-		{
-			new ModItem { Title = "Example Mod 1", Author = "Author1" },
-			new ModItem { Title = "Example Mod 2", Author = "Author2" },
-			new ModItem { Title = "Example Mod 3", Author = "Author3" }
-		};
+		if (modService == null) return;
+		
+		isBusy = true;
 		StateHasChanged();
+		
+		try
+		{
+			mods.Clear();
+			queryOptions.SortOrder = selectedSortOption;
+			
+			var modsList = await modService.GetAllModsAsync(queryOptions);
+			
+			foreach (var mod in modsList)
+			{
+				mods.Add(new ModItemViewModel(mod));
+			}
+			
+			UpdatePagination();
+			AddLogToMainWindow($"Loaded {mods.Count} mods from ModDB");
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Error loading mods: {ex.Message}");
+		}
+		finally
+		{
+			isBusy = false;
+			StateHasChanged();
+		}
 	}
 
-	private void SearchMods()
+	private void ApplyFilters()
 	{
-		System.Console.WriteLine($"Searching for: {searchText}");
+		queryOptions.Page = 1; // Reset to first page
 		LoadMods();
-	}
-
-	private void InstallMod(ModItem mod)
-	{
-		System.Console.WriteLine($"Installing mod: {mod.Title}");
 	}
 
 	private void PreviousPage()
 	{
-		if (currentPage > 1)
-		{
-			currentPage--;
-			LoadMods();
-		}
+		if (!canGoToPreviousPage) return;
+		queryOptions.Page--;
+		LoadMods();
 	}
 
 	private void NextPage()
 	{
-		currentPage++;
+		if (!canGoToNextPage) return;
+		queryOptions.Page++;
 		LoadMods();
+	}
+
+	private void UpdatePagination()
+	{
+		canGoToPreviousPage = queryOptions.Page > 1;
+		canGoToNextPage = mods.Count == 30; // ModDB shows 30 per page
+	}
+
+	private void OnSearchTextChanged(string value)
+	{
+		queryOptions.SearchText = value;
+		StateHasChanged();
+	}
+
+	private void OnSortOptionChanged(string value)
+	{
+		selectedSortOption = value;
+		StateHasChanged();
+	}
+
+	private void ViewModDetails(ModItemViewModel mod)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.ShowModDetails(mod.Model);
+			AddLogToMainWindow($"Viewing details for: {mod.Title}");
+		}
+	}
+
+	private void AddLogToMainWindow(string message)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.AddLogMessage(message);
+		}
+	}
+
+	private MainWindow? FindMainWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
 	}
 
 	protected override int BuildHash()
 	{
-		return System.HashCode.Combine(searchText, currentPage, mods.Count);
+		return System.HashCode.Combine(queryOptions.SearchText, queryOptions.Page, mods.Count, isBusy);
+	}
+	
+	// Helper ViewModel class
+	private class ModItemViewModel
+	{
+		public string Title { get; set; }
+		public string? Author { get; set; }
+		public string? Genre { get; set; }
+		public int? TotalVisits { get; set; }
+		public System.DateTime? ReleaseDate { get; set; }
+		public bool IsInstalled { get; set; }
+		public ModInfo Model { get; set; }
+		
+		public ModItemViewModel(ModInfo mod)
+		{
+			Model = mod;
+			Title = mod.Title;
+			Author = mod.Author;
+			Genre = mod.Genre;
+			TotalVisits = mod.TotalVisits;
+			ReleaseDate = mod.ReleaseDate;
+			IsInstalled = mod.IsInstalled;
+		}
 	}
 }

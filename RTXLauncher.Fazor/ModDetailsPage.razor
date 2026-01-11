@@ -1,0 +1,306 @@
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Models
+@using RTXLauncher.Core.Services
+@using System.Collections.Generic
+@using Microsoft.AspNetCore.Components
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="mod-details-page">
+	<div class="auto-layout column" style="gap: 10px;">
+		<!-- Back button and title -->
+		<div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
+			<button @onclick="NavigateBack">‹ Back to Mods</button>
+			<label style="font-size: 18px; font-weight: bold;">@modInfo?.Title</label>
+		</div>
+
+		@if (modInfo != null)
+		{
+			<!-- Mod Information -->
+			<groupbox title="Information">
+				<div class="auto-layout column" style="gap: 5px;">
+					@if (!string.IsNullOrEmpty(modInfo.Summary))
+					{
+						<div>
+							<label style="font-weight: bold;">Summary:</label>
+							<label>@modInfo.Summary</label>
+						</div>
+					}
+					
+					@if (!string.IsNullOrEmpty(modInfo.Author))
+					{
+						<label><span style="font-weight: bold;">Author:</span> @modInfo.Author</label>
+					}
+					
+					@if (!string.IsNullOrEmpty(modInfo.Genre))
+					{
+						<label><span style="font-weight: bold;">Genre:</span> @modInfo.Genre</label>
+					}
+					
+					@if (modInfo.TotalVisits.HasValue)
+					{
+						<label><span style="font-weight: bold;">Total Visits:</span> @modInfo.TotalVisits.Value.ToString("N0")</label>
+					}
+					
+					@if (modInfo.Rank.HasValue)
+					{
+						<label><span style="font-weight: bold;">Rank:</span> #@modInfo.Rank.Value</label>
+					}
+					
+					@if (modInfo.ReleaseDate.HasValue)
+					{
+						<label><span style="font-weight: bold;">Release Date:</span> @modInfo.ReleaseDate.Value.ToString("d")</label>
+					}
+				</div>
+			</groupbox>
+
+			<!-- Available Files -->
+			<groupbox title="Available Files">
+				@if (isBusy && files.Count == 0)
+				{
+					<label>Loading files...</label>
+				}
+				else if (files.Count == 0)
+				{
+					<label>No files available for this mod.</label>
+				}
+				else
+				{
+					<div class="auto-layout column" style="gap: 10px;">
+						@foreach (var file in files)
+						{
+							<div class="file-item" style="border: 1px solid gray; border-radius: 4px; padding: 10px;">
+								<div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+									<div class="file-info" style="flex: 1;">
+										<label style="font-weight: bold;">@file.Title</label>
+										@if (file.SizeInBytes.HasValue && file.SizeInBytes.Value > 0)
+										{
+											<label style="font-size: 11px; color: gray;">Size: @FormatFileSize(file.SizeInBytes.Value)</label>
+										}
+										@if (!string.IsNullOrEmpty(file.Filename))
+										{
+											<label style="font-size: 11px;">File: @file.Filename</label>
+										}
+									</div>
+									
+									<div class="file-actions" style="display: flex; flex-direction: row; gap: 5px;">
+										@if (file.IsInstalled)
+										{
+											<button @onclick="@(() => UninstallFile(file))" disabled="@isBusy">Uninstall</button>
+											<label style="color: lawngreen;">✔ Installed</label>
+										}
+										else
+										{
+											<button @onclick="@(() => InstallFile(file))" disabled="@isBusy">Install</button>
+										}
+									</div>
+								</div>
+								
+								@if (downloadProgress > 0 && currentDownloadingFile == file)
+								{
+									<progressbar value="@downloadProgress" max="100" style="margin-top: 5px;" />
+								}
+							</div>
+						}
+					</div>
+				}
+			</groupbox>
+		}
+	</div>
+</root>
+
+@code {
+	[Parameter]
+	public ModInfo? modInfo { get; set; }
+	
+	private IModService? modService;
+	private List<ModFile> files = new();
+	private bool isBusy = false;
+	private double downloadProgress = 0;
+	private ModFile? currentDownloadingFile = null;
+	private bool hasLoadedFiles = false;
+
+	public ModDetailsPage()
+	{
+		// Initialize service
+		var addonInstallService = new AddonInstallService();
+		var installedModsService = new InstalledModsService();
+		modService = new ModDBModService(addonInstallService, installedModsService);
+	}
+
+	private async void LoadFiles()
+	{
+		if (modService == null || modInfo == null || hasLoadedFiles) return;
+		
+		hasLoadedFiles = true;
+		isBusy = true;
+		StateHasChanged();
+		
+		try
+		{
+			files.Clear();
+			var filesList = await modService.GetFilesForModAsync(modInfo);
+			files.AddRange(filesList);
+			AddLogToMainWindow($"Loaded {files.Count} files for {modInfo.Title}");
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Error loading mod files: {ex.Message}");
+		}
+		finally
+		{
+			isBusy = false;
+			StateHasChanged();
+		}
+	}
+	
+	protected override int BuildHash()
+	{
+		var hash = System.HashCode.Combine(modInfo?.Title, files.Count, isBusy, downloadProgress);
+		
+		// Trigger file loading if we have modInfo and haven't loaded yet
+		if (modInfo != null && !hasLoadedFiles && !isBusy)
+		{
+			LoadFiles();
+		}
+		
+		return hash;
+	}
+
+	private async void InstallFile(ModFile file)
+	{
+		if (modService == null) return;
+		
+		isBusy = true;
+		currentDownloadingFile = file;
+		downloadProgress = 0;
+		StateHasChanged();
+		
+		try
+		{
+			var progress = new System.Progress<InstallProgressReport>(report =>
+			{
+				AddLogToMainWindow(report.Message);
+				downloadProgress = report.Percentage;
+				UpdateProgress(report.Percentage);
+				StateHasChanged();
+			});
+			
+			// Simple confirmation provider (always returns true for now)
+			System.Func<string, System.Threading.Tasks.Task<bool>> confirmationProvider = async (message) =>
+			{
+				AddLogToMainWindow($"Confirmation: {message}");
+				return true;
+			};
+			
+			await modService.InstallModFileAsync(modInfo, file, confirmationProvider, progress);
+			
+			// Refresh files to update install status
+			await System.Threading.Tasks.Task.Delay(500);
+			LoadFiles();
+			
+			AddLogToMainWindow($"Successfully installed {file.Title}");
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Error installing mod: {ex.Message}");
+		}
+		finally
+		{
+			isBusy = false;
+			currentDownloadingFile = null;
+			downloadProgress = 0;
+			StateHasChanged();
+		}
+	}
+
+	private async void UninstallFile(ModFile file)
+	{
+		if (modService == null) return;
+		
+		isBusy = true;
+		StateHasChanged();
+		
+		try
+		{
+			var progress = new System.Progress<InstallProgressReport>(report =>
+			{
+				AddLogToMainWindow(report.Message);
+			});
+			
+			// Call the uninstall method
+			await modService.UninstallModAsync(modInfo, progress);
+			
+			// Refresh files to update install status
+			await System.Threading.Tasks.Task.Delay(500);
+			LoadFiles();
+			
+			AddLogToMainWindow($"Successfully uninstalled {file.Title}");
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Error uninstalling mod: {ex.Message}");
+		}
+		finally
+		{
+			isBusy = false;
+			StateHasChanged();
+		}
+	}
+
+	private void NavigateBack()
+	{
+		// Navigate back to mods page
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.ShowModsPage();
+		}
+	}
+
+	private string FormatFileSize(long bytes)
+	{
+		string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+		double len = bytes;
+		int order = 0;
+		while (len >= 1024 && order < sizes.Length - 1)
+		{
+			order++;
+			len = len / 1024;
+		}
+		return $"{len:0.##} {sizes[order]}";
+	}
+
+	private void AddLogToMainWindow(string message)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.AddLogMessage(message);
+		}
+	}
+
+	private void UpdateProgress(int percentage)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.UpdateProgress(percentage);
+		}
+	}
+
+	private MainWindow? FindMainWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
+	}
+}

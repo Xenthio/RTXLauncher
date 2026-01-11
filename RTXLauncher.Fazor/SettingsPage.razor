@@ -14,34 +14,34 @@
 <root class="settings-page">
 	<div class="auto-layout column">
 		<!-- Resolution Group -->
-		<groupbox text="Resolution">
+		<groupbox title="Resolution">
 			<div class="auto-layout column">
-				<combobox @bind-value="selectedResolution" style="width: 250px;">
+				<combobox value="@selectedResolution" ValueChanged="@OnResolutionChanged" style="width: 250px;">
 					@foreach (var res in resolutions)
 					{
 						<option value="@res">@res</option>
 					}
 				</combobox>
 				
-				<check @bind-value="@settingsData.UseCustomResolution">Use Custom Resolution</check>
+				<check value="@settingsData.UseCustomResolution" ValueChanged="@OnUseCustomResolutionChanged">Use Custom Resolution</check>
 				
 				@if (settingsData != null && settingsData.UseCustomResolution)
 				{
 					<div class="custom-resolution" style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
-						<textentry type="number" @bind-value="@settingsData.Width" placeholder="Width" style="width: 100px;" />
+						<textentry type="number" value="@settingsData.Width.ToString()" OnTextEdited="@OnWidthChanged" placeholder="Width" style="width: 100px;" />
 						<label>×</label>
-						<textentry type="number" @bind-value="@settingsData.Height" placeholder="Height" style="width: 100px;" />
+						<textentry type="number" value="@settingsData.Height.ToString()" OnTextEdited="@OnHeightChanged" placeholder="Height" style="width: 100px;" />
 					</div>
 				}
 			</div>
 		</groupbox>
 
 		<!-- Garry's Mod Settings -->
-		<groupbox text="Garry's Mod">
+		<groupbox title="Garry's Mod">
 			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
-					<check @bind-value="@settingsData.LoadWorkshopAddons">Load Workshop Addons</check>
+					<check value="@settingsData.LoadWorkshopAddons" ValueChanged="@OnLoadWorkshopAddonsChanged">Load Workshop Addons</check>
 				}
 			</div>
 		</groupbox>
@@ -49,12 +49,12 @@
 		<!-- Linux Settings (only visible on Linux) -->
 		@if (IsLinux && settingsData != null)
 		{
-			<groupbox text="Linux Settings">
+			<groupbox title="Linux Settings">
 				<div class="auto-layout column">
 					<!-- Proton Version Selection -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Proton Version:</label>
-						<combobox @bind-value="selectedProtonBuild" style="width: 250px;">
+						<combobox value="@selectedProtonBuild" ValueChanged="@OnProtonBuildSelected" style="width: 250px;">
 							@foreach (var label in protonBuildLabels)
 							{
 								<option value="@label">@label</option>
@@ -68,7 +68,7 @@
 					{
 						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 							<label>Custom Proton Path:</label>
-							<textentry @bind-value="@settingsData.LinuxProtonPath" placeholder="/path/to/proton/executable" style="flex: 1;" />
+							<textentry value="@settingsData.LinuxProtonPath" OnTextEdited="@OnLinuxProtonPathChanged" placeholder="/path/to/proton/executable" style="flex: 1;" />
 							<button @onclick="ClearProtonPath">Clear</button>
 						</div>
 					}
@@ -76,13 +76,13 @@
 					<!-- Steam Root Override -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Steam Root Override:</label>
-						<textentry @bind-value="@settingsData.LinuxSteamRootOverride" placeholder="Leave empty for auto-detection" style="flex: 1;" />
+						<textentry value="@settingsData.LinuxSteamRootOverride" OnTextEdited="@OnLinuxSteamRootOverrideChanged" placeholder="Leave empty for auto-detection" style="flex: 1;" />
 					</div>
 
 					<!-- Vulkan Driver Selection -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Vulkan Driver:</label>
-						<combobox @bind-value="@settingsData.LinuxVulkanDriver" style="width: 200px;">
+						<combobox value="@settingsData.LinuxVulkanDriver" ValueChanged="@OnLinuxVulkanDriverChanged" style="width: 200px;">
 							@foreach (var driver in vulkanDriverOptions)
 							{
 								<option value="@driver">@driver</option>
@@ -91,7 +91,7 @@
 					</div>
 
 					<!-- Proton Logging -->
-					<check @bind-value="@settingsData.LinuxEnableProtonLog">Enable Proton Logging (PROTON_LOG=1)</check>
+					<check value="@settingsData.LinuxEnableProtonLog" ValueChanged="@OnLinuxEnableProtonLogChanged">Enable Proton Logging (PROTON_LOG=1)</check>
 				</div>
 			</groupbox>
 		}
@@ -99,14 +99,14 @@
 		<!-- Advanced Settings -->
 		@if (settingsData != null)
 		{
-			<groupbox text="Advanced Settings">
+			<groupbox title="Advanced Settings">
 				<div class="auto-layout column">
-					<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
-					<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>
+					<check value="@settingsData.ConsoleEnabled" ValueChanged="@OnConsoleEnabledChanged">Open Console</check>
+					<check value="@settingsData.DisableChromium" ValueChanged="@OnDisableChromiumChanged">Disable Chromium</check>
 					
 					<div class="setting-item" style="display: flex; flex-direction: column; gap: 5px;">
 						<label>Custom Launch Options:</label>
-						<textentry @bind-value="@settingsData.CustomLaunchOptions" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
+						<textentry value="@settingsData.CustomLaunchOptions" OnTextEdited="@OnCustomLaunchOptionsChanged" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
 					</div>
 				</div>
 			</groupbox>
@@ -183,6 +183,8 @@
 	{
 		if (settingsData == null) return;
 		
+		selectedResolution = value;
+		
 		if (value == "Native Resolution")
 		{
 			settingsData.Width = 0;
@@ -196,6 +198,42 @@
 				settingsData.Width = width;
 				settingsData.Height = height;
 			}
+		}
+		StateHasChanged();
+	}
+
+	private void OnUseCustomResolutionChanged(bool value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.UseCustomResolution = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnWidthChanged(string value)
+	{
+		if (settingsData != null && int.TryParse(value, out var width))
+		{
+			settingsData.Width = width;
+		}
+		StateHasChanged();
+	}
+
+	private void OnHeightChanged(string value)
+	{
+		if (settingsData != null && int.TryParse(value, out var height))
+		{
+			settingsData.Height = height;
+		}
+		StateHasChanged();
+	}
+
+	private void OnLoadWorkshopAddonsChanged(bool value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.LoadWorkshopAddons = value;
 		}
 		StateHasChanged();
 	}
@@ -245,10 +283,11 @@
 		}
 	}
 
-	private void OnProtonBuildChanged(string value)
+	private void OnProtonBuildSelected(string value)
 	{
 		if (settingsData == null || string.IsNullOrEmpty(value)) return;
 		
+		selectedProtonBuild = value;
 		settingsData.LinuxSelectedProtonLabel = value;
 		isCustomProtonPathVisible = (value == "Custom");
 		
@@ -277,7 +316,70 @@
 		if (availableProtonBuilds.Count > 0)
 		{
 			selectedProtonBuild = availableProtonBuilds[0].Label;
-			OnProtonBuildChanged(selectedProtonBuild);
+			OnProtonBuildSelected(selectedProtonBuild);
+		}
+		StateHasChanged();
+	}
+
+	private void OnLinuxProtonPathChanged(string value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.LinuxProtonPath = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnLinuxSteamRootOverrideChanged(string value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.LinuxSteamRootOverride = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnLinuxVulkanDriverChanged(string value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.LinuxVulkanDriver = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnLinuxEnableProtonLogChanged(bool value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.LinuxEnableProtonLog = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnConsoleEnabledChanged(bool value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.ConsoleEnabled = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnDisableChromiumChanged(bool value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.DisableChromium = value;
+		}
+		StateHasChanged();
+	}
+
+	private void OnCustomLaunchOptionsChanged(string value)
+	{
+		if (settingsData != null)
+		{
+			settingsData.CustomLaunchOptions = value;
 		}
 		StateHasChanged();
 	}
