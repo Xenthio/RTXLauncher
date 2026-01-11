@@ -71,8 +71,32 @@
 				latestReleaseUrl = latestRelease.HtmlUrl;
 				releaseNotes = $"Latest Release: {latestRelease.Name}\n\n{latestRelease.Body}";
 				
-				// Compare versions (simple string comparison for now)
-				if (latestRelease.TagName != currentVersion)
+				// Compare versions using semantic version parsing
+				bool updateAvailable = false;
+				try
+				{
+					// Strip 'v' prefix if present
+					var latestVersionStr = latestRelease.TagName?.TrimStart('v') ?? "0.0.0";
+					var currentVersionStr = currentVersion.TrimStart('v');
+					
+					if (System.Version.TryParse(latestVersionStr, out var latestVersion) &&
+					    System.Version.TryParse(currentVersionStr, out var currentVer))
+					{
+						updateAvailable = latestVersion > currentVer;
+					}
+					else
+					{
+						// Fallback to string comparison
+						updateAvailable = latestRelease.TagName != currentVersion;
+					}
+				}
+				catch
+				{
+					// Fallback to string comparison on error
+					updateAvailable = latestRelease.TagName != currentVersion;
+				}
+				
+				if (updateAvailable)
 				{
 					releaseNotes = $"⬆️ Update Available!\n\nLatest: {latestRelease.TagName}\nCurrent: {currentVersion}\n\n{latestRelease.Body}";
 					AddLogToMainWindow($"Update available: {latestRelease.TagName}");
