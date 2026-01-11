@@ -7,24 +7,24 @@
 @inherits Panel
 
 <root class="mounting-page">
-	<autolayout>
+	<div class="auto-layout column">
 		<groupbox text="Mounted Remix Games">
-			<autolayout>
+			<div class="auto-layout column">
 				@foreach (var game in mountableGames)
 				{
 					<check @bind-value="@game.IsMounted" disabled="@(!game.IsInstalled)">
 						@game.Name
 					</check>
 				}
-			</autolayout>
+			</div>
 		</groupbox>
 		
 		<groupbox text="USDA Fixes">
-			<autolayout>
+			<div class="auto-layout column">
 				<button @onclick="InstallUsdaFixes">Install USDA Fixes</button>
-			</autolayout>
+			</div>
 		</groupbox>
-	</autolayout>
+	</div>
 </root>
 
 @code {

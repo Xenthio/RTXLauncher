@@ -7,16 +7,16 @@
 @inherits Panel
 
 <root class="about-page">
-	<autolayout>
+	<div class="auto-layout column">
 		<groupbox text="The Garry's Mod RTX Launcher">
-			<autolayout>
+			<div class="auto-layout column">
 				<label>Based on the original by CR, written by Xenthio and CR.</label>
 				<label>Current Version: @currentVersion</label>
-			</autolayout>
+			</div>
 		</groupbox>
 		
 		<groupbox text="Updates">
-			<autolayout>
+			<div class="auto-layout column">
 				<textentry multiline="true" readonly="true" value="@releaseNotes" style="height: 200px; flex: 1;" />
 				
 				<div class="update-controls" style="display: flex; flex-direction: row; gap: 10px;">
@@ -29,9 +29,9 @@
 					<button @onclick="InstallUpdate" disabled="@isCheckingForUpdates">Install</button>
 					<button @onclick="CheckForUpdates" disabled="@isCheckingForUpdates">Check for Updates</button>
 				</div>
-			</autolayout>
+			</div>
 		</groupbox>
-	</autolayout>
+	</div>
 </root>
 
 @code {

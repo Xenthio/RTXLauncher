@@ -8,9 +8,9 @@
 @inherits Panel
 
 <root class="launcher-settings-page">
-	<autolayout>
+	<div class="auto-layout column">
 		<groupbox text="Launcher Settings">
-			<autolayout>
+			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
 					<check @bind-value="@settingsData.CheckForUpdatesOnLaunch">
@@ -27,9 +27,9 @@
 						</combobox>
 					</div>
 				}
-			</autolayout>
+			</div>
 		</groupbox>
-	</autolayout>
+	</div>
 </root>
 
 @code {

@@ -10,10 +10,10 @@
 @inherits Panel
 
 <root class="advanced-install-page">
-	<autolayout>
+	<div class="auto-layout column">
 		<!-- Vanilla Garry's Mod Install Section -->
 		<groupbox text="Your Vanilla Garry's Mod Install">
-			<autolayout>
+			<div class="auto-layout column">
 				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
 					<label>@vanillaInstallType</label>
@@ -31,12 +31,12 @@
 				{
 					<label class="manual-path-text">Manual path: @manualVanillaPath</label>
 				}
-			</autolayout>
+			</div>
 		</groupbox>
 		
 		<!-- RTX Install Section -->
 		<groupbox text="This RTX Install">
-			<autolayout>
+			<div class="auto-layout column">
 				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
 					<label>@rtxInstallType</label>
@@ -56,14 +56,14 @@
 					<button @onclick="UpdateInstall" disabled="@isBusy">Update Install from Vanilla</button>
 					<button @onclick="DowngradeGame" disabled="@isBusy">Downgrade Game</button>
 				</div>
-			</autolayout>
+			</div>
 		</groupbox>
 		
 		<!-- Dynamic Package List -->
 		@foreach (var package in packages)
 		{
 			<groupbox text="@package.Title">
-				<autolayout>
+				<div class="auto-layout column">
 					<div class="package-status">
 						@if (package.HasInstalledVersion)
 						{
@@ -98,10 +98,10 @@
 							<button @onclick="() => InstallPackage(package)" disabled="@isBusy">@package.ButtonText</button>
 						</div>
 					}
-				</autolayout>
+				</div>
 			</groupbox>
 		}
-	</autolayout>
+	</div>
 </root>
 
 @code {
