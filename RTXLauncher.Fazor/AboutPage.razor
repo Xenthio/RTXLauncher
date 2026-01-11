@@ -20,7 +20,7 @@
 				<textentry multiline="true" readonly="true" value="@releaseNotes" style="height: 200px; flex: 1;" />
 				
 				<div class="update-controls" style="display: flex; flex-direction: row; gap: 10px;">
-					<combobox @bind-value="selectedUpdateSource" style="width: 200px;">
+					<combobox value="@selectedUpdateSource" @onchange="@((string v) => { selectedUpdateSource = v; StateHasChanged(); })" style="width: 200px;">
 						@foreach (var source in updateSources)
 						{
 							<option value="@source">@source</option>

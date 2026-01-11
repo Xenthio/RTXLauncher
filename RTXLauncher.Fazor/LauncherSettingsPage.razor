@@ -13,13 +13,13 @@
 			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
-					<check @bind-value="@settingsData.CheckForUpdatesOnLaunch">
+					<check value="@settingsData.CheckForUpdatesOnLaunch" @onchange="@((bool v) => { settingsData.CheckForUpdatesOnLaunch = v; StateHasChanged(); })">
 						Check for updates on launch
 					</check>
 					
 					<div class="setting-item" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Theme:</label>
-						<combobox @bind-value="selectedTheme" @onchange="OnThemeChanged" style="width: 200px;">
+						<combobox value="@selectedTheme" @onchange="@((string v) => { selectedTheme = v; OnThemeChanged(v); })" style="width: 200px;">
 							@foreach (var theme in themes)
 							{
 								<option value="@theme">@theme</option>

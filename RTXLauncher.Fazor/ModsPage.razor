@@ -6,7 +6,7 @@
 
 <root class="mods-page">
 	<div class="search-area">
-		<textentry placeholder="Search for mods..." @bind-value="searchText" />
+		<textentry placeholder="Search for mods..." value="@searchText" @onchange="@((string v) => { searchText = v; StateHasChanged(); })" />
 		<button @onclick="SearchMods">Search</button>
 	</div>
 	
