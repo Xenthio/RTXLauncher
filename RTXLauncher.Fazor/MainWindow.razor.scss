@@ -1,6 +1,6 @@
 // Main Window Styling for RTX Launcher Fazor
 // Import Simple Dark Theme (matches Avalonia's SimpleTheme Dark variant)
-@import "/Assets/SimpleDarkTheme.scss";
+@import "/SimpleDarkTheme.scss";
 
 .window-content {
     display: flex;
@@ -25,12 +25,8 @@
     align-items: center;
     justify-content: center;
     .logo {
-        width: 160px;
+        max-width: 160px;
         height: 64px;
-        background-image: url("/Assets/gmodrtx.png");
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
     }
 }
 
