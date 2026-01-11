@@ -16,21 +16,21 @@
 		<!-- Resolution Group -->
 		<groupbox title="Resolution">
 			<div class="auto-layout column">
-				<combobox value="@selectedResolution" @onchange="@((string v) => { selectedResolution = v; OnResolutionChanged(v); })" style="width: 250px;">
+				<combobox value="@selectedResolution" @onchange="OnResolutionChanged" style="width: 250px;">
 					@foreach (var res in resolutions)
 					{
 						<option value="@res">@res</option>
 					}
 				</combobox>
 				
-				<check value="@settingsData.UseCustomResolution" @onchange="@((bool v) => { settingsData.UseCustomResolution = v; StateHasChanged(); })">Use Custom Resolution</check>
+				<check value="@settingsData.UseCustomResolution" @onchange="OnUseCustomResolutionChanged">Use Custom Resolution</check>
 				
 				@if (settingsData != null && settingsData.UseCustomResolution)
 				{
 					<div class="custom-resolution" style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
-						<textentry type="number" value="@settingsData.Width" @onchange="@((int v) => { settingsData.Width = v; StateHasChanged(); })" placeholder="Width" style="width: 100px;" />
+						<textentry type="number" value="@settingsData.Width.ToString()" @onchange="OnWidthChanged" placeholder="Width" style="width: 100px;" />
 						<label>×</label>
-						<textentry type="number" value="@settingsData.Height" @onchange="@((int v) => { settingsData.Height = v; StateHasChanged(); })" placeholder="Height" style="width: 100px;" />
+						<textentry type="number" value="@settingsData.Height.ToString()" @onchange="OnHeightChanged" placeholder="Height" style="width: 100px;" />
 					</div>
 				}
 			</div>
@@ -41,7 +41,7 @@
 			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
-					<check value="@settingsData.LoadWorkshopAddons" @onchange="@((bool v) => { settingsData.LoadWorkshopAddons = v; StateHasChanged(); })">Load Workshop Addons</check>
+					<check value="@settingsData.LoadWorkshopAddons" @onchange="OnLoadWorkshopAddonsChanged">Load Workshop Addons</check>
 				}
 			</div>
 		</groupbox>
@@ -54,7 +54,7 @@
 					<!-- Proton Version Selection -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Proton Version:</label>
-						<combobox value="@selectedProtonBuild" @onchange="@((string v) => { selectedProtonBuild = v; OnProtonBuildChanged(v); })" style="width: 250px;">
+						<combobox value="@selectedProtonBuild" @onchange="OnProtonBuildSelected" style="width: 250px;">
 							@foreach (var label in protonBuildLabels)
 							{
 								<option value="@label">@label</option>
@@ -68,7 +68,7 @@
 					{
 						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 							<label>Custom Proton Path:</label>
-							<textentry value="@settingsData.LinuxProtonPath" @onchange="@((string v) => { settingsData.LinuxProtonPath = v; StateHasChanged(); })" placeholder="/path/to/proton/executable" style="flex: 1;" />
+							<textentry value="@settingsData.LinuxProtonPath" @onchange="OnLinuxProtonPathChanged" placeholder="/path/to/proton/executable" style="flex: 1;" />
 							<button @onclick="ClearProtonPath">Clear</button>
 						</div>
 					}
@@ -76,13 +76,13 @@
 					<!-- Steam Root Override -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Steam Root Override:</label>
-						<textentry value="@settingsData.LinuxSteamRootOverride" @onchange="@((string v) => { settingsData.LinuxSteamRootOverride = v; StateHasChanged(); })" placeholder="Leave empty for auto-detection" style="flex: 1;" />
+						<textentry value="@settingsData.LinuxSteamRootOverride" @onchange="OnLinuxSteamRootOverrideChanged" placeholder="Leave empty for auto-detection" style="flex: 1;" />
 					</div>
 
 					<!-- Vulkan Driver Selection -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Vulkan Driver:</label>
-						<combobox value="@settingsData.LinuxVulkanDriver" @onchange="@((string v) => { settingsData.LinuxVulkanDriver = v; StateHasChanged(); })" style="width: 200px;">
+						<combobox value="@settingsData.LinuxVulkanDriver" @onchange="OnLinuxVulkanDriverChanged" style="width: 200px;">
 							@foreach (var driver in vulkanDriverOptions)
 							{
 								<option value="@driver">@driver</option>
@@ -91,7 +91,7 @@
 					</div>
 
 					<!-- Proton Logging -->
-					<check value="@settingsData.LinuxEnableProtonLog" @onchange="@((bool v) => { settingsData.LinuxEnableProtonLog = v; StateHasChanged(); })">Enable Proton Logging (PROTON_LOG=1)</check>
+					<check value="@settingsData.LinuxEnableProtonLog" @onchange="OnLinuxEnableProtonLogChanged">Enable Proton Logging (PROTON_LOG=1)</check>
 				</div>
 			</groupbox>
 		}
@@ -101,12 +101,12 @@
 		{
 			<groupbox title="Advanced Settings">
 				<div class="auto-layout column">
-					<check value="@settingsData.ConsoleEnabled" @onchange="@((bool v) => { settingsData.ConsoleEnabled = v; StateHasChanged(); })">Open Console</check>
-					<check value="@settingsData.DisableChromium" @onchange="@((bool v) => { settingsData.DisableChromium = v; StateHasChanged(); })">Disable Chromium</check>
+					<check value="@settingsData.ConsoleEnabled" @onchange="OnConsoleEnabledChanged">Open Console</check>
+					<check value="@settingsData.DisableChromium" @onchange="OnDisableChromiumChanged">Disable Chromium</check>
 					
 					<div class="setting-item" style="display: flex; flex-direction: column; gap: 5px;">
 						<label>Custom Launch Options:</label>
-						<textentry value="@settingsData.CustomLaunchOptions" @onchange="@((string v) => { settingsData.CustomLaunchOptions = v; StateHasChanged(); })" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
+						<textentry value="@settingsData.CustomLaunchOptions" @onchange="OnCustomLaunchOptionsChanged" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
 					</div>
 				</div>
 			</groupbox>
@@ -179,24 +179,44 @@
 		}
 	}
 
-	private void OnResolutionChanged(string value)
+	private void OnResolutionChanged()
 	{
 		if (settingsData == null) return;
 		
-		if (value == "Native Resolution")
+		if (selectedResolution == "Native Resolution")
 		{
 			settingsData.Width = 0;
 			settingsData.Height = 0;
 		}
 		else
 		{
-			var parts = value.Split('x');
+			var parts = selectedResolution.Split('x');
 			if (parts.Length == 2 && int.TryParse(parts[0], out var width) && int.TryParse(parts[1], out var height))
 			{
 				settingsData.Width = width;
 				settingsData.Height = height;
 			}
 		}
+		StateHasChanged();
+	}
+
+	private void OnUseCustomResolutionChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnWidthChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnHeightChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnLoadWorkshopAddonsChanged()
+	{
 		StateHasChanged();
 	}
 
@@ -245,14 +265,14 @@
 		}
 	}
 
-	private void OnProtonBuildChanged(string value)
+	private void OnProtonBuildSelected()
 	{
-		if (settingsData == null || string.IsNullOrEmpty(value)) return;
+		if (settingsData == null || string.IsNullOrEmpty(selectedProtonBuild)) return;
 		
-		settingsData.LinuxSelectedProtonLabel = value;
-		isCustomProtonPathVisible = (value == "Custom");
+		settingsData.LinuxSelectedProtonLabel = selectedProtonBuild;
+		isCustomProtonPathVisible = (selectedProtonBuild == "Custom");
 		
-		if (value != "Custom" && !string.IsNullOrEmpty(settingsData.LinuxProtonPath))
+		if (selectedProtonBuild != "Custom" && !string.IsNullOrEmpty(settingsData.LinuxProtonPath))
 		{
 			settingsData.LinuxProtonPath = "";
 		}
@@ -277,8 +297,43 @@
 		if (availableProtonBuilds.Count > 0)
 		{
 			selectedProtonBuild = availableProtonBuilds[0].Label;
-			OnProtonBuildChanged(selectedProtonBuild);
+			OnProtonBuildSelected();
 		}
+		StateHasChanged();
+	}
+
+	private void OnLinuxProtonPathChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnLinuxSteamRootOverrideChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnLinuxVulkanDriverChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnLinuxEnableProtonLogChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnConsoleEnabledChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnDisableChromiumChanged()
+	{
+		StateHasChanged();
+	}
+
+	private void OnCustomLaunchOptionsChanged()
+	{
 		StateHasChanged();
 	}
 
