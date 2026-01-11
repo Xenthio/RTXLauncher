@@ -13,13 +13,13 @@
 			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
-					<check value="@settingsData.CheckForUpdatesOnLaunch" @onchange="OnCheckForUpdatesChanged">
+					<check value="@settingsData.CheckForUpdatesOnLaunch" ValueChanged="@OnCheckForUpdatesChanged">
 						Check for updates on launch
 					</check>
 					
 					<div class="setting-item" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Theme:</label>
-						<combobox value="@selectedTheme" @onchange="OnThemeChanged" style="width: 200px;">
+						<combobox value="@selectedTheme" ValueChanged="@OnThemeChanged" style="width: 200px;">
 							@foreach (var theme in themes)
 							{
 								<option value="@theme">@theme</option>
@@ -48,21 +48,26 @@
 		}
 	}
 
-	private void OnThemeChanged()
+	private void OnThemeChanged(string newTheme)
 	{
+		selectedTheme = newTheme;
 		if (settingsData != null)
 		{
-			settingsData.Theme = selectedTheme;
+			settingsData.Theme = newTheme;
 			settingsService.SaveSettings(settingsData);
 		}
 		
 		// Apply theme change
-		ApplyTheme(selectedTheme);
+		ApplyTheme(newTheme);
 		StateHasChanged();
 	}
 
-	private void OnCheckForUpdatesChanged()
+	private void OnCheckForUpdatesChanged(bool value)
 	{
+		if (settingsData != null)
+		{
+			settingsData.CheckForUpdatesOnLaunch = value;
+		}
 		StateHasChanged();
 	}
 

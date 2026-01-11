@@ -30,7 +30,7 @@
 				
 				<div class="install-options" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label>Fixes Package:</label>
-					<combobox value="@selectedFixesPackage" @onchange="OnFixesPackageChanged" style="width: 200px;">
+					<combobox value="@selectedFixesPackage" ValueChanged="@OnFixesPackageChanged" style="width: 200px;">
 						@foreach (var package in availableFixesPackages)
 						{
 							<option value="@package.Option.ToString()">@package.DisplayName</option>
@@ -214,8 +214,9 @@
 		}
 	}
 
-	private void OnFixesPackageChanged()
+	private void OnFixesPackageChanged(string value)
 	{
+		selectedFixesPackage = value;
 		StateHasChanged();
 	}
 

@@ -11,8 +11,8 @@
 	<div class="auto-layout column" style="gap: 10px;">
 		<!-- Search and Filter Area -->
 		<div class="search-filter-area" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
-			<textentry placeholder="Search for mods..." value="@queryOptions.SearchText" @onchange="OnSearchTextChanged" style="flex: 1;" />
-			<combobox value="@selectedSortOption" @onchange="OnSortOptionChanged" style="width: 180px;">
+			<textentry placeholder="Search for mods..." value="@queryOptions.SearchText" OnTextEdited="@OnSearchTextChanged" style="flex: 1;" />
+			<combobox value="@selectedSortOption" ValueChanged="@OnSortOptionChanged" style="width: 180px;">
 				@foreach (var sort in sortOptions)
 				{
 					<option value="@sort.Value">@sort.Key</option>
@@ -182,13 +182,15 @@
 		canGoToNextPage = mods.Count == 30; // ModDB shows 30 per page
 	}
 
-	private void OnSearchTextChanged()
+	private void OnSearchTextChanged(string value)
 	{
+		queryOptions.SearchText = value;
 		StateHasChanged();
 	}
 
-	private void OnSortOptionChanged()
+	private void OnSortOptionChanged(string value)
 	{
+		selectedSortOption = value;
 		StateHasChanged();
 	}
 

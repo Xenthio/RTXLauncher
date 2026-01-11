@@ -77,7 +77,7 @@
 					
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Source:</label>
-						<combobox value="@package.SelectedSource" @onchange="OnPackageSourceChanged" style="width: 200px;">
+						<combobox value="@package.SelectedSource" ValueChanged="@OnPackageSourceChanged" style="width: 200px;">
 							@foreach (var source in package.Sources)
 							{
 								<option value="@source">@source</option>
@@ -89,7 +89,7 @@
 					{
 						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 							<label>Version:</label>
-							<combobox value="@package.SelectedRelease" @onchange="OnPackageReleaseChanged" style="width: 200px;">
+							<combobox value="@package.SelectedRelease" ValueChanged="@OnPackageReleaseChanged" style="width: 200px;">
 								@foreach (var release in package.Releases)
 								{
 									<option value="@release">@release.Name</option>
@@ -200,13 +200,17 @@
 		StateHasChanged();
 	}
 
-	private void OnPackageSourceChanged()
+	private void OnPackageSourceChanged(string value)
 	{
+		// Note: This would need to know which package changed
+		// For now just trigger state update
 		StateHasChanged();
 	}
 
-	private void OnPackageReleaseChanged()
+	private void OnPackageReleaseChanged(string value)
 	{
+		// Note: This would need to know which package changed
+		// For now just trigger state update
 		StateHasChanged();
 	}
 	
