@@ -67,328 +67,347 @@ $theme-control-mid-high: #686868;
 
 // Window styling overrides
 xguirootpanel {
-> .Window {
-border-radius: 0px;
-box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.5);
-border: 1px solid $theme-border-low;
+    >.Window {
+        border-radius: 0px;
+        box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.5);
+        border: 1px solid $theme-border-low;
+        background-color: $window;
 
-&.unfocused {
-> .TitleBar {
-background-color: $window;
-color: $grey-text;
+        &.unfocused {
+            >.TitleBar {
+                background-color: $window;
+                color: $grey-text;
 
-> .Control {
-color: $grey-text;
-}
-}
-}
+                >.Control {
+                    color: $grey-text;
+                }
+            }
+        }
 
-> .TitleBar {
-padding: 0px;
-height: 30px;
-background-color: $menu;
-color: $window-text;
-border-bottom: 1px solid $theme-border-low;
+        >.TitleBar {
+            padding: 0px;
+            height: 30px;
+            background-color: $menu;
+            color: $window-text;
+            border-bottom: 1px solid $theme-border-low;
 
-.Control {
-width: 45px;
-height: 29px;
-border: none;
-border-radius: 0px;
-font-size: 10px;
-transition: all 0.1s linear;
-background-color: transparent;
-color: $window-text;
+            .Control {
+                width: 45px;
+                height: 29px;
+                border: none;
+                border-radius: 0px;
+                font-size: 10px;
+                transition: all 0.1s linear;
+                background-color: transparent;
+                color: $window-text;
 
-&:hover {
-background-color: $theme-control-mid-high;
-}
+                &:hover {
+                    background-color: $theme-control-mid-high;
+                }
 
-&:active {
-background-color: $button-face;
-}
-}
+                &:active {
+                    background-color: $button-face;
+                }
+            }
 
-.TitleIcon {
-margin-left: 8px;
-margin-top: 1px;
-}
+            .TitleIcon {
+                margin-left: 8px;
+                margin-top: 1px;
+            }
 
-.CloseButton {
-margin-left: 0px;
-margin-right: 0px;
+            .CloseButton {
+                margin-left: 0px;
+                margin-right: 0px;
 
-&:hover {
-background-color: #C42B1C;
-color: white;
-}
+                &:hover {
+                    background-color: #C42B1C;
+                    color: white;
+                }
 
-&:active {
-background-color: #A52818;
-}
-}
-}
-}
+                &:active {
+                    background-color: #A52818;
+                }
+            }
+        }
+    }
 }
 
 // Button styling overrides
 .button {
-background-color: $button-face;
-border: 1px solid $theme-border-mid;
-border-radius: 3px;
-color: $button-text;
-transition: all 0.1s linear;
+    background-color: $button-face;
+    border: 1px solid $theme-border-mid;
+    border-radius: 3px;
+    color: $button-text;
+    transition: all 0.1s linear;
 
-&:hover {
-background-color: $theme-control-mid-high;
-border-color: $theme-border-high;
-}
+    &:hover {
+        background-color: $theme-control-mid-high;
+        border-color: $theme-border-high;
+    }
 
-&:active {
-background-color: $button-face;
-border-color: $theme-border-mid;
-}
+    &:active {
+        background-color: $button-face;
+        border-color: $theme-border-mid;
+    }
 }
 
 // CheckBox styling overrides
 .checkbox {
-.checkpanel, iconpanel {
-transition: all 0.1s linear;
-border: 1px solid $theme-border-mid;
-border-radius: 3px;
-background-color: $button-face;
-width: 16px;
-height: 16px;
-min-width: 16px;
-min-height: 16px;
 
-&:hover {
-background-color: $theme-control-mid-high;
-border-color: $theme-border-high;
-}
+    .checkpanel,
+    iconpanel {
+        transition: all 0.1s linear;
+        border: 1px solid $theme-border-mid;
+        border-radius: 3px;
+        background-color: $button-face;
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
 
-&:active {
-background-color: $button-face;
-}
-}
+        &:hover {
+            background-color: $theme-control-mid-high;
+            border-color: $theme-border-high;
+        }
 
-&.checked {
-> .checkpanel, .iconpanel {
-border: 1px solid $highlight;
-background-color: $highlight;
+        &:active {
+            background-color: $button-face;
+        }
+    }
 
-.checklabel {
-color: white;
-}
-}
+    &.checked {
 
-&:hover {
-> .checkpanel, .iconpanel {
-background-color: #1AAEEA;
-}
-}
-}
+        >.checkpanel,
+        .iconpanel {
+            border: 1px solid $highlight;
+            background-color: $highlight;
+
+            .checklabel {
+                color: white;
+            }
+        }
+
+        &:hover {
+
+            >.checkpanel,
+            .iconpanel {
+                background-color: #1AAEEA;
+            }
+        }
+    }
 }
 
 // RadioButton styling overrides
 .radiobutton {
-.checkpanel, iconpanel {
-transition: all 0.1s linear;
-border: 1px solid $theme-border-mid;
-border-radius: 8px;
-background-color: $button-face;
-width: 16px;
-height: 16px;
-min-width: 16px;
-min-height: 16px;
-justify-content: center;
-align-items: center;
 
-> .checklabel {
-width: 6px;
-height: 6px;
-background-color: white;
-border-radius: 8px;
-}
-}
+    .checkpanel,
+    iconpanel {
+        transition: all 0.1s linear;
+        border: 1px solid $theme-border-mid;
+        border-radius: 8px;
+        background-color: $button-face;
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+        justify-content: center;
+        align-items: center;
 
-&:hover {
-.checkpanel, iconpanel {
-background-color: $theme-control-mid-high;
-border-color: $theme-border-high;
-}
-}
+        >.checklabel {
+            width: 6px;
+            height: 6px;
+            background-color: white;
+            border-radius: 8px;
+        }
+    }
 
-&:active {
-.checkpanel, iconpanel {
-background-color: $button-face;
-}
-}
+    &:hover {
 
-&.checked {
-> .checkpanel, .iconpanel {
-border: 1px solid $highlight;
-background-color: $highlight;
+        .checkpanel,
+        iconpanel {
+            background-color: $theme-control-mid-high;
+            border-color: $theme-border-high;
+        }
+    }
 
-.checklabel {
-background-color: white;
-}
-}
+    &:active {
 
-&:hover {
-> .checkpanel, .iconpanel {
-background-color: #1AAEEA;
-}
-}
-}
+        .checkpanel,
+        iconpanel {
+            background-color: $button-face;
+        }
+    }
+
+    &.checked {
+
+        >.checkpanel,
+        .iconpanel {
+            border: 1px solid $highlight;
+            background-color: $highlight;
+
+            .checklabel {
+                background-color: white;
+            }
+        }
+
+        &:hover {
+
+            >.checkpanel,
+            .iconpanel {
+                background-color: #1AAEEA;
+            }
+        }
+    }
 }
 
 // TextEntry / TextBox styling overrides
 .textentry,
 .textbox {
-background-color: $button-face;
-border-radius: 3px;
-border: 1px solid $theme-border-mid;
-color: $window-text;
-transition: all 0.1s linear;
+    background-color: $button-face;
+    border-radius: 3px;
+    border: 1px solid $theme-border-mid;
+    color: $window-text;
+    transition: all 0.1s linear;
 
-&:hover {
-border-color: $theme-border-high;
-}
+    &:hover {
+        border-color: $theme-border-high;
+    }
 
-&:focus {
-border-color: $highlight;
-}
+    &:focus {
+        border-color: $highlight;
+    }
 }
 
 // ComboBox / Select styling
 .selector {
-> .selector_indicator {
-border: 0px;
-background-color: transparent;
-content: "";
-font-size: 10px;
-top: 2px;
-align-items: center;
-}
+    >.selector_indicator {
+        border: 0px;
+        background-color: transparent;
+        content: "";
+        font-size: 10px;
+        top: 2px;
+        align-items: center;
+    }
 }
 
 // ProgressBar styling
-progressbar, .progressbar {
-background-color: $button-face;
-border: 1px solid $theme-border-mid;
-height: 20px;
-border-radius: 3px;
-overflow: hidden;
+progressbar,
+.progressbar {
+    background-color: $button-face;
+    border: 1px solid $theme-border-mid;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
 
-.progressbar-fill {
-background-color: $highlight;
-height: 100%;
-}
+    .progressbar-fill {
+        background-color: $highlight;
+        height: 100%;
+    }
 }
 
 // TabContainer styling
 .TabContainer {
-> .tabs {
-background-color: $window;
-border-bottom: 1px solid $theme-border-low;
+    >.tabs {
+        background-color: $window;
+        border-bottom: 1px solid $theme-border-low;
 
-> .button {
-background-color: transparent;
-border: none;
-border-bottom: 2px solid transparent;
-border-radius: 0px;
-color: $grey-text;
-transition: all 0.1s linear;
+        >.button {
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 0px;
+            color: $grey-text;
+            transition: all 0.1s linear;
 
-&:hover {
-background-color: $button-face;
-color: $window-text;
-}
+            &:hover {
+                background-color: $button-face;
+                color: $window-text;
+            }
 
-&.active {
-background-color: transparent;
-border-bottom: 2px solid $highlight;
-color: $window-text;
-}
-}
-}
+            &.active {
+                background-color: transparent;
+                border-bottom: 2px solid $highlight;
+                color: $window-text;
+            }
+        }
+    }
 
-> .sheets {
-background-color: $window;
-border: 1px solid $theme-border-low;
-border-top: none;
-}
+    >.sheets {
+        background-color: $window;
+        border: 1px solid $theme-border-low;
+        border-top: none;
+    }
 }
 
 // Context Menu
 .ContextMenu {
-border-radius: 3px;
-background-color: $menu;
-border: 1px solid $theme-border-mid;
-padding: 4px;
-box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    background-color: $menu;
+    border: 1px solid $theme-border-mid;
+    padding: 4px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
 
-.Menu-Separator {
-border: 0px;
-background-color: $theme-border-low;
-height: 1px;
-margin: 4px 0;
-}
+    .Menu-Separator {
+        border: 0px;
+        background-color: $theme-border-low;
+        height: 1px;
+        margin: 4px 0;
+    }
 
-.MenuItem {
-min-height: 24px;
-border-radius: 2px;
-color: $menu-text;
-padding: 4px 8px;
+    .MenuItem {
+        min-height: 24px;
+        border-radius: 2px;
+        color: $menu-text;
+        padding: 4px 8px;
 
-&:hover {
-background-color: $theme-control-mid-high;
-}
+        &:hover {
+            background-color: $theme-control-mid-high;
+        }
 
-&.open, &:active {
-background-color: $button-face;
-}
-}
+        &.open,
+        &:active {
+            background-color: $button-face;
+        }
+    }
 }
 
 // Toolbar
 .toolbar {
-background-color: $menu;
-border-bottom: 1px solid $theme-border-low;
+    background-color: $menu;
+    border-bottom: 1px solid $theme-border-low;
 
-&.menu-toolbar {
-background-color: $menu;
-}
+    &.menu-toolbar {
+        background-color: $menu;
+    }
 
-.menu-item {
-margin: 0px;
-border-radius: 0px;
-border: none;
-color: $menu-text;
-transition: all 0.1s linear;
+    .menu-item {
+        margin: 0px;
+        border-radius: 0px;
+        border: none;
+        color: $menu-text;
+        transition: all 0.1s linear;
 
-&:hover {
-background-color: $button-face;
-}
+        &:hover {
+            background-color: $button-face;
+        }
 
-&:active {
-background-color: $theme-control-mid-high;
-}
-}
+        &:active {
+            background-color: $theme-control-mid-high;
+        }
+    }
 
-.toolbar-button {
-background-color: transparent;
-border-radius: 2px;
-color: $window-text;
+    .toolbar-button {
+        background-color: transparent;
+        border-radius: 2px;
+        color: $window-text;
 
-&:hover {
-background-color: $button-face;
-border: 1px solid $theme-border-mid;
-}
+        &:hover {
+            background-color: $button-face;
+            border: 1px solid $theme-border-mid;
+        }
 
-&:active {
-background-color: $theme-control-mid-high;
-}
-}
+        &:active {
+            background-color: $theme-control-mid-high;
+        }
+    }
 }
