@@ -12,96 +12,106 @@
 @inherits Panel
 
 <root class="settings-page">
-	<!-- Resolution Group -->
-	<groupbox text="Resolution">
-		<combobox @bind-value="selectedResolution">
-			@foreach (var res in resolutions)
-			{
-				<option value="@res">@res</option>
-			}
-		</combobox>
-		
-		<check @bind-value="@settingsData.UseCustomResolution">Use Custom Resolution</check>
-		
-		@if (settingsData != null && settingsData.UseCustomResolution)
-		{
-			<div class="custom-resolution">
-				<textentry type="number" @bind-value="@settingsData.Width" placeholder="Width" />
-				<label>×</label>
-				<textentry type="number" @bind-value="@settingsData.Height" placeholder="Height" />
-			</div>
-		}
-	</groupbox>
+	<autolayout>
+		<!-- Resolution Group -->
+		<groupbox text="Resolution">
+			<autolayout>
+				<combobox @bind-value="selectedResolution" style="width: 250px;">
+					@foreach (var res in resolutions)
+					{
+						<option value="@res">@res</option>
+					}
+				</combobox>
+				
+				<check @bind-value="@settingsData.UseCustomResolution">Use Custom Resolution</check>
+				
+				@if (settingsData != null && settingsData.UseCustomResolution)
+				{
+					<div class="custom-resolution">
+						<textentry type="number" @bind-value="@settingsData.Width" placeholder="Width" style="width: 100px;" />
+						<label>×</label>
+						<textentry type="number" @bind-value="@settingsData.Height" placeholder="Height" style="width: 100px;" />
+					</div>
+				}
+			</autolayout>
+		</groupbox>
 
-	<!-- Garry's Mod Settings -->
-	<groupbox text="Garry's Mod">
+		<!-- Garry's Mod Settings -->
+		<groupbox text="Garry's Mod">
+			<autolayout>
+				@if (settingsData != null)
+				{
+					<check @bind-value="@settingsData.LoadWorkshopAddons">Load Workshop Addons</check>
+				}
+			</autolayout>
+		</groupbox>
+
+		<!-- Linux Settings (only visible on Linux) -->
+		@if (IsLinux && settingsData != null)
+		{
+			<groupbox text="Linux Settings">
+				<autolayout>
+					<!-- Proton Version Selection -->
+					<div class="setting-row">
+						<label>Proton Version:</label>
+						<combobox @bind-value="selectedProtonBuild" style="width: 250px;">
+							@foreach (var label in protonBuildLabels)
+							{
+								<option value="@label">@label</option>
+							}
+						</combobox>
+						<button @onclick="RefreshProtonBuilds">Refresh</button>
+					</div>
+
+					<!-- Custom Proton Path -->
+					@if (isCustomProtonPathVisible)
+					{
+						<div class="setting-row">
+							<label>Custom Proton Path:</label>
+							<textentry @bind-value="@settingsData.LinuxProtonPath" placeholder="/path/to/proton/executable" style="flex: 1;" />
+							<button @onclick="ClearProtonPath">Clear</button>
+						</div>
+					}
+
+					<!-- Steam Root Override -->
+					<div class="setting-row">
+						<label>Steam Root Override:</label>
+						<textentry @bind-value="@settingsData.LinuxSteamRootOverride" placeholder="Leave empty for auto-detection" style="flex: 1;" />
+					</div>
+
+					<!-- Vulkan Driver Selection -->
+					<div class="setting-row">
+						<label>Vulkan Driver:</label>
+						<combobox @bind-value="@settingsData.LinuxVulkanDriver" style="width: 200px;">
+							@foreach (var driver in vulkanDriverOptions)
+							{
+								<option value="@driver">@driver</option>
+							}
+						</combobox>
+					</div>
+
+					<!-- Proton Logging -->
+					<check @bind-value="@settingsData.LinuxEnableProtonLog">Enable Proton Logging (PROTON_LOG=1)</check>
+				</autolayout>
+			</groupbox>
+		}
+
+		<!-- Advanced Settings -->
 		@if (settingsData != null)
 		{
-			<check @bind-value="@settingsData.LoadWorkshopAddons">Load Workshop Addons</check>
+			<groupbox text="Advanced Settings">
+				<autolayout>
+					<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
+					<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>
+					
+					<div class="setting-item">
+						<label>Custom Launch Options:</label>
+						<textentry @bind-value="@settingsData.CustomLaunchOptions" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
+					</div>
+				</autolayout>
+			</groupbox>
 		}
-	</groupbox>
-
-	<!-- Linux Settings (only visible on Linux) -->
-	@if (IsLinux && settingsData != null)
-	{
-		<groupbox text="Linux Settings">
-			<!-- Proton Version Selection -->
-			<div class="setting-row">
-				<label>Proton Version:</label>
-				<combobox @bind-value="selectedProtonBuild">
-					@foreach (var label in protonBuildLabels)
-					{
-						<option value="@label">@label</option>
-					}
-				</combobox>
-				<button @onclick="RefreshProtonBuilds">Refresh</button>
-			</div>
-
-			<!-- Custom Proton Path -->
-			@if (isCustomProtonPathVisible)
-			{
-				<div class="setting-row">
-					<label>Custom Proton Path:</label>
-					<textentry @bind-value="@settingsData.LinuxProtonPath" placeholder="/path/to/proton/executable" />
-					<button @onclick="ClearProtonPath">Clear</button>
-				</div>
-			}
-
-			<!-- Steam Root Override -->
-			<div class="setting-row">
-				<label>Steam Root Override:</label>
-				<textentry @bind-value="@settingsData.LinuxSteamRootOverride" placeholder="Leave empty for auto-detection" />
-			</div>
-
-			<!-- Vulkan Driver Selection -->
-			<div class="setting-row">
-				<label>Vulkan Driver:</label>
-				<combobox @bind-value="@settingsData.LinuxVulkanDriver">
-					@foreach (var driver in vulkanDriverOptions)
-					{
-						<option value="@driver">@driver</option>
-					}
-				</combobox>
-			</div>
-
-			<!-- Proton Logging -->
-			<check @bind-value="@settingsData.LinuxEnableProtonLog">Enable Proton Logging (PROTON_LOG=1)</check>
-		</groupbox>
-	}
-
-	<!-- Advanced Settings -->
-	@if (settingsData != null)
-	{
-		<groupbox text="Advanced Settings">
-			<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
-			<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>
-			
-			<div class="setting-item">
-				<label>Custom Launch Options:</label>
-				<textentry @bind-value="@settingsData.CustomLaunchOptions" placeholder="Custom Launch Options (e.g. -windowed -noborder)" />
-			</div>
-		</groupbox>
-	}
+	</autolayout>
 </root>
 
 @code {

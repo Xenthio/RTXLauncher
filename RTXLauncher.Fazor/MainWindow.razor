@@ -117,11 +117,37 @@
 
 	public MainWindow()
 	{
-		// Load Fazor default theme
-		SetTheme("SimpleDarkTheme.scss");
-		
 		// Initialize settings
 		settingsData = settingsService.LoadSettings();
+		
+		// Load saved theme or default
+		string themeName = !string.IsNullOrEmpty(settingsData?.Theme) ? settingsData.Theme : "SimpleDark";
+		ApplyTheme(themeName);
+	}
+
+	public void ApplyTheme(string themeName)
+	{
+		try
+		{
+			// Map friendly names to SCSS files
+			string themeFile = themeName switch
+			{
+				"SimpleDark" => "SimpleDarkTheme.scss",
+				"Computer95" => "/XGUI/DefaultStyles/Computer95.scss",
+				"Computer11" => "/XGUI/DefaultStyles/Computer11.scss",
+				"ComputerXP" => "/XGUI/DefaultStyles/ComputerXP.scss",
+				"Derma" => "/XGUI/DefaultStyles/Derma.scss",
+				_ => "SimpleDarkTheme.scss"
+			};
+			
+			SetTheme(themeFile);
+			AddLogMessage($"Theme changed to: {themeName}");
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error applying theme: {ex.Message}");
+		}
 	}
 
 	private void ShowPage(int pageIndex)

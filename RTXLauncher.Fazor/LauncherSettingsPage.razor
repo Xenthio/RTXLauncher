@@ -8,36 +8,82 @@
 @inherits Panel
 
 <root class="launcher-settings-page">
-	<groupbox text="Launcher Settings">
-		@if (settingsData != null)
-		{
-			<check @bind-value="@settingsData.CheckForUpdatesOnLaunch">
-				Check for updates on launch
-			</check>
-			
-			<div class="setting-item">
-				<label>Theme:</label>
-				<combobox @bind-value="selectedTheme">
-					@foreach (var theme in themes)
-					{
-						<option value="@theme">@theme</option>
-					}
-				</combobox>
-			</div>
-		}
-	</groupbox>
+	<autolayout>
+		<groupbox text="Launcher Settings">
+			<autolayout>
+				@if (settingsData != null)
+				{
+					<check @bind-value="@settingsData.CheckForUpdatesOnLaunch">
+						Check for updates on launch
+					</check>
+					
+					<div class="setting-item">
+						<label>Theme:</label>
+						<combobox @bind-value="selectedTheme" @onchange="OnThemeChanged" style="width: 200px;">
+							@foreach (var theme in themes)
+							{
+								<option value="@theme">@theme</option>
+							}
+						</combobox>
+					</div>
+				}
+			</autolayout>
+		</groupbox>
+	</autolayout>
 </root>
 
 @code {
 	private SettingsService settingsService = new SettingsService();
 	private SettingsData? settingsData;
-	private List<string> themes = new() { "Computer95", "Computer11", "ComputerXP", "Derma" };
-	private string selectedTheme = "Computer11";
+	private List<string> themes = new() { "SimpleDark", "Computer95", "Computer11", "ComputerXP", "Derma" };
+	private string selectedTheme = "SimpleDark";
 
 	public LauncherSettingsPage()
 	{
 		settingsData = settingsService.LoadSettings();
-		// TODO: Load actual theme from settings
+		// Load saved theme if available
+		if (!string.IsNullOrEmpty(settingsData?.Theme))
+		{
+			selectedTheme = settingsData.Theme;
+		}
+	}
+
+	private void OnThemeChanged(string newTheme)
+	{
+		selectedTheme = newTheme;
+		if (settingsData != null)
+		{
+			settingsData.Theme = newTheme;
+			settingsService.SaveSettings(settingsData);
+		}
+		
+		// Apply theme change
+		ApplyTheme(newTheme);
+		StateHasChanged();
+	}
+
+	private void ApplyTheme(string themeName)
+	{
+		// Find the MainWindow and update its theme
+		var mainWindow = FindRootWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.ApplyTheme(themeName);
+		}
+	}
+
+	private MainWindow? FindRootWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
 	}
 
 	public override void OnDeleted()

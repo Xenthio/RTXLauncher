@@ -6,19 +6,25 @@
 @namespace RTXLauncher.Fazor
 @inherits Panel
 
-<root class="mounting-page" style="flex-direction:column">
-	<groupbox text="Mounted Remix Games">
-		@foreach (var game in mountableGames)
-		{
-			<check @bind-value="@game.IsMounted" disabled="@(!game.IsInstalled)">
-				@game.Name
-			</check>
-		}
-	</groupbox>
-	
-	<groupbox text="USDA Fixes">
-		<button @onclick="InstallUsdaFixes">Install USDA Fixes</button>
-	</groupbox>
+<root class="mounting-page">
+	<autolayout>
+		<groupbox text="Mounted Remix Games">
+			<autolayout>
+				@foreach (var game in mountableGames)
+				{
+					<check @bind-value="@game.IsMounted" disabled="@(!game.IsInstalled)">
+						@game.Name
+					</check>
+				}
+			</autolayout>
+		</groupbox>
+		
+		<groupbox text="USDA Fixes">
+			<autolayout>
+				<button @onclick="InstallUsdaFixes">Install USDA Fixes</button>
+			</autolayout>
+		</groupbox>
+	</autolayout>
 </root>
 
 @code {
