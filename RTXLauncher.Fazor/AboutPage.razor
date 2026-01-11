@@ -26,7 +26,7 @@
 							<option value="@source">@source</option>
 						}
 					</combobox>
-					<button @onclick="InstallUpdate" disabled="@isCheckingForUpdates">Install</button>
+					<button @onclick="InstallUpdate" disabled="@(string.IsNullOrEmpty(latestReleaseUrl))">Open Release Page</button>
 					<button @onclick="CheckForUpdates" disabled="@isCheckingForUpdates">Check for Updates</button>
 				</div>
 			</div>
@@ -41,28 +41,111 @@
 	private List<string> updateSources = new() { "Stable", "Beta", "Experimental" };
 	private string selectedUpdateSource = "Stable";
 	private GitHubService? gitHubService;
+	private string? latestReleaseUrl;
 
 	public AboutPage()
 	{
 		gitHubService = new GitHubService();
 		currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+		
+		// Auto-check for updates on page load
+		CheckForUpdates();
 	}
 
 	private async void CheckForUpdates()
 	{
+		if (gitHubService == null) return;
+		
 		isCheckingForUpdates = true;
 		releaseNotes = "Checking for updates...";
 		StateHasChanged();
 		
-		await System.Threading.Tasks.Task.Delay(1000);
-		releaseNotes = "No updates available at this time.";
-		isCheckingForUpdates = false;
-		StateHasChanged();
+		try
+		{
+			// Check for launcher updates from the RTXLauncher repository
+			var releases = await gitHubService.FetchReleasesAsync("Xenthio", "RTXLauncher");
+			
+			if (releases != null && releases.Count > 0)
+			{
+				var latestRelease = releases[0]; // First release is the latest
+				latestReleaseUrl = latestRelease.HtmlUrl;
+				releaseNotes = $"Latest Release: {latestRelease.Name}\n\n{latestRelease.Body}";
+				
+				// Compare versions (simple string comparison for now)
+				if (latestRelease.TagName != currentVersion)
+				{
+					releaseNotes = $"⬆️ Update Available!\n\nLatest: {latestRelease.TagName}\nCurrent: {currentVersion}\n\n{latestRelease.Body}";
+					AddLogToMainWindow($"Update available: {latestRelease.TagName}");
+				}
+				else
+				{
+					AddLogToMainWindow("You are running the latest version.");
+				}
+			}
+			else
+			{
+				releaseNotes = "No updates found.";
+			}
+		}
+		catch (System.Exception ex)
+		{
+			releaseNotes = $"Error checking for updates: {ex.Message}";
+			AddLogToMainWindow($"Failed to check for updates: {ex.Message}");
+		}
+		finally
+		{
+			isCheckingForUpdates = false;
+			StateHasChanged();
+		}
 	}
 
 	private void InstallUpdate()
 	{
-		System.Console.WriteLine($"Installing update from {selectedUpdateSource}...");
+		if (!string.IsNullOrEmpty(latestReleaseUrl))
+		{
+			try
+			{
+				// Open the release page in the default browser
+				var psi = new System.Diagnostics.ProcessStartInfo
+				{
+					FileName = latestReleaseUrl,
+					UseShellExecute = true
+				};
+				System.Diagnostics.Process.Start(psi);
+				AddLogToMainWindow($"Opening release page: {latestReleaseUrl}");
+			}
+			catch (System.Exception ex)
+			{
+				AddLogToMainWindow($"Error opening release page: {ex.Message}");
+			}
+		}
+		else
+		{
+			AddLogToMainWindow("No update URL available.");
+		}
+	}
+
+	private void AddLogToMainWindow(string message)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.AddLogMessage(message);
+		}
+	}
+
+	private MainWindow? FindMainWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
 	}
 
 	protected override int BuildHash()
