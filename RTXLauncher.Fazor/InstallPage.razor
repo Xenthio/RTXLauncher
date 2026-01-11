@@ -1,6 +1,10 @@
 @using Sandbox.UI;
 @using global::Fazor.Controls;
 @using RTXLauncher.Core.Utilities
+@using RTXLauncher.Core.Services
+@using RTXLauncher.Core.Models
+@using System.Collections.Generic
+@using System.Linq
 @namespace RTXLauncher.Fazor
 @inherits Panel
 
@@ -8,18 +12,51 @@
 	@if (isWelcomeVisible)
 	{
 		<groupbox text="Welcome to the Garry's Mod RTX Launcher">
-			<label>Quick installer will set up everything you need.</label>
-			<label>Vanilla Path: @autoDetectedPath</label>
-			<button @onclick="StartInstall" disabled="@isBusy">
-				@(isBusy ? "Installing..." : "Start Quick Install")
-			</button>
+			<div class="auto-layout column">
+				<label>Quick installer will set up everything you need.</label>
+				<label>Vanilla Path: @autoDetectedPath</label>
+				
+				@if (preflightWarnings.Count > 0)
+				{
+					<groupbox text="Warnings">
+						<div class="auto-layout column">
+							@foreach (var warning in preflightWarnings)
+							{
+								<label style="color: orange;">⚠️ @warning</label>
+							}
+						</div>
+					</groupbox>
+				}
+				
+				<div class="install-options" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+					<label>Fixes Package:</label>
+					<combobox @bind-value="selectedFixesPackage" style="width: 200px;">
+						@foreach (var package in availableFixesPackages)
+						{
+							<option value="@package.Option.ToString()">@package.DisplayName</option>
+						}
+					</combobox>
+				</div>
+				
+				<div class="button-row" style="display: flex; flex-direction: row; gap: 10px;">
+					<button @onclick="StartInstall" disabled="@isBusy">
+						@(isBusy ? "Installing..." : "Start Quick Install")
+					</button>
+					@if (autoDetectedPath == "Not found")
+					{
+						<button @onclick="BrowseVanillaPath" disabled="@isBusy">Browse for Vanilla Install</button>
+					}
+				</div>
+			</div>
 		</groupbox>
 	}
 	else if (isCompletedVisible)
 	{
 		<groupbox text="Installation Complete!">
-			<label>Your installation is ready. Use 'Launch Game' to play.</label>
-			<button @onclick="RerunInstall">Re-run Install</button>
+			<div class="auto-layout column">
+				<label>Your installation is ready. Use 'Launch Game' to play.</label>
+				<button @onclick="RerunInstall">Re-run Install</button>
+			</div>
 		</groupbox>
 	}
 </root>
@@ -29,36 +66,170 @@
 	private bool isCompletedVisible = false;
 	private bool isBusy = false;
 	private string autoDetectedPath = "Checking...";
+	private string? manualVanillaPath = null;
+	private List<string> preflightWarnings = new();
+	private List<FixesPackageInfo> availableFixesPackages = new();
+	private string selectedFixesPackage = "Standard";
+	private QuickInstallService? quickInstallService;
 
 	public InstallPage()
+	{
+		// Initialize services
+		var gitHubService = new GitHubService();
+		var installService = new GarrysModInstallService();
+		var updateService = new GarrysModUpdateService();
+		var packageInstallService = new PackageInstallService();
+		var patchingService = new PatchingService();
+		var installedPackagesService = new InstalledPackagesService();
+		quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService, installedPackagesService);
+		
+		// Load available fixes packages
+		availableFixesPackages = QuickInstallService.GetAvailableFixesPackages();
+		selectedFixesPackage = availableFixesPackages.FirstOrDefault(p => p.Option == FixesPackageOption.Standard)?.Option.ToString() ?? "Standard";
+		
+		CheckInitialState();
+		CheckVanillaInstallation();
+	}
+
+	private void CheckInitialState()
 	{
 		var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
 		isCompletedVisible = installType != "unknown";
 		isWelcomeVisible = !isCompletedVisible;
-		autoDetectedPath = GarrysModUtility.GetVanillaInstallFolder() ?? "Not found";
+		
+		if (isWelcomeVisible)
+		{
+			// Perform preflight checks
+			preflightWarnings.Clear();
+			var currentDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+			
+			// Check if running from Downloads folder
+			if (currentDirectory.Contains(System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), "Downloads"), System.StringComparison.OrdinalIgnoreCase))
+			{
+				preflightWarnings.Add("Running from Downloads folder. Recommended to move to a dedicated folder.");
+			}
+		}
+	}
+
+	private void CheckVanillaInstallation()
+	{
+		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder();
+		if (!string.IsNullOrEmpty(vanillaPath))
+		{
+			autoDetectedPath = vanillaPath;
+		}
+		else
+		{
+			autoDetectedPath = "Not found";
+			preflightWarnings.Insert(0, "Could not auto-detect vanilla Garry's Mod installation. Please browse for it manually.");
+		}
 		StateHasChanged();
+	}
+
+	private void BrowseVanillaPath()
+	{
+		// TODO: Implement folder picker dialog when Fazor supports it
+		AddLogToMainWindow("Folder picker not yet implemented in Fazor. Please install Garry's Mod first.");
 	}
 
 	private async void StartInstall()
 	{
+		if (quickInstallService == null) return;
+		
 		isBusy = true;
 		StateHasChanged();
-		await System.Threading.Tasks.Task.Delay(1000);
-		isWelcomeVisible = false;
-		isCompletedVisible = true;
-		isBusy = false;
-		StateHasChanged();
+		
+		try
+		{
+			AddLogToMainWindow("Starting quick installation...");
+			
+			// Get the selected fixes package
+			var fixesPackage = availableFixesPackages.FirstOrDefault(p => p.Option.ToString() == selectedFixesPackage);
+			if (fixesPackage == null)
+			{
+				fixesPackage = availableFixesPackages.First(p => p.Option == FixesPackageOption.Standard);
+			}
+			
+			// Determine vanilla path
+			var vanillaPath = !string.IsNullOrEmpty(manualVanillaPath) ? manualVanillaPath : autoDetectedPath;
+			if (vanillaPath == "Not found" || vanillaPath == "Checking...")
+			{
+				AddLogToMainWindow("Error: No vanilla Garry's Mod installation found.");
+				isBusy = false;
+				StateHasChanged();
+				return;
+			}
+			
+			AddLogToMainWindow($"Using vanilla installation: {vanillaPath}");
+			AddLogToMainWindow($"Using fixes package: {fixesPackage.DisplayName}");
+			
+			// Run the quick install
+			var progress = new System.Progress<InstallProgressReport>(report =>
+			{
+				AddLogToMainWindow(report.Message);
+				UpdateProgress(report.Percentage);
+			});
+			
+			await quickInstallService.PerformQuickInstallAsync(progress, fixesPackage.Option, vanillaPath);
+			
+			AddLogToMainWindow("Installation completed successfully!");
+			isWelcomeVisible = false;
+			isCompletedVisible = true;
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Installation failed: {ex.Message}");
+		}
+		finally
+		{
+			isBusy = false;
+			StateHasChanged();
+		}
 	}
 
 	private void RerunInstall()
 	{
 		isCompletedVisible = false;
 		isWelcomeVisible = true;
+		CheckVanillaInstallation();
 		StateHasChanged();
+	}
+
+	private void AddLogToMainWindow(string message)
+	{
+		// Find the MainWindow and add to its log
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.AddLogMessage(message);
+		}
+	}
+
+	private void UpdateProgress(int percentage)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.UpdateProgress(percentage);
+		}
+	}
+
+	private MainWindow? FindMainWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
 	}
 
 	protected override int BuildHash()
 	{
-		return System.HashCode.Combine(isWelcomeVisible, isCompletedVisible, isBusy);
+		return System.HashCode.Combine(isWelcomeVisible, isCompletedVisible, isBusy, preflightWarnings.Count);
 	}
 }

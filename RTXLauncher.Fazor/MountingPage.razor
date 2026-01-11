@@ -2,7 +2,10 @@
 @using Sandbox.UI;
 @using global::Fazor.Controls;
 @using RTXLauncher.Core.Services
+@using RTXLauncher.Core.Models
+@using RTXLauncher.Core.Utilities
 @using System.Collections.Generic
+@using System.Linq
 @namespace RTXLauncher.Fazor
 @inherits Panel
 
@@ -12,31 +15,36 @@
 			<div class="auto-layout column">
 				@foreach (var game in mountableGames)
 				{
-					<check @bind-value="@game.IsMounted" disabled="@(!game.IsInstalled)">
-						@game.Name
-					</check>
+					<div class="game-item" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
+						<div style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+							<label class="game-name">@game.Name</label>
+							<label class="game-status" style="color: @(game.IsInstalled ? "green" : "gray");">
+								@(game.IsInstalled ? "Installed" : "Not Installed")
+							</label>
+						</div>
+						<button @onclick="@(() => MountGame(game))" disabled="@(!game.IsInstalled || game.IsMounting)">
+							@(game.IsMounting ? "Mounting..." : "Mount")
+						</button>
+					</div>
 				}
 			</div>
 		</groupbox>
 		
 		<groupbox text="USDA Fixes">
 			<div class="auto-layout column">
-				<button @onclick="InstallUsdaFixes">Install USDA Fixes</button>
+				<label>Install USDA fixes for Half-Life 2 RTX to improve compatibility.</label>
+				<button @onclick="InstallUsdaFixes" disabled="@isBusy">
+					@(isBusy ? "Installing..." : "Install USDA Fixes")
+				</button>
 			</div>
 		</groupbox>
 	</div>
 </root>
 
 @code {
-	private class MountableGame
-	{
-		public string Name { get; set; } = "";
-		public bool IsInstalled { get; set; }
-		public bool IsMounted { get; set; }
-	}
-	
-	private List<MountableGame> mountableGames = new();
+	private List<MountableGameInfo> mountableGames = new();
 	private MountingService? mountingService;
+	private bool isBusy = false;
 
 	public MountingPage()
 	{
@@ -46,23 +54,171 @@
 
 	private void LoadMountableGames()
 	{
-		// TODO: Load actual games from MountingService
-		mountableGames = new List<MountableGame>
+		// Define the mountable games (matching Avalonia version)
+		mountableGames = new List<MountableGameInfo>
 		{
-			new MountableGame { Name = "Half-Life 2", IsInstalled = true, IsMounted = false },
-			new MountableGame { Name = "Counter-Strike: Source", IsInstalled = true, IsMounted = false },
-			new MountableGame { Name = "Team Fortress 2", IsInstalled = false, IsMounted = false },
-			new MountableGame { Name = "Portal", IsInstalled = true, IsMounted = false }
+			new MountableGameInfo 
+			{ 
+				Name = "Half-Life 2: RTX",
+				InstallFolder = "Half-Life 2 RTX",
+				GameFolder = "hl2rtx",
+				RemixModFolder = "hl2rtx"
+			},
+			new MountableGameInfo 
+			{ 
+				Name = "Portal with RTX",
+				InstallFolder = "PortalRTX",
+				GameFolder = "portal_rtx",
+				RemixModFolder = "gameReadyAssets"
+			},
+			new MountableGameInfo 
+			{ 
+				Name = "Portal: Prelude RTX",
+				InstallFolder = "Portal Prelude RTX",
+				GameFolder = "prelude_rtx",
+				RemixModFolder = "gameReadyAssets"
+			},
+			new MountableGameInfo 
+			{ 
+				Name = "Portal 2 with RTX",
+				InstallFolder = "Portal 2 With RTX",
+				GameFolder = "portal2",
+				RemixModFolder = "portal2rtx"
+			},
+			new MountableGameInfo 
+			{ 
+				Name = "Dark Messiah RTX",
+				InstallFolder = "Dark Messiah Might and Magic Single Player RTX",
+				GameFolder = "mm",
+				RemixModFolder = "dmrtx"
+			}
 		};
+		
+		// Check which games are installed
+		foreach (var game in mountableGames)
+		{
+			var installPath = SteamLibraryUtility.GetGameInstallFolder(game.InstallFolder);
+			game.IsInstalled = !string.IsNullOrEmpty(installPath);
+		}
+		
+		StateHasChanged();
 	}
 
-	private void InstallUsdaFixes()
+	private async void MountGame(MountableGameInfo game)
 	{
-		System.Console.WriteLine("Installing USDA fixes...");
+		if (mountingService == null || !game.IsInstalled) return;
+		
+		game.IsMounting = true;
+		StateHasChanged();
+		
+		try
+		{
+			AddLogToMainWindow($"Mounting {game.Name}...");
+			
+			var progress = new System.Progress<InstallProgressReport>(report =>
+			{
+				AddLogToMainWindow(report.Message);
+				UpdateProgress(report.Percentage);
+			});
+			
+			await mountingService.MountGameAsync(
+				game.Name,
+				game.GameFolder,
+				game.InstallFolder,
+				game.RemixModFolder,
+				progress
+			);
+			
+			AddLogToMainWindow($"{game.Name} mounted successfully!");
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Error mounting {game.Name}: {ex.Message}");
+		}
+		finally
+		{
+			game.IsMounting = false;
+			StateHasChanged();
+		}
+	}
+
+	private async void InstallUsdaFixes()
+	{
+		if (mountingService == null) return;
+		
+		isBusy = true;
+		StateHasChanged();
+		
+		try
+		{
+			AddLogToMainWindow("Installing USDA fixes for Half-Life 2 RTX...");
+			
+			var progress = new System.Progress<InstallProgressReport>(report =>
+			{
+				AddLogToMainWindow(report.Message);
+				UpdateProgress(report.Percentage);
+			});
+			
+			await mountingService.ApplyHl2UsdaFixesAsync(progress);
+			
+			AddLogToMainWindow("USDA fixes installed successfully!");
+		}
+		catch (System.Exception ex)
+		{
+			AddLogToMainWindow($"Error installing USDA fixes: {ex.Message}");
+		}
+		finally
+		{
+			isBusy = false;
+			StateHasChanged();
+		}
+	}
+
+	private void AddLogToMainWindow(string message)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.AddLogMessage(message);
+		}
+	}
+
+	private void UpdateProgress(int percentage)
+	{
+		var mainWindow = FindMainWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.UpdateProgress(percentage);
+		}
+	}
+
+	private MainWindow? FindMainWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
 	}
 
 	protected override int BuildHash()
 	{
-		return System.HashCode.Combine(mountableGames.Count);
+		return System.HashCode.Combine(mountableGames.Count, isBusy);
+	}
+	
+	// Simple class to track game info and state
+	private class MountableGameInfo
+	{
+		public string Name { get; set; } = "";
+		public string InstallFolder { get; set; } = "";
+		public string GameFolder { get; set; } = "";
+		public string RemixModFolder { get; set; } = "";
+		public bool IsInstalled { get; set; }
+		public bool IsMounting { get; set; }
 	}
 }

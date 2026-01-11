@@ -4,6 +4,7 @@
 @using global::Fazor.Controls;
 @using RTXLauncher.Core.Models;
 @using RTXLauncher.Core.Services;
+@using RTXLauncher.Core.Utilities;
 @using System;
 @using System.Collections.Generic;
 @using System.Diagnostics;
@@ -201,8 +202,29 @@
 
 	private void LaunchGame()
 	{
-		AddLogMessage("Launch game functionality - to be implemented");
-		// TODO: Implement game launch logic
+		try
+		{
+			if (settingsData == null)
+			{
+				AddLogMessage("Settings not loaded.");
+				return;
+			}
+
+			AddLogMessage("Launching Garry's Mod RTX...");
+			
+			// Get screen dimensions - use settings or defaults
+			int screenWidth = settingsData.Width > 0 ? settingsData.Width : 1920;
+			int screenHeight = settingsData.Height > 0 ? settingsData.Height : 1080;
+			
+			// Use LauncherUtility to launch the game
+			LauncherUtility.LaunchGame(settingsData, screenWidth, screenHeight);
+			
+			AddLogMessage("Game launched successfully!");
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error launching game: {ex.Message}");
+		}
 	}
 
 	private void CloseWindow()
@@ -211,10 +233,16 @@
 		Close();
 	}
 
-	private void AddLogMessage(string message)
+	public void AddLogMessage(string message)
 	{
 		fullLog.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
 		statusMessage = message;
+		StateHasChanged();
+	}
+
+	public void UpdateProgress(int percentage)
+	{
+		progressValue = percentage;
 		StateHasChanged();
 	}
 
