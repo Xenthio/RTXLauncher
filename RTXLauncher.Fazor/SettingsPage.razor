@@ -1,0 +1,330 @@
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Models
+@using RTXLauncher.Core.Services
+@using RTXLauncher.Core.Utilities
+@using System
+@using System.Collections.Generic
+@using System.IO
+@using System.Runtime.InteropServices
+@using System.Linq
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="settings-page">
+	<div class="auto-layout column">
+		<!-- Resolution Group -->
+		<groupbox text="Resolution">
+			<div class="auto-layout column">
+				<combobox @bind-value="selectedResolution" style="width: 250px;">
+					@foreach (var res in resolutions)
+					{
+						<option value="@res">@res</option>
+					}
+				</combobox>
+				
+				<check @bind-value="@settingsData.UseCustomResolution">Use Custom Resolution</check>
+				
+				@if (settingsData != null && settingsData.UseCustomResolution)
+				{
+					<div class="custom-resolution" style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
+						<textentry type="number" @bind-value="@settingsData.Width" placeholder="Width" style="width: 100px;" />
+						<label>×</label>
+						<textentry type="number" @bind-value="@settingsData.Height" placeholder="Height" style="width: 100px;" />
+					</div>
+				}
+			</div>
+		</groupbox>
+
+		<!-- Garry's Mod Settings -->
+		<groupbox text="Garry's Mod">
+			<div class="auto-layout column">
+				@if (settingsData != null)
+				{
+					<check @bind-value="@settingsData.LoadWorkshopAddons">Load Workshop Addons</check>
+				}
+			</div>
+		</groupbox>
+
+		<!-- Linux Settings (only visible on Linux) -->
+		@if (IsLinux && settingsData != null)
+		{
+			<groupbox text="Linux Settings">
+				<div class="auto-layout column">
+					<!-- Proton Version Selection -->
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+						<label>Proton Version:</label>
+						<combobox @bind-value="selectedProtonBuild" style="width: 250px;">
+							@foreach (var label in protonBuildLabels)
+							{
+								<option value="@label">@label</option>
+							}
+						</combobox>
+						<button @onclick="RefreshProtonBuilds">Refresh</button>
+					</div>
+
+					<!-- Custom Proton Path -->
+					@if (isCustomProtonPathVisible)
+					{
+						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+							<label>Custom Proton Path:</label>
+							<textentry @bind-value="@settingsData.LinuxProtonPath" placeholder="/path/to/proton/executable" style="flex: 1;" />
+							<button @onclick="ClearProtonPath">Clear</button>
+						</div>
+					}
+
+					<!-- Steam Root Override -->
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+						<label>Steam Root Override:</label>
+						<textentry @bind-value="@settingsData.LinuxSteamRootOverride" placeholder="Leave empty for auto-detection" style="flex: 1;" />
+					</div>
+
+					<!-- Vulkan Driver Selection -->
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+						<label>Vulkan Driver:</label>
+						<combobox @bind-value="@settingsData.LinuxVulkanDriver" style="width: 200px;">
+							@foreach (var driver in vulkanDriverOptions)
+							{
+								<option value="@driver">@driver</option>
+							}
+						</combobox>
+					</div>
+
+					<!-- Proton Logging -->
+					<check @bind-value="@settingsData.LinuxEnableProtonLog">Enable Proton Logging (PROTON_LOG=1)</check>
+				</div>
+			</groupbox>
+		}
+
+		<!-- Advanced Settings -->
+		@if (settingsData != null)
+		{
+			<groupbox text="Advanced Settings">
+				<div class="auto-layout column">
+					<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
+					<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>
+					
+					<div class="setting-item" style="display: flex; flex-direction: column; gap: 5px;">
+						<label>Custom Launch Options:</label>
+						<textentry @bind-value="@settingsData.CustomLaunchOptions" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
+					</div>
+				</div>
+			</groupbox>
+		}
+	</div>
+</root>
+
+@code {
+	private SettingsService settingsService = new SettingsService();
+	private SettingsData? settingsData;
+	
+	private List<string> resolutions = new List<string>();
+	private string selectedResolution = "Native Resolution";
+	
+	// Linux-specific
+	private bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+	private List<(string Label, string Path)> availableProtonBuilds = new();
+	private List<string> protonBuildLabels = new();
+	private string selectedProtonBuild = "";
+	private bool isCustomProtonPathVisible = false;
+	private List<string> vulkanDriverOptions = new();
+
+	public SettingsPage()
+	{
+		
+		// Load settings
+		settingsData = settingsService.LoadSettings();
+		
+		// Initialize resolution list
+		resolutions.Add("Native Resolution");
+		resolutions.AddRange(LauncherUtility.CommonResolutions);
+		
+		// Set selected resolution
+		if (settingsData.Width == 0 || settingsData.Height == 0)
+		{
+			selectedResolution = "Native Resolution";
+		}
+		else
+		{
+			var resString = $"{settingsData.Width}x{settingsData.Height}";
+			if (resolutions.Contains(resString))
+			{
+				selectedResolution = resString;
+			}
+			else
+			{
+				settingsData.UseCustomResolution = true;
+				selectedResolution = resString;
+			}
+		}
+		
+		// Initialize Linux settings
+		if (IsLinux)
+		{
+			LoadProtonBuilds();
+			LoadVulkanDrivers();
+		}
+		
+		StateHasChanged();
+	}
+
+	public override void OnDeleted()
+	{
+		base.OnDeleted();
+		
+		// Save settings when page is destroyed
+		if (settingsData != null)
+		{
+			settingsService.SaveSettings(settingsData);
+		}
+	}
+
+	private void OnResolutionChanged(string value)
+	{
+		if (settingsData == null) return;
+		
+		if (value == "Native Resolution")
+		{
+			settingsData.Width = 0;
+			settingsData.Height = 0;
+		}
+		else
+		{
+			var parts = value.Split('x');
+			if (parts.Length == 2 && int.TryParse(parts[0], out var width) && int.TryParse(parts[1], out var height))
+			{
+				settingsData.Width = width;
+				settingsData.Height = height;
+			}
+		}
+		StateHasChanged();
+	}
+
+	private void LoadProtonBuilds()
+	{
+		if (settingsData == null) return;
+		
+		try
+		{
+			availableProtonBuilds = LauncherUtility.ListProtonBuilds(settingsData);
+			protonBuildLabels = availableProtonBuilds.Select(p => p.Label).ToList();
+			
+			// Add "Custom" option
+			protonBuildLabels.Add("Custom");
+			
+			// Set selected build
+			if (!string.IsNullOrEmpty(settingsData.LinuxSelectedProtonLabel))
+			{
+				if (settingsData.LinuxSelectedProtonLabel == "Custom" || !string.IsNullOrEmpty(settingsData.LinuxProtonPath))
+				{
+					selectedProtonBuild = "Custom";
+					isCustomProtonPathVisible = true;
+					return;
+				}
+				
+				var matching = availableProtonBuilds.FirstOrDefault(p => p.Label == settingsData.LinuxSelectedProtonLabel);
+				if (matching != default)
+				{
+					selectedProtonBuild = matching.Label;
+					isCustomProtonPathVisible = false;
+					return;
+				}
+			}
+			
+			// Default to first available
+			if (availableProtonBuilds.Count > 0)
+			{
+				selectedProtonBuild = availableProtonBuilds[0].Label;
+				settingsData.LinuxSelectedProtonLabel = selectedProtonBuild;
+				isCustomProtonPathVisible = false;
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Warning: Could not load Proton builds: {ex.Message}");
+		}
+	}
+
+	private void OnProtonBuildChanged(string value)
+	{
+		if (settingsData == null || string.IsNullOrEmpty(value)) return;
+		
+		settingsData.LinuxSelectedProtonLabel = value;
+		isCustomProtonPathVisible = (value == "Custom");
+		
+		if (value != "Custom" && !string.IsNullOrEmpty(settingsData.LinuxProtonPath))
+		{
+			settingsData.LinuxProtonPath = "";
+		}
+		StateHasChanged();
+	}
+
+	private void RefreshProtonBuilds()
+	{
+		if (IsLinux)
+		{
+			LoadProtonBuilds();
+			LoadVulkanDrivers();
+			StateHasChanged();
+		}
+	}
+
+	private void ClearProtonPath()
+	{
+		if (settingsData == null) return;
+		
+		settingsData.LinuxProtonPath = "";
+		if (availableProtonBuilds.Count > 0)
+		{
+			selectedProtonBuild = availableProtonBuilds[0].Label;
+			OnProtonBuildChanged(selectedProtonBuild);
+		}
+		StateHasChanged();
+	}
+
+	private void LoadVulkanDrivers()
+	{
+		if (settingsData == null) return;
+		
+		vulkanDriverOptions = new List<string> { "Auto" };
+		
+		try
+		{
+			// Check for AMD drivers
+			if (File.Exists("/usr/share/vulkan/icd.d/amd_icd64.json"))
+				vulkanDriverOptions.Add("AMDVLK");
+			if (File.Exists("/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"))
+				vulkanDriverOptions.Add("RADV");
+			
+			// Check for Intel driver
+			if (File.Exists("/usr/share/vulkan/icd.d/intel_icd.x86_64.json"))
+				vulkanDriverOptions.Add("Intel ANV");
+			
+			// Check for NVIDIA driver
+			if (File.Exists("/usr/share/vulkan/icd.d/nvidia_icd.json"))
+				vulkanDriverOptions.Add("NVIDIA");
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Warning: Could not detect Vulkan drivers: {ex.Message}");
+		}
+		
+		// Ensure current selection is valid
+		if (!vulkanDriverOptions.Contains(settingsData.LinuxVulkanDriver))
+		{
+			settingsData.LinuxVulkanDriver = "Auto";
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		return HashCode.Combine(
+			settingsData?.Width,
+			settingsData?.Height,
+			settingsData?.UseCustomResolution,
+			settingsData?.LoadWorkshopAddons,
+			settingsData?.ConsoleEnabled,
+			settingsData?.DisableChromium
+		);
+	}
+}

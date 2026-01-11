@@ -1,0 +1,225 @@
+
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Services
+@using RTXLauncher.Core.Utilities
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="advanced-install-page">
+	<div class="auto-layout column">
+		<!-- Vanilla Garry's Mod Install Section -->
+		<groupbox text="Your Vanilla Garry's Mod Install">
+			<div class="auto-layout column">
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+					<label class="label-bold">Install Type:</label>
+					<label>@vanillaInstallType</label>
+				</div>
+				
+				<div class="info-row" style="display: flex; flex-direction: column; gap: 5px;">
+					<label class="label-bold">Install Path:</label>
+					<div class="path-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+						<label class="path-text">@vanillaInstallPath</label>
+						<button @onclick="BrowseVanillaPath">Browse...</button>
+					</div>
+				</div>
+				
+				@if (!string.IsNullOrEmpty(manualVanillaPath))
+				{
+					<label class="manual-path-text">Manual path: @manualVanillaPath</label>
+				}
+			</div>
+		</groupbox>
+		
+		<!-- RTX Install Section -->
+		<groupbox text="This RTX Install">
+			<div class="auto-layout column">
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+					<label class="label-bold">Install Type:</label>
+					<label>@rtxInstallType</label>
+				</div>
+				
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+					<label class="label-bold">Game Version:</label>
+					<label>@gameVersionDate</label>
+				</div>
+				
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+					<label class="label-bold">Install Path:</label>
+					<label class="path-text">@rtxInstallPath</label>
+				</div>
+				
+				<div class="button-row" style="display: flex; flex-direction: row; gap: 10px;">
+					<button @onclick="UpdateInstall" disabled="@isBusy">Update Install from Vanilla</button>
+					<button @onclick="DowngradeGame" disabled="@isBusy">Downgrade Game</button>
+				</div>
+			</div>
+		</groupbox>
+		
+		<!-- Dynamic Package List -->
+		@foreach (var package in packages)
+		{
+			<groupbox text="@package.Title">
+				<div class="auto-layout column">
+					<div class="package-status">
+						@if (package.HasInstalledVersion)
+						{
+							<label class="installed-label">Installed: <span class="version-text">@package.InstalledVersion</span> <span class="source-text">(@package.InstalledSource)</span></label>
+						}
+						else
+						{
+							<label class="not-installed-label">Not installed</label>
+						}
+					</div>
+					
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+						<label>Source:</label>
+						<combobox @bind-value="package.SelectedSource" style="width: 200px;">
+							@foreach (var source in package.Sources)
+							{
+								<option value="@source">@source</option>
+							}
+						</combobox>
+					</div>
+					
+					@if (package.Releases.Count > 0)
+					{
+						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+							<label>Version:</label>
+							<combobox @bind-value="package.SelectedRelease" style="width: 200px;">
+								@foreach (var release in package.Releases)
+								{
+									<option value="@release">@release.Name</option>
+								}
+							</combobox>
+							<button @onclick="() => InstallPackage(package)" disabled="@isBusy">@package.ButtonText</button>
+						</div>
+					}
+				</div>
+			</groupbox>
+		}
+	</div>
+</root>
+
+@code {
+	private bool isBusy = false;
+	
+	// Vanilla install info
+	private string vanillaInstallType = "Steam";
+	private string vanillaInstallPath = "Detecting...";
+	private string manualVanillaPath = "";
+	
+	// RTX install info
+	private string rtxInstallType = "Steam Mounted";
+	private string gameVersionDate = "2024-01-01";
+	private string rtxInstallPath = "Detecting...";
+	
+	// Package list
+	private List<PackageInfo> packages = new();
+	
+	public AdvancedInstallPage()
+	{
+		DetectInstalls();
+		InitializePackages();
+	}
+	
+	private void DetectInstalls()
+	{
+		try
+		{
+			// Detect install paths (simplified for now)
+			// TODO: Use GarrysModInstallService to detect actual paths
+			vanillaInstallPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\GarrysMod";
+			rtxInstallPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\GarrysModRTX";
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Detection error: {ex.Message}");
+		}
+	}
+	
+	private void InitializePackages()
+	{
+		packages.Add(new PackageInfo 
+		{ 
+			Title = "RTX Remix",
+			Sources = new List<string> { "GitHub", "Local" },
+			SelectedSource = "GitHub",
+			HasInstalledVersion = false,
+			ButtonText = "Install"
+		});
+		
+		packages.Add(new PackageInfo 
+		{ 
+			Title = "GMod Fixes",
+			Sources = new List<string> { "GitHub", "Local" },
+			SelectedSource = "GitHub",
+			HasInstalledVersion = false,
+			ButtonText = "Install"
+		});
+	}
+	
+	private void BrowseVanillaPath()
+	{
+		// TODO: Implement file browser
+		Console.WriteLine("Browse vanilla path");
+	}
+	
+	private async void UpdateInstall()
+	{
+		isBusy = true;
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		isBusy = false;
+		StateHasChanged();
+	}
+	
+	private async void DowngradeGame()
+	{
+		isBusy = true;
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		isBusy = false;
+		StateHasChanged();
+	}
+	
+	private async void InstallPackage(PackageInfo package)
+	{
+		isBusy = true;
+		package.ButtonText = "Installing...";
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(2000);
+		package.HasInstalledVersion = true;
+		package.InstalledVersion = "1.0.0";
+		package.InstalledSource = package.SelectedSource;
+		package.ButtonText = "Reinstall";
+		isBusy = false;
+		StateHasChanged();
+	}
+	
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(isBusy, packages.Count);
+	}
+	
+	private class PackageInfo
+	{
+		public string Title { get; set; } = "";
+		public List<string> Sources { get; set; } = new();
+		public string SelectedSource { get; set; } = "";
+		public List<ReleaseInfo> Releases { get; set; } = new();
+		public ReleaseInfo? SelectedRelease { get; set; }
+		public bool HasInstalledVersion { get; set; }
+		public string InstalledVersion { get; set; } = "";
+		public string InstalledSource { get; set; } = "";
+		public string ButtonText { get; set; } = "Install";
+	}
+	
+	private class ReleaseInfo
+	{
+		public string Name { get; set; } = "";
+	}
+}

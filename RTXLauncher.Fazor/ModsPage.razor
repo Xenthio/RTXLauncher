@@ -1,0 +1,88 @@
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using System.Collections.Generic
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="mods-page">
+	<div class="search-area">
+		<textentry placeholder="Search for mods..." @bind-value="searchText" />
+		<button @onclick="SearchMods">Search</button>
+	</div>
+	
+	<div class="mod-list">
+		@foreach (var mod in mods)
+		{
+			<div class="mod-item">
+				<label class="mod-title">@mod.Title</label>
+				<label class="mod-author">by @mod.Author</label>
+				<button @onclick="() => InstallMod(mod)">Install</button>
+			</div>
+		}
+	</div>
+	
+	<div class="pagination">
+		<button @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
+		<label>Page @currentPage</label>
+		<button @onclick="NextPage">Next</button>
+	</div>
+</root>
+
+@code {
+	private class ModItem
+	{
+		public string Title { get; set; } = "";
+		public string Author { get; set; } = "";
+	}
+	
+	private string searchText = "";
+	private int currentPage = 1;
+	private List<ModItem> mods = new();
+
+	public ModsPage()
+	{
+		LoadMods();
+	}
+
+	private void LoadMods()
+	{
+		mods = new List<ModItem>
+		{
+			new ModItem { Title = "Example Mod 1", Author = "Author1" },
+			new ModItem { Title = "Example Mod 2", Author = "Author2" },
+			new ModItem { Title = "Example Mod 3", Author = "Author3" }
+		};
+		StateHasChanged();
+	}
+
+	private void SearchMods()
+	{
+		System.Console.WriteLine($"Searching for: {searchText}");
+		LoadMods();
+	}
+
+	private void InstallMod(ModItem mod)
+	{
+		System.Console.WriteLine($"Installing mod: {mod.Title}");
+	}
+
+	private void PreviousPage()
+	{
+		if (currentPage > 1)
+		{
+			currentPage--;
+			LoadMods();
+		}
+	}
+
+	private void NextPage()
+	{
+		currentPage++;
+		LoadMods();
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(searchText, currentPage, mods.Count);
+	}
+}

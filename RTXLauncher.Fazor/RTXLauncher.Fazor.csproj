@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RTXLauncher.Fazor</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- Disable console window on Windows -->
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <!-- Release configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishTrimmed>false</PublishTrimmed>
+    <SelfContained>false</SelfContained>
+    <TrimMode>partial</TrimMode>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Fazor dependencies from local source -->
+    <ProjectReference Include="..\..\UITest\src\Fazor.UI\Fazor.UI.csproj" />
+    <ProjectReference Include="..\..\UITest\src\Fazor.Controls\Fazor.Controls.csproj" />
+    <ProjectReference Include="..\..\UITest\src\Fazor.Build\Fazor.Build.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference to core RTXLauncher functionality -->
+    <ProjectReference Include="..\RTXLauncher.Core\RTXLauncher.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Native AOT / Trimming configuration -->
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="rd.xml" />
+  </ItemGroup>
+
+  <!-- Assets -->
+  <ItemGroup>
+    <Content Include="Assets\**\*" Exclude="Assets\README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
+  <!-- Import Fazor build targets for Razor and SCSS -->
+  <Import Project="..\..\UITest\src\Fazor.Build\build\Fazor.Build.targets" />
+</Project>

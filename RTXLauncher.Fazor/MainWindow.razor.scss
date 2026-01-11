@@ -1,0 +1,188 @@
+// Main Window Styling for RTX Launcher Fazor
+// Import Simple Dark Theme (matches Avalonia's SimpleTheme Dark variant)
+@import "/Assets/SimpleDarkTheme.scss";
+
+.window-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    gap: 10px;
+}
+
+.top-bar {
+    display: flex;
+    flex-direction: row;
+    border-bottom: 1px solid $theme-border-low;
+    padding-bottom: 10px;
+    gap: 10px;
+}
+
+.logo-area {
+    width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+}
+
+.status-text {
+    font-size: 13px;
+    min-height: 20px;
+    color: $theme-foreground;
+    display: flex;
+    align-items: center;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    gap: 10px;
+    overflow: hidden;
+
+    .selectlist {
+        width: 200px;
+        flex-shrink: 0;
+    }
+
+    .content-area {
+        flex: 1;
+        background-color: $theme-control-mid;
+        border: 1px solid $theme-border-low;
+        border-radius: 3px;
+        padding: 10px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        
+        > * {
+            flex-shrink: 0;  // Don't shrink content
+        }
+    }
+}
+
+.log-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    
+    .log-content {
+        flex: 1;
+        background-color: #000000;
+        color: #00FF00;
+        font-family: "Consolas", "Courier New", monospace;
+        padding: 5px;
+        overflow: auto;
+        border: 1px solid $theme-border-low;
+        border-radius: 3px;
+    }
+    
+    .log-entry {
+        margin: 2px 0;
+    }
+}
+
+.bottom-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+// Page specific styles
+.welcome-page, .settings-page, .install-page, .update-page, .mods-page, 
+.about-page, .advanced-install-page, .launcher-settings-page, .mounting-page {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    
+    h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: $theme-foreground;
+    }
+    
+    h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+        color: $theme-foreground;
+    }
+    
+    h3 {
+        font-size: 14px;
+        margin-bottom: 5px;
+        color: $theme-foreground;
+    }
+    
+    p {
+        margin-bottom: 10px;
+        color: $theme-foreground;
+        line-height: 1.5;
+    }
+    
+    groupbox {
+        margin-bottom: 10px;
+    }
+}
+
+.setting-item {
+    margin-bottom: 15px;
+    
+    > label, > .label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: $theme-foreground;
+    }
+}
+
+.install-steps, .mod-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.step, .mod-item {
+    padding: 10px;
+    background-color: $theme-control-mid;
+    border: 1px solid $theme-border-low;
+    border-radius: 3px;
+    
+    h3 {
+        margin-bottom: 5px;
+        color: $theme-foreground;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    p {
+        color: $theme-foreground;
+        margin: 5px 0;
+    }
+}
+
+.info-item {
+    margin-bottom: 10px;
+    
+    label {
+        font-weight: 600;
+        margin-right: 10px;
+        color: $theme-foreground;
+    }
+    
+    span {
+        color: $theme-foreground;
+    }
+}
+
+

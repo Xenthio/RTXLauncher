@@ -1,0 +1,64 @@
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Utilities
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="install-page">
+	@if (isWelcomeVisible)
+	{
+		<groupbox text="Welcome to the Garry's Mod RTX Launcher">
+			<label>Quick installer will set up everything you need.</label>
+			<label>Vanilla Path: @autoDetectedPath</label>
+			<button @onclick="StartInstall" disabled="@isBusy">
+				@(isBusy ? "Installing..." : "Start Quick Install")
+			</button>
+		</groupbox>
+	}
+	else if (isCompletedVisible)
+	{
+		<groupbox text="Installation Complete!">
+			<label>Your installation is ready. Use 'Launch Game' to play.</label>
+			<button @onclick="RerunInstall">Re-run Install</button>
+		</groupbox>
+	}
+</root>
+
+@code {
+	private bool isWelcomeVisible = false;
+	private bool isCompletedVisible = false;
+	private bool isBusy = false;
+	private string autoDetectedPath = "Checking...";
+
+	public InstallPage()
+	{
+		var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
+		isCompletedVisible = installType != "unknown";
+		isWelcomeVisible = !isCompletedVisible;
+		autoDetectedPath = GarrysModUtility.GetVanillaInstallFolder() ?? "Not found";
+		StateHasChanged();
+	}
+
+	private async void StartInstall()
+	{
+		isBusy = true;
+		StateHasChanged();
+		await System.Threading.Tasks.Task.Delay(1000);
+		isWelcomeVisible = false;
+		isCompletedVisible = true;
+		isBusy = false;
+		StateHasChanged();
+	}
+
+	private void RerunInstall()
+	{
+		isCompletedVisible = false;
+		isWelcomeVisible = true;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(isWelcomeVisible, isCompletedVisible, isBusy);
+	}
+}

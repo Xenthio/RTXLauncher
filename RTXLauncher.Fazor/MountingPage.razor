@@ -1,0 +1,68 @@
+
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Services
+@using System.Collections.Generic
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="mounting-page">
+	<div class="auto-layout column">
+		<groupbox text="Mounted Remix Games">
+			<div class="auto-layout column">
+				@foreach (var game in mountableGames)
+				{
+					<check @bind-value="@game.IsMounted" disabled="@(!game.IsInstalled)">
+						@game.Name
+					</check>
+				}
+			</div>
+		</groupbox>
+		
+		<groupbox text="USDA Fixes">
+			<div class="auto-layout column">
+				<button @onclick="InstallUsdaFixes">Install USDA Fixes</button>
+			</div>
+		</groupbox>
+	</div>
+</root>
+
+@code {
+	private class MountableGame
+	{
+		public string Name { get; set; } = "";
+		public bool IsInstalled { get; set; }
+		public bool IsMounted { get; set; }
+	}
+	
+	private List<MountableGame> mountableGames = new();
+	private MountingService? mountingService;
+
+	public MountingPage()
+	{
+		mountingService = new MountingService();
+		LoadMountableGames();
+	}
+
+	private void LoadMountableGames()
+	{
+		// TODO: Load actual games from MountingService
+		mountableGames = new List<MountableGame>
+		{
+			new MountableGame { Name = "Half-Life 2", IsInstalled = true, IsMounted = false },
+			new MountableGame { Name = "Counter-Strike: Source", IsInstalled = true, IsMounted = false },
+			new MountableGame { Name = "Team Fortress 2", IsInstalled = false, IsMounted = false },
+			new MountableGame { Name = "Portal", IsInstalled = true, IsMounted = false }
+		};
+	}
+
+	private void InstallUsdaFixes()
+	{
+		System.Console.WriteLine("Installing USDA fixes...");
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(mountableGames.Count);
+	}
+}

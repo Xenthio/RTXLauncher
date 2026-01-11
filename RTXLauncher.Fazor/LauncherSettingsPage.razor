@@ -1,0 +1,102 @@
+
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Services
+@using RTXLauncher.Core.Models
+@using System.Collections.Generic
+@namespace RTXLauncher.Fazor
+@inherits Panel
+
+<root class="launcher-settings-page">
+	<div class="auto-layout column">
+		<groupbox text="Launcher Settings">
+			<div class="auto-layout column">
+				@if (settingsData != null)
+				{
+					<check @bind-value="@settingsData.CheckForUpdatesOnLaunch">
+						Check for updates on launch
+					</check>
+					
+					<div class="setting-item" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+						<label>Theme:</label>
+						<combobox @bind-value="selectedTheme" @onchange="OnThemeChanged" style="width: 200px;">
+							@foreach (var theme in themes)
+							{
+								<option value="@theme">@theme</option>
+							}
+						</combobox>
+					</div>
+				}
+			</div>
+		</groupbox>
+	</div>
+</root>
+
+@code {
+	private SettingsService settingsService = new SettingsService();
+	private SettingsData? settingsData;
+	private List<string> themes = new() { "SimpleDark", "Computer95", "Computer11", "ComputerXP", "Derma" };
+	private string selectedTheme = "SimpleDark";
+
+	public LauncherSettingsPage()
+	{
+		settingsData = settingsService.LoadSettings();
+		// Load saved theme if available
+		if (!string.IsNullOrEmpty(settingsData?.Theme))
+		{
+			selectedTheme = settingsData.Theme;
+		}
+	}
+
+	private void OnThemeChanged(string newTheme)
+	{
+		selectedTheme = newTheme;
+		if (settingsData != null)
+		{
+			settingsData.Theme = newTheme;
+			settingsService.SaveSettings(settingsData);
+		}
+		
+		// Apply theme change
+		ApplyTheme(newTheme);
+		StateHasChanged();
+	}
+
+	private void ApplyTheme(string themeName)
+	{
+		// Find the MainWindow and update its theme
+		var mainWindow = FindRootWindow();
+		if (mainWindow != null)
+		{
+			mainWindow.ApplyTheme(themeName);
+		}
+	}
+
+	private MainWindow? FindRootWindow()
+	{
+		var current = Parent;
+		while (current != null)
+		{
+			if (current is MainWindow window)
+			{
+				return window;
+			}
+			current = current.Parent;
+		}
+		return null;
+	}
+
+	public override void OnDeleted()
+	{
+		base.OnDeleted();
+		if (settingsData != null)
+		{
+			settingsService.SaveSettings(settingsData);
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(settingsData?.CheckForUpdatesOnLaunch, selectedTheme);
+	}
+}

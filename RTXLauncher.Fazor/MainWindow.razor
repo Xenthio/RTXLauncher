@@ -1,0 +1,225 @@
+@using global::Fazor.UI;
+@using Sandbox;
+@using Sandbox.UI;
+@using global::Fazor.Controls;
+@using RTXLauncher.Core.Models;
+@using RTXLauncher.Core.Services;
+@using System;
+@using System.Collections.Generic;
+@using System.Diagnostics;
+@using System.IO;
+@namespace RTXLauncher.Fazor
+@inherits Window
+@attribute [StyleSheet("MainWindow.razor.scss")]
+
+<root title="Garry's Mod RTX Launcher" hasminimise="true" hasmaximise="true" hasclose="true" 
+      windowwidth="870" windowheight="600">
+	<div class="window-content">
+		<!-- Top Bar with Logo and Progress -->
+		<div class="top-bar">
+			<div class="logo-area">
+				<img src="/Assets/gmodrtx.png" style="height: 64px; width: auto;" />
+			</div>
+			<div class="progress-area">
+				<div class="status-text">@statusMessage</div>
+				<progressbar value="@progressValue" max="100" />
+				<button @onclick="ToggleLog">@(showLog ? "Hide Log" : "Show Log")</button>
+			</div>
+		</div>
+
+		<!-- Main Content Area -->
+		<div class="main-content">
+			<!-- Sidebar Navigation -->
+			<selectlist @ref="navigationList">
+				<listoption @onclick="@(() => ShowPage(0))">Settings</listoption>
+				<listoption @onclick="@(() => ShowPage(1))">Mounting</listoption>
+				<listoption @onclick="@(() => ShowPage(2))">Setup</listoption>
+				<listoption @onclick="@(() => ShowPage(3))">Advanced Install</listoption>
+				<listoption @onclick="@(() => ShowPage(4))">About</listoption>
+				<listoption @onclick="@(() => ShowPage(5))">Launcher Settings</listoption>
+				<listoption @onclick="@(() => ShowPage(6))">Mods</listoption>
+			</selectlist>
+
+			<!-- Content Display Area -->
+			<div class="content-area">
+				@if (!showLog)
+				{
+					@if (currentPageIndex == 0)
+					{
+						<SettingsPage />
+					}
+					else if (currentPageIndex == 1)
+					{
+						<MountingPage />
+					}
+					else if (currentPageIndex == 2)
+					{
+						<InstallPage />
+					}
+					else if (currentPageIndex == 3)
+					{
+						<AdvancedInstallPage />
+					}
+					else if (currentPageIndex == 4)
+					{
+						<AboutPage />
+					}
+					else if (currentPageIndex == 5)
+					{
+						<LauncherSettingsPage />
+					}
+					else if (currentPageIndex == 6)
+					{
+						<ModsPage />
+					}
+				}
+				else
+				{
+					<!-- Expandable Log Viewer -->
+					<div class="log-viewer">
+						<div class="log-content">
+							@foreach (var logEntry in fullLog)
+							{
+								<div class="log-entry">@logEntry</div>
+							}
+						</div>
+						<button @onclick="SaveLog">Save Log to File</button>
+					</div>
+				}
+			</div>
+		</div>
+
+		<!-- Bottom Buttons -->
+		<div class="bottom-buttons">
+			<button @onclick="OpenInstallFolder">Open Install Folder</button>
+			<button @onclick="LaunchGame">Launch Game</button>
+			<button @onclick="CloseWindow">Close</button>
+		</div>
+	</div>
+</root>
+
+@code {
+	private int progressValue = 0;
+	private string statusMessage = "Welcome to the Garry's Mod RTX Launcher!";
+	private bool showLog = false;
+	private List<string> fullLog = new List<string>() { 
+		"Welcome to the Garry's Mod RTX Launcher!", 
+		"Fazor version - Experimental build"
+	};
+	
+	// Services
+	private SettingsService settingsService = new SettingsService();
+	private SettingsData? settingsData;
+
+	// Navigation
+	private SelectList? navigationList;
+	private int currentPageIndex = 0;
+
+	public MainWindow()
+	{
+		// Initialize settings
+		settingsData = settingsService.LoadSettings();
+		
+		// Load saved theme or default
+		string themeName = !string.IsNullOrEmpty(settingsData?.Theme) ? settingsData.Theme : "SimpleDark";
+		ApplyTheme(themeName);
+	}
+
+	public void ApplyTheme(string themeName)
+	{
+		try
+		{
+			// Map friendly names to SCSS files
+			string themeFile = themeName switch
+			{
+				"SimpleDark" => "SimpleDarkTheme.scss",
+				"Computer95" => "/XGUI/DefaultStyles/Computer95.scss",
+				"Computer11" => "/XGUI/DefaultStyles/Computer11.scss",
+				"ComputerXP" => "/XGUI/DefaultStyles/ComputerXP.scss",
+				"Derma" => "/XGUI/DefaultStyles/Derma.scss",
+				_ => "SimpleDarkTheme.scss"
+			};
+			
+			SetTheme(themeFile);
+			AddLogMessage($"Theme changed to: {themeName}");
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error applying theme: {ex.Message}");
+		}
+	}
+
+	private void ShowPage(int pageIndex)
+	{
+		currentPageIndex = pageIndex;
+		StateHasChanged();
+	}
+
+	private void ToggleLog()
+	{
+		showLog = !showLog;
+		StateHasChanged();
+	}
+
+	private void SaveLog()
+	{
+		try
+		{
+			var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "RTXLauncher_Log.txt");
+			File.WriteAllLines(logPath, fullLog);
+			AddLogMessage($"Log saved to: {logPath}");
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error saving log: {ex.Message}");
+		}
+	}
+
+	private void OpenInstallFolder()
+	{
+		try
+		{
+			if (settingsData != null && !string.IsNullOrEmpty(settingsData.ManuallySpecifiedInstallPath) && Directory.Exists(settingsData.ManuallySpecifiedInstallPath))
+			{
+				Process.Start(new ProcessStartInfo
+				{
+					FileName = settingsData.ManuallySpecifiedInstallPath,
+					UseShellExecute = true
+				});
+			}
+			else
+			{
+				AddLogMessage("Install folder not found or not set.");
+			}
+		}
+		catch (Exception ex)
+		{
+			AddLogMessage($"Error opening install folder: {ex.Message}");
+		}
+	}
+
+	private void LaunchGame()
+	{
+		AddLogMessage("Launch game functionality - to be implemented");
+		// TODO: Implement game launch logic
+	}
+
+	private void CloseWindow()
+	{
+		// Close this window
+		Close();
+	}
+
+	private void AddLogMessage(string message)
+	{
+		fullLog.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
+		statusMessage = message;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return HashCode.Combine(progressValue, statusMessage, showLog, fullLog.Count, currentPageIndex);
+	}
+}
