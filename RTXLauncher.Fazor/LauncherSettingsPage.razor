@@ -17,7 +17,7 @@
 						Check for updates on launch
 					</check>
 					
-					<div class="setting-item">
+					<div class="setting-item" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Theme:</label>
 						<combobox @bind-value="selectedTheme" @onchange="OnThemeChanged" style="width: 200px;">
 							@foreach (var theme in themes)

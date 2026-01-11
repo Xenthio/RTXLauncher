@@ -27,7 +27,7 @@
 				
 				@if (settingsData != null && settingsData.UseCustomResolution)
 				{
-					<div class="custom-resolution">
+					<div class="custom-resolution" style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
 						<textentry type="number" @bind-value="@settingsData.Width" placeholder="Width" style="width: 100px;" />
 						<label>×</label>
 						<textentry type="number" @bind-value="@settingsData.Height" placeholder="Height" style="width: 100px;" />
@@ -52,7 +52,7 @@
 			<groupbox text="Linux Settings">
 				<autolayout>
 					<!-- Proton Version Selection -->
-					<div class="setting-row">
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Proton Version:</label>
 						<combobox @bind-value="selectedProtonBuild" style="width: 250px;">
 							@foreach (var label in protonBuildLabels)
@@ -66,7 +66,7 @@
 					<!-- Custom Proton Path -->
 					@if (isCustomProtonPathVisible)
 					{
-						<div class="setting-row">
+						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 							<label>Custom Proton Path:</label>
 							<textentry @bind-value="@settingsData.LinuxProtonPath" placeholder="/path/to/proton/executable" style="flex: 1;" />
 							<button @onclick="ClearProtonPath">Clear</button>
@@ -74,13 +74,13 @@
 					}
 
 					<!-- Steam Root Override -->
-					<div class="setting-row">
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Steam Root Override:</label>
 						<textentry @bind-value="@settingsData.LinuxSteamRootOverride" placeholder="Leave empty for auto-detection" style="flex: 1;" />
 					</div>
 
 					<!-- Vulkan Driver Selection -->
-					<div class="setting-row">
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Vulkan Driver:</label>
 						<combobox @bind-value="@settingsData.LinuxVulkanDriver" style="width: 200px;">
 							@foreach (var driver in vulkanDriverOptions)
@@ -104,7 +104,7 @@
 					<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
 					<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>
 					
-					<div class="setting-item">
+					<div class="setting-item" style="display: flex; flex-direction: column; gap: 5px;">
 						<label>Custom Launch Options:</label>
 						<textentry @bind-value="@settingsData.CustomLaunchOptions" placeholder="Custom Launch Options (e.g. -windowed -noborder)" style="flex: 1;" />
 					</div>

@@ -14,14 +14,14 @@
 		<!-- Vanilla Garry's Mod Install Section -->
 		<groupbox text="Your Vanilla Garry's Mod Install">
 			<autolayout>
-				<div class="info-row">
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
 					<label>@vanillaInstallType</label>
 				</div>
 				
-				<div class="info-row">
+				<div class="info-row" style="display: flex; flex-direction: column; gap: 5px;">
 					<label class="label-bold">Install Path:</label>
-					<div class="path-row">
+					<div class="path-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label class="path-text">@vanillaInstallPath</label>
 						<button @onclick="BrowseVanillaPath">Browse...</button>
 					</div>
@@ -37,22 +37,22 @@
 		<!-- RTX Install Section -->
 		<groupbox text="This RTX Install">
 			<autolayout>
-				<div class="info-row">
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
 					<label>@rtxInstallType</label>
 				</div>
 				
-				<div class="info-row">
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Game Version:</label>
 					<label>@gameVersionDate</label>
 				</div>
 				
-				<div class="info-row">
+				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Path:</label>
 					<label class="path-text">@rtxInstallPath</label>
 				</div>
 				
-				<div class="button-row">
+				<div class="button-row" style="display: flex; flex-direction: row; gap: 10px;">
 					<button @onclick="UpdateInstall" disabled="@isBusy">Update Install from Vanilla</button>
 					<button @onclick="DowngradeGame" disabled="@isBusy">Downgrade Game</button>
 				</div>
@@ -75,7 +75,7 @@
 						}
 					</div>
 					
-					<div class="setting-row">
+					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Source:</label>
 						<combobox @bind-value="package.SelectedSource" style="width: 200px;">
 							@foreach (var source in package.Sources)
@@ -87,7 +87,7 @@
 					
 					@if (package.Releases.Count > 0)
 					{
-						<div class="setting-row">
+						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 							<label>Version:</label>
 							<combobox @bind-value="package.SelectedRelease" style="width: 200px;">
 								@foreach (var release in package.Releases)
