@@ -47,7 +47,11 @@
 			<div class="content-area simple-border">
 				@if (!showLog)
 				{
-					@if (currentPageIndex == 0)
+					@if (isShowingModDetails && currentModDetails != null)
+					{
+						<ModDetailsPage @key="currentModDetails.ModPageUrl" modInfo="@currentModDetails" />
+					}
+					else if (currentPageIndex == 0)
 					{
 						<SettingsPage />
 					}
@@ -117,6 +121,8 @@
 	// Navigation
 	private SelectList? navigationList;
 	private int currentPageIndex = 0;
+	private ModInfo? currentModDetails = null;
+	private bool isShowingModDetails = false;
 
 	public MainWindow()
 	{
@@ -157,6 +163,23 @@
 	private void ShowPage(int pageIndex)
 	{
 		currentPageIndex = pageIndex;
+		isShowingModDetails = false;
+		currentModDetails = null;
+		StateHasChanged();
+	}
+
+	public void ShowModDetails(ModInfo mod)
+	{
+		currentModDetails = mod;
+		isShowingModDetails = true;
+		StateHasChanged();
+	}
+
+	public void ShowModsPage()
+	{
+		isShowingModDetails = false;
+		currentModDetails = null;
+		currentPageIndex = 6;
 		StateHasChanged();
 	}
 
