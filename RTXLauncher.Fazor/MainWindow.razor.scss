@@ -61,6 +61,12 @@
         border-radius: 3px;
         padding: 10px;
         overflow: auto;
+        display: flex;
+        flex-direction: column;
+        
+        > * {
+            flex-shrink: 0;  // Don't shrink content
+        }
     }
 }
 
@@ -93,8 +99,12 @@
 }
 
 // Page specific styles
-.welcome-page, .settings-page, .install-page, .update-page, .mods-page {
+.welcome-page, .settings-page, .install-page, .update-page, .mods-page, 
+.about-page, .advanced-install-page, .launcher-settings-page, .mounting-page {
+    display: flex;
     flex-direction: column;
+    width: 100%;
+    gap: 10px;
     
     h1 {
         font-size: 24px;
@@ -118,6 +128,10 @@
         margin-bottom: 10px;
         color: $theme-foreground;
         line-height: 1.5;
+    }
+    
+    groupbox {
+        margin-bottom: 10px;
     }
 }
 
