@@ -1,4 +1,7 @@
 
+@using System
+@using System.Collections.Generic
+@using System.Linq
 @using Sandbox.UI;
 @using global::Fazor.Controls;
 @using RTXLauncher.Core.Services
@@ -127,8 +130,8 @@
 	{
 		try
 		{
-			var installService = new InstallService();
 			// Detect install paths (simplified for now)
+			// TODO: Use GarrysModInstallService to detect actual paths
 			vanillaInstallPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\GarrysMod";
 			rtxInstallPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\GarrysModRTX";
 		}
