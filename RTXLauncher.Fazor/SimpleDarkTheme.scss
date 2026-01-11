@@ -1,6 +1,11 @@
 // Avalonia Simple Dark Theme - Matching official Avalonia Simple theme colors
 // Based on Avalonia.Themes.Simple/Accents/Base.xaml Dark theme
 
+// Import XGUI function styles and base styles
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/Windows.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/Windows+VisualStyleQuirks.scss";
+
 //////////////
 
 $default-text-size: 12px;
