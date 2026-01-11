@@ -14,7 +14,7 @@
 <root class="settings-page">
 	<div class="auto-layout column">
 		<!-- Resolution Group -->
-		<groupbox text="Resolution">
+		<groupbox title="Resolution">
 			<div class="auto-layout column">
 				<combobox @bind-value="selectedResolution" style="width: 250px;">
 					@foreach (var res in resolutions)
@@ -37,7 +37,7 @@
 		</groupbox>
 
 		<!-- Garry's Mod Settings -->
-		<groupbox text="Garry's Mod">
+		<groupbox title="Garry's Mod">
 			<div class="auto-layout column">
 				@if (settingsData != null)
 				{
@@ -49,7 +49,7 @@
 		<!-- Linux Settings (only visible on Linux) -->
 		@if (IsLinux && settingsData != null)
 		{
-			<groupbox text="Linux Settings">
+			<groupbox title="Linux Settings">
 				<div class="auto-layout column">
 					<!-- Proton Version Selection -->
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
@@ -99,7 +99,7 @@
 		<!-- Advanced Settings -->
 		@if (settingsData != null)
 		{
-			<groupbox text="Advanced Settings">
+			<groupbox title="Advanced Settings">
 				<div class="auto-layout column">
 					<check @bind-value="@settingsData.ConsoleEnabled">Open Console</check>
 					<check @bind-value="@settingsData.DisableChromium">Disable Chromium</check>

@@ -5,7 +5,7 @@
 @inherits Panel
 
 <root class="update-page">
-	<groupbox text="RTX Remix Update">
+	<groupbox title="RTX Remix Update">
 		<label>Current Version: @currentVersion</label>
 		<label>Status: @status</label>
 		<button @onclick="CheckForUpdates" disabled="@isChecking">Check for Updates</button>

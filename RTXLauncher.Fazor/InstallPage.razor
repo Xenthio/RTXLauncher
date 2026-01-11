@@ -11,14 +11,14 @@
 <root class="install-page">
 	@if (isWelcomeVisible)
 	{
-		<groupbox text="Welcome to the Garry's Mod RTX Launcher">
+		<groupbox title="Welcome to the Garry's Mod RTX Launcher">
 			<div class="auto-layout column">
 				<label>Quick installer will set up everything you need.</label>
 				<label>Vanilla Path: @autoDetectedPath</label>
 				
 				@if (preflightWarnings.Count > 0)
 				{
-					<groupbox text="Warnings">
+					<groupbox title="Warnings">
 						<div class="auto-layout column">
 							@foreach (var warning in preflightWarnings)
 							{
@@ -52,7 +52,7 @@
 	}
 	else if (isCompletedVisible)
 	{
-		<groupbox text="Installation Complete!">
+		<groupbox title="Installation Complete!">
 			<div class="auto-layout column">
 				<label>Your installation is ready. Use 'Launch Game' to play.</label>
 				<button @onclick="RerunInstall">Re-run Install</button>

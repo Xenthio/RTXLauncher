@@ -11,7 +11,7 @@
 
 <root class="mounting-page">
 	<div class="auto-layout column">
-		<groupbox text="Mounted Remix Games">
+		<groupbox title="Mounted Remix Games">
 			<div class="auto-layout column">
 				@foreach (var game in mountableGames)
 				{
@@ -30,7 +30,7 @@
 			</div>
 		</groupbox>
 		
-		<groupbox text="USDA Fixes">
+		<groupbox title="USDA Fixes">
 			<div class="auto-layout column">
 				<label>Install USDA fixes for Half-Life 2 RTX to improve compatibility.</label>
 				<button @onclick="InstallUsdaFixes" disabled="@isBusy">

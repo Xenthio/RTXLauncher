@@ -19,12 +19,14 @@
 		<!-- Top Bar with Logo and Progress -->
 		<div class="top-bar">
 			<div class="logo-area">
-				<img src="/Assets/gmodrtx.png" style="height: 64px; width: auto;" />
+				<div class="logo"></div>
 			</div>
 			<div class="progress-area">
-				<div class="status-text">@statusMessage</div>
+				<div class="top">
+					<div class="status-text">@statusMessage</div>
+					<button @onclick="ToggleLog">@(showLog ? "Hide Log" : "Show Log")</button>
+				</div>
 				<progressbar value="@progressValue" max="100" />
-				<button @onclick="ToggleLog">@(showLog ? "Hide Log" : "Show Log")</button>
 			</div>
 		</div>
 

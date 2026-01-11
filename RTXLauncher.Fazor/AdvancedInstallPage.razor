@@ -12,7 +12,7 @@
 <root class="advanced-install-page">
 	<div class="auto-layout column">
 		<!-- Vanilla Garry's Mod Install Section -->
-		<groupbox text="Your Vanilla Garry's Mod Install">
+		<groupbox title="Your Vanilla Garry's Mod Install">
 			<div class="auto-layout column">
 				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
@@ -35,7 +35,7 @@
 		</groupbox>
 		
 		<!-- RTX Install Section -->
-		<groupbox text="This RTX Install">
+		<groupbox title="This RTX Install">
 			<div class="auto-layout column">
 				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
@@ -62,7 +62,7 @@
 		<!-- Dynamic Package List -->
 		@foreach (var package in packages)
 		{
-			<groupbox text="@package.Title">
+			<groupbox title="@package.Title">
 				<div class="auto-layout column">
 					<div class="package-status">
 						@if (package.HasInstalledVersion)

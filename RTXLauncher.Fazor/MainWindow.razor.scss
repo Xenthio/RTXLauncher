@@ -24,6 +24,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    .logo {
+        width: 160px;
+        height: 64px;
+        background-image: url("/Assets/gmodrtx.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
 }
 
 .progress-area {
@@ -32,6 +40,12 @@
     flex-direction: column;
     gap: 5px;
     justify-content: center;
+    >.top {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
 }
 
 .status-text {
