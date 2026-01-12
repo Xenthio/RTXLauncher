@@ -1,11 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using RTXLauncher.Avalonia.Utilities;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -41,6 +43,21 @@ public partial class ModsViewModel : PageViewModel
 		_modService = modService;
 		Header = "Mods";
 		_selectedSortOption = SortOptions.First(); // Set default sort order
+		
+		// Listen for mod deletion messages to update IsInstalled status
+		WeakReferenceMessenger.Default.Register<ModDeletedMessage>(this, (recipient, message) =>
+		{
+			Debug.WriteLine($"[ModsViewModel] Received ModDeletedMessage for: {message.ModPageUrl}");
+			
+			// Find the mod in the list and update its IsInstalled status
+			var mod = Mods.FirstOrDefault(m => m.Model.ModPageUrl == message.ModPageUrl);
+			if (mod != null)
+			{
+				mod.Model.IsInstalled = false;
+				mod.IsInstalled = false; // Update the ViewModel property which will trigger UI update
+				Debug.WriteLine($"[ModsViewModel] Updated IsInstalled to false for: {mod.Title}");
+			}
+		});
 	}
 	public async Task LoadModsAsync()
 	{

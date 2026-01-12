@@ -1,5 +1,6 @@
-﻿using Avalonia;
+using Avalonia;
 using System;
+using System.Text.Json;
 
 namespace RTXLauncher.Avalonia;
 

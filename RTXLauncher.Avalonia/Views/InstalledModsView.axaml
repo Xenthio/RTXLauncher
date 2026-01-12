@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RTXLauncher.Avalonia.ViewModels"
+             xmlns:converters="using:RTXLauncher.Avalonia.Converters"
+             x:Class="RTXLauncher.Avalonia.Views.InstalledModsView"
+             x:DataType="vm:InstalledModsViewModel">
+
+	<UserControl.Resources>
+		<converters:StringIsNullOrEmptyConverter x:Key="StringIsVisibleConverter"/>
+	</UserControl.Resources>
+
+	<Grid RowDefinitions="Auto,Auto,*" Margin="10" RowSpacing="10">
+		<!-- Search and Refresh Bar -->
+		<Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+			<TextBox Grid.Column="0" Text="{Binding SearchText, Mode=TwoWay}" Watermark="Search mods..."/>
+			<Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshModsCommand}"/>
+			<ProgressBar Grid.Column="2" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Width="100"/>
+		</Grid>
+
+		<!-- Status Message -->
+		<TextBlock Grid.Row="1" 
+		           Text="{Binding StatusMessage}" 
+		           FontSize="12" 
+		           Foreground="{DynamicResource SystemAccentColor}"
+		           HorizontalAlignment="Center"
+		           IsVisible="{Binding StatusMessage, Converter={StaticResource StringIsVisibleConverter}}"
+		           Margin="0,5,0,5"/>
+
+		<!-- Mods List -->
+		<ScrollViewer Grid.Row="2">
+			<ItemsControl ItemsSource="{Binding FilteredMods}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate x:DataType="vm:InstalledModItemViewModel">
+						<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+							<Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+								<!-- Mod Info Column -->
+								<StackPanel Grid.Column="0" Spacing="5">
+									<!-- Name and Badges -->
+									<StackPanel Orientation="Horizontal" Spacing="8">
+										<TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+										
+										<!-- Status Badge -->
+										<Border Background="{Binding StatusColor}" CornerRadius="3" Padding="5,2">
+											<TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+										</Border>
+										
+										<!-- Source Badge -->
+										<Border Background="DodgerBlue" CornerRadius="3" Padding="5,2" IsVisible="{Binding IsFromModDB}">
+											<TextBlock Text="{Binding SourceBadge}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+										</Border>
+									</StackPanel>
+
+									<!-- Folder Name -->
+									<TextBlock Text="{Binding FolderName, StringFormat='Folder: {0}'}" FontSize="11" Foreground="Gray"/>
+
+									<!-- Description -->
+									<TextBlock Text="{Binding Description}" 
+									           TextWrapping="Wrap" 
+									           FontSize="12"
+									           IsVisible="{Binding Description, Converter={StaticResource StringIsVisibleConverter}}"/>
+
+									<!-- Author and Version -->
+									<StackPanel Orientation="Horizontal" Spacing="10">
+										<TextBlock Text="{Binding Author, StringFormat='By: {0}'}" 
+										           FontSize="11" 
+										           Foreground="Gray"
+										           IsVisible="{Binding Author, Converter={StaticResource StringIsVisibleConverter}}"/>
+										<TextBlock Text="{Binding Version, StringFormat='v{0}'}" 
+										           FontSize="11" 
+										           Foreground="Gray"
+										           IsVisible="{Binding Version, Converter={StaticResource StringIsVisibleConverter}}"/>
+									</StackPanel>
+
+									<!-- Install Date -->
+									<TextBlock Text="{Binding InstallDate, StringFormat='Installed: {0:d}'}" 
+									           FontSize="11" 
+									           Foreground="Gray"
+									           IsVisible="{Binding InstallDate, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+								</StackPanel>
+
+								<!-- Action Buttons Column -->
+								<StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+									<!-- Enable/Disable Button -->
+									<Button Content="{Binding ToggleButtonText}"
+									        Command="{Binding $parent[ItemsControl].DataContext.ToggleModEnabledCommand}"
+									        CommandParameter="{Binding}"
+									        Width="100"/>
+
+									<!-- Delete Button -->
+									<Button Content="Delete"
+									        Command="{Binding $parent[ItemsControl].DataContext.DeleteModCommand}"
+									        CommandParameter="{Binding}"
+									        IsEnabled="{Binding IsDeletable}"
+									        Width="100">
+										<ToolTip.Tip>
+											<TextBlock Text="{Binding DeleteButtonTooltip}"/>
+										</ToolTip.Tip>
+									</Button>
+
+									<!-- ModDB Link Button -->
+									<Button Content="View on ModDB"
+									        Width="100"
+									        Command="{Binding $parent[ItemsControl].DataContext.OpenUrlCommand}"
+									        CommandParameter="{Binding ModDBPageUrl}"
+									        IsVisible="{Binding IsFromModDB}"/>
+								</StackPanel>
+							</Grid>
+						</Border>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</ScrollViewer>
+	</Grid>
+</UserControl>

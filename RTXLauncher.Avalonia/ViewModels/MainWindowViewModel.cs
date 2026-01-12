@@ -82,16 +82,21 @@ public partial class MainWindowViewModel : ViewModelBase
 		var installedModsService = new InstalledModsService();
 		_addonInstallService = new AddonInstallService();
 		_modBrowserService = new ModDBModService(_addonInstallService, installedModsService);
+		var modManagementService = new ModManagementService(installedModsService);
 
 		// 1. Create the instance of ModsViewModel
-		var modsViewModel = new ModsViewModel(_modBrowserService);
+		var getModsViewModel = new ModsViewModel(_modBrowserService);
+		getModsViewModel.Header = "Get Mods";
 
 		// 2. ** CONNECT THE WIRE **: Subscribe to the child's request event.
-		//    When modsViewModel invokes OnViewDetailsRequested, our ShowModDetails method will run.
-		modsViewModel.OnViewDetailsRequested = ShowModDetails;
+		//    When getModsViewModel invokes OnViewDetailsRequested, our ShowModDetails method will run.
+		getModsViewModel.OnViewDetailsRequested = ShowModDetails;
 
 		// 3. Save the instance so we can navigate back to it.
-		_modsPageInstance = modsViewModel;
+		_modsPageInstance = getModsViewModel;
+
+		// 4. Create the Installed Mods page
+		var installedModsViewModel = new InstalledModsViewModel(modManagementService);
 
 
 
@@ -99,10 +104,11 @@ public partial class MainWindowViewModel : ViewModelBase
 		{
 			new SettingsViewModel(_settingsData, _messenger),
 			new MountingViewModel(mountingService, _messenger),
+			installedModsViewModel, // Installed Mods page
+			getModsViewModel, // Get Mods - moved next to Installed Mods
 			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService, installedPackagesService, depotDowngradeService),
 			new AboutViewModel(_messenger, gitHubService),
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
-			modsViewModel,
 		};
 
 		var setupViewModel = new SetupViewModel(quickInstallService, _messenger);
@@ -152,10 +158,15 @@ public partial class MainWindowViewModel : ViewModelBase
 		{
 			CurrentPage = value; // Change the content to match the sidebar selection
 
-			// mod s
+			// Load mods when navigating to Get Mods page
 			if (value is ModsViewModel modsViewModel)
 			{
 				await modsViewModel.LoadModsAsync();
+			}
+			// Load installed mods when navigating to Installed Mods page
+			else if (value is InstalledModsViewModel installedModsViewModel)
+			{
+				await installedModsViewModel.LoadInstalledModsAsync();
 			}
 		}
 	}

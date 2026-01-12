@@ -8,3 +8,7 @@ public record ProgressReportMessage(InstallProgressReport Report);
 // A message that will be broadcast when packages are installed/updated
 // so UI can refresh installed version displays
 public record PackagesUpdatedMessage();
+
+// A message that will be broadcast when a mod is deleted from the Installed Mods page
+// so the Get Mods page can update the IsInstalled status
+public record ModDeletedMessage(string ModPageUrl);

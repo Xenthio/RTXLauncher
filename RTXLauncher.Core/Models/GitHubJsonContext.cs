@@ -20,6 +20,9 @@ namespace RTXLauncher.Core.Models;
 [JsonSerializable(typeof(List<GitHubArtifactInfo>))]
 [JsonSerializable(typeof(List<InstalledModInfo>))]
 [JsonSerializable(typeof(InstalledModInfo))]
+[JsonSerializable(typeof(ModMetadata))]
+[JsonSerializable(typeof(InstalledMod))]
+[JsonSerializable(typeof(List<InstalledMod>))]
 public partial class GitHubJsonContext : JsonSerializerContext
 {
 }

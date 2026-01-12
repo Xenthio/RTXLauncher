@@ -1,5 +1,10 @@
-﻿using RTXLauncher.Core.Utilities;
+﻿using RTXLauncher.Core.Models;
+using RTXLauncher.Core.Utilities;
+using SharpCompress.Archives;
+using SharpCompress.Common;
+using System.Diagnostics;
 using System.IO.Compression;
+using System.Text.Json;
 
 namespace RTXLauncher.Core.Services;
 
@@ -8,7 +13,7 @@ public class AddonInstallService
 	/// <summary>
 	/// Installs a mod/addon and returns a list of created file/directory paths.
 	/// </summary>
-	public async Task<List<string>> InstallAddonAsync(string filePath, string addonName, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress = null)
+	public async Task<List<string>> InstallAddonAsync(string filePath, string addonName, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress = null, ModMetadata? metadata = null)
 	{
 		if (!File.Exists(filePath))
 			throw new FileNotFoundException("Addon file not found.", filePath);
@@ -22,17 +27,35 @@ public class AddonInstallService
 			Directory.CreateDirectory(tempExtractPath);
 			progress?.Report($"Extracting {Path.GetFileName(filePath)}...");
 
-			if (Path.GetExtension(filePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+			var extension = Path.GetExtension(filePath).ToLowerInvariant();
+			Debug.WriteLine($"[AddonInstallService] Archive extension: {extension}");
+
+			// Use SharpCompress for all archive formats (.zip, .7z, .rar, .tar, .tar.gz, etc.)
+			if (IsArchiveFile(extension))
 			{
-				await Task.Run(() => ZipFile.ExtractToDirectory(filePath, tempExtractPath));
+				await Task.Run(() =>
+				{
+					using var archive = ArchiveFactory.Open(filePath);
+					foreach (var entry in archive.Entries.Where(e => !e.IsDirectory))
+					{
+						entry.WriteToDirectory(tempExtractPath, new ExtractionOptions
+						{
+							ExtractFullPath = true,
+							Overwrite = true
+						});
+					}
+				});
+				Debug.WriteLine($"[AddonInstallService] Archive extracted successfully to {tempExtractPath}");
 			}
 			else
 			{
+				// If not a recognized archive, just copy the file
+				Debug.WriteLine($"[AddonInstallService] Not an archive, copying file directly");
 				File.Copy(filePath, Path.Combine(tempExtractPath, Path.GetFileName(filePath)), true);
 			}
 
 			progress?.Report("Analyzing addon contents...");
-			installedPaths = await ProcessExtractedFiles(tempExtractPath, addonName, installFolder, confirmationProvider, progress);
+			installedPaths = await ProcessExtractedFiles(tempExtractPath, addonName, installFolder, confirmationProvider, progress, metadata);
 		}
 		finally
 		{
@@ -89,32 +112,48 @@ public class AddonInstallService
 		});
 	}
 
-	private async Task<List<string>> ProcessExtractedFiles(string extractedPath, string addonName, string installFolder, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress)
+	private async Task<List<string>> ProcessExtractedFiles(string extractedPath, string addonName, string installFolder, Func<string, Task<bool>> confirmationProvider, IProgress<string>? progress, ModMetadata? metadata)
 	{
 		var createdPaths = new List<string>();
 
 		// Heuristic 1: Find Remix Mods (containing mod.usda)
 		var modUsdaFiles = Directory.GetFiles(extractedPath, "mod.usda", SearchOption.AllDirectories);
+		Debug.WriteLine($"[AddonInstallService] Found {modUsdaFiles.Length} mod.usda files in {extractedPath}");
+		
 		if (modUsdaFiles.Any())
 		{
 			var modUsdaFile = modUsdaFiles.First();
 			var modRoot = Path.GetDirectoryName(modUsdaFile);
+			Debug.WriteLine($"[AddonInstallService] Mod root: {modRoot}");
 
 			if (modRoot != null)
 			{
 				var targetModsFolder = Path.Combine(installFolder, "rtx-remix", "mods");
 				Directory.CreateDirectory(targetModsFolder);
+				Debug.WriteLine($"[AddonInstallService] Target mods folder: {targetModsFolder}");
 
 				string finalModFolderName = new DirectoryInfo(modRoot).Name;
 				if (Path.GetFullPath(modRoot).Equals(Path.GetFullPath(extractedPath)))
 				{
 					finalModFolderName = addonName;
 				}
+				Debug.WriteLine($"[AddonInstallService] Final mod folder name: {finalModFolderName}");
 
 				var targetPath = Path.Combine(targetModsFolder, finalModFolderName);
+				Debug.WriteLine($"[AddonInstallService] Target path: {targetPath}");
+				
 				progress?.Report($"Installing Remix mod '{finalModFolderName}'...");
 				CopyDirectory(modRoot, targetPath);
 				createdPaths.Add(targetPath); // Track the created directory
+				Debug.WriteLine($"[AddonInstallService] Mod installed successfully to: {targetPath}");
+				
+				// Save metadata if provided
+				if (metadata != null)
+				{
+					await SaveModMetadataAsync(targetPath, metadata);
+					Debug.WriteLine($"[AddonInstallService] Metadata saved for: {finalModFolderName}");
+				}
+				
 				return createdPaths;
 			}
 		}
@@ -165,5 +204,38 @@ public class AddonInstallService
 			var destDir = Path.Combine(destinationDir, Path.GetFileName(directory));
 			CopyDirectory(directory, destDir);
 		}
+	}
+
+	/// <summary>
+	/// Saves metadata to mod_info.json in the mod folder
+	/// </summary>
+	private async Task SaveModMetadataAsync(string modFolderPath, ModMetadata metadata)
+	{
+		var metadataPath = Path.Combine(modFolderPath, "mod_info.json");
+		var json = JsonSerializer.Serialize(metadata, GitHubJsonContext.Default.ModMetadata);
+		await File.WriteAllTextAsync(metadataPath, json);
+	}
+
+	/// <summary>
+	/// Checks if the file extension is a recognized archive format
+	/// </summary>
+	private static bool IsArchiveFile(string extension)
+	{
+		return extension switch
+		{
+			".zip" => true,
+			".7z" => true,
+			".rar" => true,
+			".tar" => true,
+			".gz" => true,
+			".bz2" => true,
+			".xz" => true,
+			".tar.gz" => true,
+			".tar.bz2" => true,
+			".tar.xz" => true,
+			".tgz" => true,
+			".tbz2" => true,
+			_ => false
+		};
 	}
 }

@@ -52,7 +52,7 @@ public class ModDBModService : IModService
 		try
 		{
 			// Use BrowserFetcher to ensure Chrome is downloaded
-			var browserFetcher = new BrowserFetcher();
+		var browserFetcher = new BrowserFetcher();
 			
 			OnStatusUpdate?.Report("Downloading Chrome (first time setup)...");
 			Debug.WriteLine("[ModDBModService] Starting Chrome download/verification...");
@@ -108,14 +108,14 @@ public class ModDBModService : IModService
 			
 			Debug.WriteLine("[ModDBModService] Chrome verification successful.");
 			
-			OnStatusUpdate?.Report("Starting browser...");
-			
-			// Initialize PuppeteerExtra with Stealth plugin to bypass Cloudflare
-			var puppeteerExtra = new PuppeteerExtra();
-			puppeteerExtra.Use(new StealthPlugin());
-			
-			// Launch with explicit executable path
-			_browser = await puppeteerExtra.LaunchAsync(new LaunchOptions
+		OnStatusUpdate?.Report("Starting browser...");
+		
+		// Initialize PuppeteerExtra with Stealth plugin to bypass Cloudflare
+		var puppeteerExtra = new PuppeteerExtra();
+		puppeteerExtra.Use(new StealthPlugin());
+		
+		// Launch with explicit executable path
+		_browser = await puppeteerExtra.LaunchAsync(new LaunchOptions
 			{
 				ExecutablePath = executablePath,
 				Headless = Headless,
@@ -128,16 +128,16 @@ public class ModDBModService : IModService
 				DefaultViewport = new ViewPortOptions { Width = 1920, Height = 1080 }
 			});
 			
-			Debug.WriteLine($"[ModDBModService] Shared browser instance created with Stealth (Headless: {Headless}).");
-			OnStatusUpdate?.Report("Browser ready");
-		}
-		catch (Exception ex)
-		{
-			OnStatusUpdate?.Report($"Browser initialization failed: {ex.Message}");
-			Debug.WriteLine($"[ModDBModService] FATAL ERROR in EnsureBrowserAsync: {ex.Message}");
-			Debug.WriteLine($"[ModDBModService] Stack trace: {ex.StackTrace}");
-			throw;
-		}
+		Debug.WriteLine($"[ModDBModService] Shared browser instance created with Stealth (Headless: {Headless}).");
+		OnStatusUpdate?.Report("Browser ready");
+	}
+	catch (Exception ex)
+	{
+		OnStatusUpdate?.Report($"Browser initialization failed: {ex.Message}");
+		Debug.WriteLine($"[ModDBModService] FATAL ERROR in EnsureBrowserAsync: {ex.Message}");
+		Debug.WriteLine($"[ModDBModService] Stack trace: {ex.StackTrace}");
+		throw;
+	}
 	}
 
 	/// <summary>
@@ -163,25 +163,25 @@ public class ModDBModService : IModService
 		// Disable in debug mode to see all resources
 		if (!DebugMode)
 		{
-			await _page.SetRequestInterceptionAsync(true);
-			_page.Request += (sender, e) =>
+		await _page.SetRequestInterceptionAsync(true);
+		_page.Request += (sender, e) =>
+		{
+			var resourceType = e.Request.ResourceType;
+			if (resourceType == ResourceType.Image ||
+				resourceType == ResourceType.StyleSheet ||
+				resourceType == ResourceType.Font ||
+				resourceType == ResourceType.Media)
 			{
-				var resourceType = e.Request.ResourceType;
-				if (resourceType == ResourceType.Image ||
-					resourceType == ResourceType.StyleSheet ||
-					resourceType == ResourceType.Font ||
-					resourceType == ResourceType.Media)
-				{
-					// Abort unnecessary requests to speed up page loading.
-					_ = e.Request.AbortAsync();
-				}
-				else
-				{
-					// Allow essential requests (documents, scripts, etc.).
-					_ = e.Request.ContinueAsync();
-				}
-			};
-			Debug.WriteLine("[ModDBModService] Shared page created with request interception enabled.");
+				// Abort unnecessary requests to speed up page loading.
+				_ = e.Request.AbortAsync();
+			}
+			else
+			{
+				// Allow essential requests (documents, scripts, etc.).
+				_ = e.Request.ContinueAsync();
+			}
+		};
+		Debug.WriteLine("[ModDBModService] Shared page created with request interception enabled.");
 		}
 		else
 		{
@@ -642,7 +642,20 @@ public class ModDBModService : IModService
 			{
 				progress.Report(new InstallProgressReport { Message = message, Percentage = 95 });
 			});
-			var installedPaths = await _addonInstallService.InstallAddonAsync(tempFilePath, file.Title, confirmationProvider, installProgress);
+			
+			// Create metadata for the mod
+			var metadata = new ModMetadata
+			{
+				Name = file.Title,
+				Description = mod.Summary ?? string.Empty,
+				Author = mod.Author ?? detailedFile.Uploader,
+				Version = null, // ModDB doesn't provide version info in the file details
+				FromModDB = true,
+				ModDBUrl = mod.ModPageUrl,
+				InstallDate = DateTime.UtcNow
+			};
+			
+			var installedPaths = await _addonInstallService.InstallAddonAsync(tempFilePath, file.Title, confirmationProvider, installProgress, metadata);
 			progress.Report(new InstallProgressReport { Message = "Finalizing installation...", Percentage = 98 });
 
 			var installedInfo = new InstalledModInfo

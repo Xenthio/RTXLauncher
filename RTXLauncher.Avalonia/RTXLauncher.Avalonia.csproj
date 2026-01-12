@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,6 +8,10 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <Version>1.0.0</Version>
+    <!-- Enable reflection-based JSON serialization for PuppeteerSharp compatibility -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Use partial trimming to preserve parameter names -->
+    <TrimMode>partial</TrimMode>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\gmodrtx.png" />
@@ -73,5 +77,14 @@
 
   <ItemGroup>
     <TrimmerRootDescriptor Include="rd.xml" />
+  </ItemGroup>
+
+  <!-- Mark PuppeteerSharp assemblies as non-trimmable to avoid JSON serialization issues -->
+  <ItemGroup>
+    <TrimmableAssembly Include="PuppeteerSharp" IsTrimmable="false" />
+    <TrimmableAssembly Include="PuppeteerExtraSharp" IsTrimmable="false" />
+    <!-- Use partial trimming mode for PuppeteerSharp to preserve parameter names -->
+    <TrimmerRootAssembly Include="PuppeteerSharp" />
+    <TrimmerRootAssembly Include="PuppeteerExtraSharp" />
   </ItemGroup>
 </Project>
