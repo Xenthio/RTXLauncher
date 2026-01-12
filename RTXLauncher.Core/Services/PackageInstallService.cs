@@ -9,6 +9,7 @@ namespace RTXLauncher.Core.Services;
 public class PackageInstallService
 {
 	private readonly HttpClient _httpClient;
+	private readonly DownloadManager _downloadManager;
 	private static readonly string CacheDirectory = Path.Combine(
 		Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
 		"RTXLauncher",
@@ -70,11 +71,13 @@ bin/win64/tbb.dll
 bin/win64/tbbmalloc.dll
 bin/win64/usd_ms.dll
 ";
-	public PackageInstallService()
+	public PackageInstallService(DownloadManager? downloadManager = null)
 	{
 		_httpClient = new HttpClient();
 		// GitHub API can sometimes reject requests without a User-Agent
 		_httpClient.DefaultRequestHeaders.Add("User-Agent", "RTXLauncher");
+		
+		_downloadManager = downloadManager ?? new DownloadManager();
 		
 		// Ensure cache directory exists
 		Directory.CreateDirectory(CacheDirectory);
@@ -249,58 +252,43 @@ bin/win64/usd_ms.dll
 			return;
 		}
 
-		// Download to cache first
-		using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-		response.EnsureSuccessStatusCode();
-
-		long totalBytes = response.Content.Headers.ContentLength ?? -1;
-		using var downloadStream = await response.Content.ReadAsStreamAsync();
-		using var fileStream = new FileStream(cachedFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
-
-		long totalBytesRead = 0;
-		var buffer = new byte[8192];
-		int bytesRead;
-
-		// Keep track of the last percentage we reported
-		int lastPercentageReported = -1;
-
-		while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+		// Configure download options
+		var downloadOptions = new DownloadOptions
 		{
-			await fileStream.WriteAsync(buffer, 0, bytesRead);
-			totalBytesRead += bytesRead;
+			MaxRetries = 5,
+			TimeoutMinutes = 10,
+			AllowResume = true,
+			UserAgent = "RTXLauncher"
+		};
 
-			if (totalBytes > 0)
+		// Map EnhancedDownloadProgress to DownloadProgressReport
+		var mappedProgress = new Progress<EnhancedDownloadProgress>(enhancedProgress =>
+		{
+			progress.Report(new DownloadProgressReport
 			{
-				int currentPercentage = (int)((double)totalBytesRead / totalBytes * 100);
+				BytesDownloaded = enhancedProgress.BytesDownloaded,
+				TotalBytes = enhancedProgress.TotalBytes,
+				Percentage = enhancedProgress.PercentComplete
+			});
+		});
 
-				if (currentPercentage > lastPercentageReported)
-				{
-					lastPercentageReported = currentPercentage;
-					progress.Report(new DownloadProgressReport
-					{
-						BytesDownloaded = totalBytesRead,
-						TotalBytes = totalBytes,
-						Percentage = currentPercentage
-					});
-				}
-			}
-			else
+		// Download to cache using DownloadManager
+		var result = await _downloadManager.DownloadFileAsync(
+			url,
+			cachedFilePath,
+			downloadOptions,
+			mappedProgress);
+
+		if (!result.Success)
+		{
+			// Clean up failed cache file
+			if (File.Exists(cachedFilePath))
 			{
-				// For indeterminate downloads, we can't use percentage
-				// For now, reporting on every read is acceptable as it's less common.
-				progress.Report(new DownloadProgressReport { BytesDownloaded = totalBytesRead, TotalBytes = totalBytes });
+				File.Delete(cachedFilePath);
 			}
+			throw new Exception($"Download failed: {result.ErrorMessage}", result.Exception);
 		}
 
-		// Ensure the final 100% completion is always reported
-		if (lastPercentageReported < 100)
-		{
-			progress.Report(new DownloadProgressReport { BytesDownloaded = totalBytes, TotalBytes = totalBytes, Percentage = 100 });
-		}
-		
-		// Close the file stream before copying
-		fileStream.Close();
-		
 		// Copy from cache to destination
 		File.Copy(cachedFilePath, destinationPath, overwrite: true);
 	}

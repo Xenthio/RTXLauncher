@@ -12,6 +12,7 @@ public class ModDBModService : IModService
 {
 	private readonly AddonInstallService _addonInstallService;
 	private readonly InstalledModsService _installedModsService;
+	private readonly DownloadManager _downloadManager;
 	private IBrowser? _browser;
 	private IPage? _page; // Reusable page instance for performance
 	private bool _isDisposed;
@@ -19,10 +20,11 @@ public class ModDBModService : IModService
 	// Use a full browser User-Agent string consistently.
 	public readonly static string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 (RTXLauncher/1.0)";
 
-	public ModDBModService(AddonInstallService addonInstallService, InstalledModsService installedModsService)
+	public ModDBModService(AddonInstallService addonInstallService, InstalledModsService installedModsService, DownloadManager? downloadManager = null)
 	{
 		_addonInstallService = addonInstallService;
 		_installedModsService = installedModsService;
+		_downloadManager = downloadManager ?? new DownloadManager();
 	}
 
 	private async Task EnsureBrowserAsync()
@@ -239,6 +241,73 @@ public class ModDBModService : IModService
 		if (string.IsNullOrEmpty(file.DirectDownloadUrl))
 			throw new InvalidOperationException("Direct download URL is not available.");
 
+		// Try using DownloadManager first for direct URLs (simpler, more robust)
+		// Fall back to Puppeteer if DownloadManager fails
+		bool tryDownloadManager = true;
+		
+		if (tryDownloadManager)
+		{
+			try
+			{
+				Debug.WriteLine($"[ModDBModService] Attempting download with DownloadManager: {file.DirectDownloadUrl}");
+				
+				// Configure download options with MD5 verification if available
+				var downloadOptions = new DownloadOptions
+				{
+					MaxRetries = 5,
+					TimeoutMinutes = 30,
+					AllowResume = true,
+					UserAgent = UserAgent
+				};
+
+				// Add MD5 verification if hash is available
+				if (!string.IsNullOrEmpty(file.Md5Hash))
+				{
+					downloadOptions.ExpectedHash = file.Md5Hash;
+					downloadOptions.HashAlgorithm = HashAlgorithmType.MD5;
+					Debug.WriteLine($"[ModDBModService] Will verify MD5 hash: {file.Md5Hash}");
+				}
+
+				// Map EnhancedDownloadProgress to simple percentage progress
+				var mappedProgress = new Progress<EnhancedDownloadProgress>(enhancedProgress =>
+				{
+					progress.Report(enhancedProgress.PercentComplete);
+				});
+
+				// Attempt download with DownloadManager
+				var result = await _downloadManager.DownloadFileAsync(
+					file.DirectDownloadUrl,
+					destinationPath,
+					downloadOptions,
+					mappedProgress);
+
+				if (result.Success)
+				{
+					Debug.WriteLine($"[ModDBModService] DownloadManager succeeded. Downloaded {result.BytesDownloaded} bytes.");
+					progress.Report(100);
+					return; // Success!
+				}
+				else
+				{
+					Debug.WriteLine($"[ModDBModService] DownloadManager failed: {result.ErrorMessage}. Falling back to Puppeteer...");
+				}
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"[ModDBModService] DownloadManager exception: {ex.Message}. Falling back to Puppeteer...");
+			}
+		}
+
+		// Fallback to Puppeteer-based download (original implementation)
+		Debug.WriteLine("[ModDBModService] Using Puppeteer browser-based download...");
+		await DownloadFileWithPuppeteerAsync(file, destinationPath, progress);
+	}
+
+	/// <summary>
+	/// Original Puppeteer-based download method as fallback
+	/// </summary>
+	private async Task DownloadFileWithPuppeteerAsync(ModFile file, string destinationPath, IProgress<double> progress)
+	{
 		await EnsurePageAsync(); // Ensure page and browser are ready
 
 		// Use the temporary directory of the final destination file

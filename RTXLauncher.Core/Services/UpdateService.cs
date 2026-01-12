@@ -34,12 +34,14 @@ public class UpdateCheckResult
 public class UpdateService
 {
 	private readonly GitHubService _gitHubService;
+	private readonly DownloadManager _downloadManager;
 	private readonly string _owner = "Xenthio";
 	private readonly string _repo = "RTXLauncher";
 
-	public UpdateService(GitHubService gitHubService)
+	public UpdateService(GitHubService gitHubService, DownloadManager? downloadManager = null)
 	{
 		_gitHubService = gitHubService;
+		_downloadManager = downloadManager ?? new DownloadManager();
 	}
 
 	/// <summary>
@@ -344,10 +346,6 @@ public class UpdateService
 	private async Task<string> DownloadFileAsync(string url, string downloadFolder, 
 		IProgress<UpdateProgress>? progress = null)
 	{
-		using var client = new HttpClient();
-		client.DefaultRequestHeaders.Add("User-Agent", "RTXLauncherUpdater");
-		client.Timeout = TimeSpan.FromMinutes(5);
-
 		// Determine file name and path
 		bool isExe = url.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 		string fileName = isExe ? Path.GetFileName(url) : "update.zip";
@@ -358,42 +356,43 @@ public class UpdateService
 
 		string downloadPath = Path.Combine(downloadFolder, fileName);
 
+		// Configure download options
+		var downloadOptions = new DownloadOptions
+		{
+			MaxRetries = 5,
+			TimeoutMinutes = 10,
+			AllowResume = true,
+			UserAgent = "RTXLauncherUpdater"
+		};
+
+		// Map EnhancedDownloadProgress to UpdateProgress
+		var mappedProgress = progress != null ? new Progress<EnhancedDownloadProgress>(enhancedProgress =>
+		{
+			// Map percentage from download phase to overall update progress (10% - 90% range)
+			int mappedPercent = 10 + (int)(enhancedProgress.PercentComplete * 0.8);
+
+			progress.Report(new UpdateProgress
+			{
+				Message = enhancedProgress.Message,
+				PercentComplete = mappedPercent,
+				IsComplete = enhancedProgress.IsComplete,
+				Error = enhancedProgress.Error
+			});
+		}) : null;
+
 		try
 		{
-			using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-			response.EnsureSuccessStatusCode();
+			// Use DownloadManager for robust downloading
+			var result = await _downloadManager.DownloadFileAsync(
+				url,
+				downloadPath,
+				downloadOptions,
+				mappedProgress);
 
-			long totalSize = response.Content.Headers.ContentLength ?? 1000000;
-			progress?.Report(new UpdateProgress { 
-				Message = $"Downloading {totalSize / 1024} KB...", 
-				PercentComplete = 20 
-			});
-
-			using var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None);
-			using var downloadStream = await response.Content.ReadAsStreamAsync();
-
-			byte[] buffer = new byte[8192];
-			long totalBytesRead = 0;
-			int bytesRead;
-
-			while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+			if (!result.Success)
 			{
-				await fileStream.WriteAsync(buffer, 0, bytesRead);
-				totalBytesRead += bytesRead;
-				
-				int progressPercentage = (int)((totalBytesRead * 100) / totalSize);
-				int overallProgress = 20 + (int)(progressPercentage * 0.6); // 20% to 80%
-				
-				progress?.Report(new UpdateProgress { 
-					Message = $"Downloading... {progressPercentage}%", 
-					PercentComplete = overallProgress 
-				});
+				throw new Exception($"Download failed: {result.ErrorMessage}", result.Exception);
 			}
-
-			progress?.Report(new UpdateProgress { 
-				Message = "Download completed", 
-				PercentComplete = 90 
-			});
 
 			return downloadPath;
 		}
@@ -401,12 +400,29 @@ public class UpdateService
 		{
 			// Fallback URL for staging builds
 			string fallbackUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe";
+			
 			progress?.Report(new UpdateProgress { 
 				Message = "Access denied, trying fallback URL...", 
 				PercentComplete = 15 
 			});
-			
-			return await DownloadFileAsync(fallbackUrl, downloadFolder, progress);
+
+			// Determine fallback file name
+			string fallbackFileName = Path.GetFileName(fallbackUrl);
+			string fallbackPath = Path.Combine(downloadFolder, fallbackFileName);
+
+			// Try fallback URL with DownloadManager
+			var fallbackResult = await _downloadManager.DownloadFileAsync(
+				fallbackUrl,
+				fallbackPath,
+				downloadOptions,
+				mappedProgress);
+
+			if (!fallbackResult.Success)
+			{
+				throw new Exception($"Fallback download also failed: {fallbackResult.ErrorMessage}", fallbackResult.Exception);
+			}
+
+			return fallbackPath;
 		}
 	}
 }
