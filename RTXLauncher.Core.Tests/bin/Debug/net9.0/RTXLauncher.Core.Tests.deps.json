@@ -381,6 +381,17 @@
           }
         }
       },
+      "PuppeteerExtraSharp/3.1.1": {
+        "dependencies": {
+          "PuppeteerSharp": "20.2.2"
+        },
+        "runtime": {
+          "lib/net8.0/PuppeteerExtraSharp.dll": {
+            "assemblyVersion": "3.1.1.0",
+            "fileVersion": "3.1.1.0"
+          }
+        }
+      },
       "PuppeteerSharp/20.2.2": {
         "dependencies": {
           "Microsoft.Extensions.Logging": "8.0.0"
@@ -471,6 +482,7 @@
       "RTXLauncher.Core/1.0.0": {
         "dependencies": {
           "HtmlAgilityPack": "1.12.2",
+          "PuppeteerExtraSharp": "3.1.1",
           "PuppeteerSharp": "20.2.2"
         },
         "runtime": {
@@ -592,6 +604,13 @@
       "sha512": "sha512-ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A==",
       "path": "newtonsoft.json/13.0.1",
       "hashPath": "newtonsoft.json.13.0.1.nupkg.sha512"
+    },
+    "PuppeteerExtraSharp/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-i08xWbc1m/P2oT7bUf6Jy5A/k+F/TRdP/q/3as/Ftj8tU6fXx3mhdnf5UgHVaafsOgZ0a1xVK0PbwHmONGV0xg==",
+      "path": "puppeteerextrasharp/3.1.1",
+      "hashPath": "puppeteerextrasharp.3.1.1.nupkg.sha512"
     },
     "PuppeteerSharp/20.2.2": {
       "type": "package",

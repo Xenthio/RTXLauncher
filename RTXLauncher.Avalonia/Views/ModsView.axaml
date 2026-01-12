@@ -11,7 +11,7 @@
 		<converters:StringIsNullOrEmptyConverter x:Key="StringIsVisibleConverter"/>
 	</UserControl.Resources>
 
-	<Grid RowDefinitions="Auto,Auto,*,Auto" Margin="10" RowSpacing="10">
+	<Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="10" RowSpacing="10">
 		<!-- Search and Filter Area -->
 		<Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
 			<TextBox Grid.Column="0" Text="{Binding QueryOptions.SearchText, Mode=TwoWay}" Watermark="Search for mods..." KeyUp="SearchBox_KeyUp"/>
@@ -24,12 +24,21 @@
 			<ProgressBar Grid.Column="3" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Width="100"/>
 		</Grid>
 
+		<!-- Status Message -->
+		<TextBlock Grid.Row="1" 
+		           Text="{Binding StatusMessage}" 
+		           FontSize="12" 
+		           Foreground="{DynamicResource SystemAccentColor}"
+		           HorizontalAlignment="Center"
+		           IsVisible="{Binding StatusMessage, Converter={StaticResource StringIsVisibleConverter}}"
+		           Margin="0,5,0,5"/>
+
 		<!-- ModDB Notice -->
-		<TextBlock Grid.Row="1" Text="Mods sourced from ModDB. For more mods, visit https://www.moddb.com/games/garrys-mod-10/mods"
+		<TextBlock Grid.Row="2" Text="Mods sourced from ModDB. For more mods, visit https://www.moddb.com/games/garrys-mod-10/mods"
                    FontSize="11" Foreground="Gray" HorizontalAlignment="Center" TextWrapping="Wrap"/>
 
 		<!-- Mod Grid Area -->
-		<ScrollViewer Grid.Row="2">
+		<ScrollViewer Grid.Row="3">
 			<ItemsControl ItemsSource="{Binding Mods}">
 				<ItemsControl.ItemsPanel>
 					<ItemsPanelTemplate>
@@ -85,7 +94,7 @@
 		</ScrollViewer>
 
 		<!-- Pagination Area -->
-		<StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+		<StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
 			<Button Content="‹ Previous" Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanGoToPreviousPage}"/>
 			<TextBlock Text="{Binding QueryOptions.Page, StringFormat='Page {0}'}" VerticalAlignment="Center"/>
 			<Button Content="Next ›" Command="{Binding NextPageCommand}" IsEnabled="{Binding CanGoToNextPage}"/>

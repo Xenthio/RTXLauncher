@@ -17,6 +17,7 @@ public partial class ModsViewModel : PageViewModel
 	public Action<ModItemViewModel>? OnViewDetailsRequested { get; set; }
 
 	[ObservableProperty] private bool _isBusy;
+	[ObservableProperty] private string _statusMessage = string.Empty;
 	[ObservableProperty] private bool _canGoToPreviousPage;
 	[ObservableProperty] private bool _canGoToNextPage;
 
@@ -44,18 +45,45 @@ public partial class ModsViewModel : PageViewModel
 	public async Task LoadModsAsync()
 	{
 		IsBusy = true;
+		StatusMessage = "Loading mods...";
 		Mods.Clear();
 
-		QueryOptions.SortOrder = SelectedSortOption.Value;
-		var mods = await _modService.GetAllModsAsync(QueryOptions);
-
-		foreach (var mod in mods)
+		try
 		{
-			Mods.Add(new ModItemViewModel(mod));
-		}
+			// Set up progress callback for Chrome download if needed
+			var progress = new Progress<string>(status => StatusMessage = status);
+			
+			// Pass progress to ModDBModService if it's the implementation
+			if (_modService is ModDBModService modDbService)
+			{
+				modDbService.OnStatusUpdate = progress;
+			}
 
-		UpdatePagination();
-		IsBusy = false;
+			QueryOptions.SortOrder = SelectedSortOption.Value;
+			var mods = await _modService.GetAllModsAsync(QueryOptions);
+
+			foreach (var mod in mods)
+			{
+				Mods.Add(new ModItemViewModel(mod));
+			}
+
+			UpdatePagination();
+			StatusMessage = $"Loaded {Mods.Count} mods";
+		}
+		catch (Exception ex)
+		{
+			StatusMessage = $"Error: {ex.Message}";
+		}
+		finally
+		{
+			IsBusy = false;
+			// Clear status message after a delay
+			await Task.Delay(2000);
+			if (StatusMessage.StartsWith("Loaded") || StatusMessage.StartsWith("Error"))
+			{
+				StatusMessage = string.Empty;
+			}
+		}
 	}
 
 	[RelayCommand]

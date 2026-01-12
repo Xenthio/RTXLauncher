@@ -1,5 +1,7 @@
 ﻿using HtmlAgilityPack;
 using PuppeteerSharp;
+using PuppeteerExtraSharp;
+using PuppeteerExtraSharp.Plugins.ExtraStealth;
 using RTXLauncher.Core.Models;
 using System.Diagnostics;
 using System.Text.Json;
@@ -20,6 +22,21 @@ public class ModDBModService : IModService
 	// Use a full browser User-Agent string consistently.
 	public readonly static string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 (RTXLauncher/1.0)";
 
+	/// <summary>
+	/// Enable debug mode to capture screenshots and HTML dumps
+	/// </summary>
+	public static bool DebugMode { get; set; } = false;
+
+	/// <summary>
+	/// Run browser in headless mode (false = show browser window for debugging)
+	/// </summary>
+	public static bool Headless { get; set; } = true;
+	
+	/// <summary>
+	/// Progress callback for UI updates (e.g., Chrome download status)
+	/// </summary>
+	public IProgress<string>? OnStatusUpdate { get; set; }
+
 	public ModDBModService(AddonInstallService addonInstallService, InstalledModsService installedModsService, DownloadManager? downloadManager = null)
 	{
 		_addonInstallService = addonInstallService;
@@ -30,15 +47,97 @@ public class ModDBModService : IModService
 	private async Task EnsureBrowserAsync()
 	{
 		if (_browser != null && _browser.IsConnected) return;
-		Debug.WriteLine("[ModDBModService] Creating new shared browser instance...");
-		var browserFetcher = new BrowserFetcher();
-		await browserFetcher.DownloadAsync();
-		_browser = await Puppeteer.LaunchAsync(new LaunchOptions
+		Debug.WriteLine("[ModDBModService] Creating new shared browser instance with Stealth plugin...");
+		
+		try
 		{
-			Headless = true,
-			Args = new[] { "--no-sandbox" }
-		});
-		Debug.WriteLine("[ModDBModService] Shared browser instance created.");
+			// Use BrowserFetcher to ensure Chrome is downloaded
+			var browserFetcher = new BrowserFetcher();
+			
+			OnStatusUpdate?.Report("Downloading Chrome (first time setup)...");
+			Debug.WriteLine("[ModDBModService] Starting Chrome download/verification...");
+			
+			var installedBrowser = await browserFetcher.DownloadAsync();
+			
+			Debug.WriteLine($"[ModDBModService] Browser info - Path: {installedBrowser.Browser}, BuildId: {installedBrowser.BuildId}");
+			
+			// Get the actual executable path
+			var executablePath = installedBrowser.GetExecutablePath();
+			Debug.WriteLine($"[ModDBModService] Chrome executable path: {executablePath}");
+			
+			// Verify the executable exists - if not, try to clean up and re-download
+			if (!File.Exists(executablePath))
+			{
+				OnStatusUpdate?.Report("Chrome download incomplete, cleaning up...");
+				Debug.WriteLine($"[ModDBModService] Chrome executable not found! Attempting to clean up incomplete download...");
+				
+				// Try to delete the incomplete Chrome folder
+				var chromeDir = Path.GetDirectoryName(Path.GetDirectoryName(executablePath)); // Go up two levels to Chrome folder
+				if (Directory.Exists(chromeDir))
+				{
+					Debug.WriteLine($"[ModDBModService] Deleting incomplete Chrome directory: {chromeDir}");
+					try
+					{
+						Directory.Delete(chromeDir, recursive: true);
+						Debug.WriteLine($"[ModDBModService] Deleted successfully. Attempting re-download...");
+						
+						OnStatusUpdate?.Report("Re-downloading Chrome...");
+						
+						// Try downloading again
+						installedBrowser = await browserFetcher.DownloadAsync();
+						executablePath = installedBrowser.GetExecutablePath();
+						
+						if (!File.Exists(executablePath))
+						{
+							throw new FileNotFoundException($"Chrome executable still not found after re-download at: {executablePath}", executablePath);
+						}
+						
+						Debug.WriteLine($"[ModDBModService] Re-download successful!");
+					}
+					catch (Exception cleanupEx)
+					{
+						Debug.WriteLine($"[ModDBModService] Failed to cleanup and re-download: {cleanupEx.Message}");
+						throw new InvalidOperationException($"Chrome download is incomplete and cleanup failed. Please manually delete: {chromeDir}", cleanupEx);
+					}
+				}
+				else
+				{
+					throw new FileNotFoundException($"Chrome executable not found and directory doesn't exist: {executablePath}", executablePath);
+				}
+			}
+			
+			Debug.WriteLine("[ModDBModService] Chrome verification successful.");
+			
+			OnStatusUpdate?.Report("Starting browser...");
+			
+			// Initialize PuppeteerExtra with Stealth plugin to bypass Cloudflare
+			var puppeteerExtra = new PuppeteerExtra();
+			puppeteerExtra.Use(new StealthPlugin());
+			
+			// Launch with explicit executable path
+			_browser = await puppeteerExtra.LaunchAsync(new LaunchOptions
+			{
+				ExecutablePath = executablePath,
+				Headless = Headless,
+				Args = new[] 
+				{ 
+					"--no-sandbox",
+					"--disable-setuid-sandbox",
+					"--disable-blink-features=AutomationControlled" // Additional stealth
+				},
+				DefaultViewport = new ViewPortOptions { Width = 1920, Height = 1080 }
+			});
+			
+			Debug.WriteLine($"[ModDBModService] Shared browser instance created with Stealth (Headless: {Headless}).");
+			OnStatusUpdate?.Report("Browser ready");
+		}
+		catch (Exception ex)
+		{
+			OnStatusUpdate?.Report($"Browser initialization failed: {ex.Message}");
+			Debug.WriteLine($"[ModDBModService] FATAL ERROR in EnsureBrowserAsync: {ex.Message}");
+			Debug.WriteLine($"[ModDBModService] Stack trace: {ex.StackTrace}");
+			throw;
+		}
 	}
 
 	/// <summary>
@@ -53,26 +152,41 @@ public class ModDBModService : IModService
 		_page = await _browser!.NewPageAsync();
 		await _page.SetUserAgentAsync(UserAgent);
 
-		// --- THE #1 PERFORMANCE OPTIMIZATION: REQUEST BLOCKING ---
-		await _page.SetRequestInterceptionAsync(true);
-		_page.Request += (sender, e) =>
+		// Enable debug logging if debug mode is on
+		if (DebugMode)
 		{
-			var resourceType = e.Request.ResourceType;
-			if (resourceType == ResourceType.Image ||
-				resourceType == ResourceType.StyleSheet ||
-				resourceType == ResourceType.Font ||
-				resourceType == ResourceType.Media)
+			ModDBDebugHelper.EnableConsoleLogging(_page);
+			Debug.WriteLine("[ModDBModService] Debug mode ENABLED - screenshots and HTML dumps will be saved");
+		}
+
+		// --- THE #1 PERFORMANCE OPTIMIZATION: REQUEST BLOCKING ---
+		// Disable in debug mode to see all resources
+		if (!DebugMode)
+		{
+			await _page.SetRequestInterceptionAsync(true);
+			_page.Request += (sender, e) =>
 			{
-				// Abort unnecessary requests to speed up page loading.
-				_ = e.Request.AbortAsync();
-			}
-			else
-			{
-				// Allow essential requests (documents, scripts, etc.).
-				_ = e.Request.ContinueAsync();
-			}
-		};
-		Debug.WriteLine("[ModDBModService] Shared page created with request interception enabled.");
+				var resourceType = e.Request.ResourceType;
+				if (resourceType == ResourceType.Image ||
+					resourceType == ResourceType.StyleSheet ||
+					resourceType == ResourceType.Font ||
+					resourceType == ResourceType.Media)
+				{
+					// Abort unnecessary requests to speed up page loading.
+					_ = e.Request.AbortAsync();
+				}
+				else
+				{
+					// Allow essential requests (documents, scripts, etc.).
+					_ = e.Request.ContinueAsync();
+				}
+			};
+			Debug.WriteLine("[ModDBModService] Shared page created with request interception enabled.");
+		}
+		else
+		{
+			Debug.WriteLine("[ModDBModService] Shared page created WITHOUT request interception (debug mode).");
+		}
 	}
 
 	public async Task<List<ModInfo>> GetAllModsAsync(ModQueryOptions options)
@@ -188,29 +302,70 @@ public class ModDBModService : IModService
 			Debug.WriteLine($"[ModDBModService] Navigating to file page: {file.FilePageUrl}");
 			await _page!.GoToAsync(file.FilePageUrl, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 }, Timeout = 25000 });
 
-			async Task<string?> GetElementText(string selector)
+			if (DebugMode)
+			{
+				await ModDBDebugHelper.LogPageInfoAsync(_page);
+				await ModDBDebugHelper.TakeScreenshotAsync(_page, "01_file_page_loaded");
+			}
+
+			async Task<string?> GetElementText(string selector, string description = "")
 			{
 				try
 				{
+					if (DebugMode && !string.IsNullOrEmpty(description))
+					{
+						await ModDBDebugHelper.CheckSelectorExistsAsync(_page, selector, description);
+					}
+					
 					await _page.WaitForSelectorAsync(selector, new WaitForSelectorOptions { Timeout = 7000 });
 					return await _page.EvaluateExpressionAsync<string>($"document.querySelector('{selector}').textContent");
 				}
-				catch (WaitTaskTimeoutException) { Debug.WriteLine($"[ModDBModService] Timeout: Selector '{selector}' not found."); return null; }
+				catch (WaitTaskTimeoutException) 
+				{ 
+					Debug.WriteLine($"[ModDBModService] Timeout: Selector '{selector}' not found.");
+					
+					if (DebugMode)
+					{
+						// Try to find similar elements
+						await ModDBDebugHelper.FindElementsLikeAsync(_page, selector.Contains("#") ? selector.Split('#')[1].Split(' ')[0] : selector.Split('.')[0]);
+					}
+					
+					return null; 
+				}
 			}
 
 			Debug.WriteLine("[ModDBModService] Scraping file details...");
-			file.Filename = (await GetElementText("#downloadsinfo .row:nth-child(2) .summary"))?.Trim();
-			file.Uploader = (await GetElementText("#downloadsinfo .row:nth-child(4) .summary a"))?.Trim();
-			var sizeText = await GetElementText("#downloadsinfo .row:nth-child(6) .summary");
-			file.Md5Hash = (await GetElementText("#downloadsinfo .row:nth-child(8) .summary"))?.Trim();
+			file.Filename = (await GetElementText("#downloadsinfo .row:nth-child(2) .summary", "Filename"))?.Trim();
+			file.Uploader = (await GetElementText("#downloadsinfo .row:nth-child(4) .summary a", "Uploader"))?.Trim();
+			var sizeText = await GetElementText("#downloadsinfo .row:nth-child(6) .summary", "File size");
+			file.Md5Hash = (await GetElementText("#downloadsinfo .row:nth-child(8) .summary", "MD5 hash"))?.Trim();
+			
 			if (!string.IsNullOrEmpty(sizeText))
 			{
 				var match = Regex.Match(sizeText, @"\(([\d,]+) bytes\)");
 				if (match.Success) file.SizeInBytes = long.Parse(match.Groups[1].Value.Replace(",", ""));
 			}
 
+			Debug.WriteLine($"[ModDBModService] Scraped - Filename: {file.Filename}, Size: {file.SizeInBytes}, MD5: {file.Md5Hash}");
+
+			if (DebugMode)
+			{
+				await ModDBDebugHelper.TakeScreenshotAsync(_page, "02_details_scraped");
+			}
+
 			Debug.WriteLine("[ModDBModService] Finding start link...");
 			const string startLinkSelector = "a#downloadmirrorstoggle";
+			
+			if (DebugMode)
+			{
+				var hasDownloadButton = await ModDBDebugHelper.CheckSelectorExistsAsync(_page, startLinkSelector, "Download button");
+				if (!hasDownloadButton)
+				{
+					// Try to find download-related links
+					await ModDBDebugHelper.GetLinksContainingTextAsync(_page, "download");
+				}
+			}
+			
 			await _page.WaitForSelectorAsync(startLinkSelector, new WaitForSelectorOptions { Timeout = 10000 });
 			var startLink = await _page.EvaluateExpressionAsync<string>($"document.querySelector('{startLinkSelector}').href");
 
@@ -219,18 +374,56 @@ public class ModDBModService : IModService
 				Debug.WriteLine($"[ModDBModService] Navigating to intermediate page: {startLink}");
 				await _page.GoToAsync(startLink, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.DOMContentLoaded }, Timeout = 15000 });
 
+				if (DebugMode)
+				{
+					await ModDBDebugHelper.LogPageInfoAsync(_page);
+					await ModDBDebugHelper.TakeScreenshotAsync(_page, "03_intermediate_page");
+				}
+
 				Debug.WriteLine("[ModDBModService] Finding final mirror link...");
 				const string mirrorLinkSelector = @"p > a[href*='/downloads/mirror/']";
+				
+				if (DebugMode)
+				{
+					var hasMirrorLink = await ModDBDebugHelper.CheckSelectorExistsAsync(_page, mirrorLinkSelector, "Mirror link");
+					if (!hasMirrorLink)
+					{
+						await ModDBDebugHelper.GetLinksContainingTextAsync(_page, "mirror");
+						await ModDBDebugHelper.DumpPageHtmlAsync(_page, "04_mirror_page_html");
+					}
+				}
+				
 				await _page.WaitForSelectorAsync(mirrorLinkSelector, new WaitForSelectorOptions { Timeout = 10000 });
 				var mirrorLink = await _page.EvaluateExpressionAsync<string>($"document.querySelector(`{mirrorLinkSelector}`).href");
 
 				file.DirectDownloadUrl = mirrorLink;
 				Debug.WriteLine($"[ModDBModService] SUCCESS: Found direct URL: {file.DirectDownloadUrl}");
+				
+				if (DebugMode)
+				{
+					await ModDBDebugHelper.TakeScreenshotAsync(_page, "05_success");
+				}
 			}
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine($"[ModDBModService] FATAL Error getting file details: {ex}. Resetting page.");
+			Debug.WriteLine($"[ModDBModService] FATAL Error getting file details: {ex}");
+			Debug.WriteLine($"[ModDBModService] Stack trace: {ex.StackTrace}");
+			
+			if (DebugMode)
+			{
+				try
+				{
+					await ModDBDebugHelper.CreateDebugReportAsync(_page!, file.FilePageUrl);
+					Debug.WriteLine("[ModDBModService] Debug report created. Check the debug folder for screenshots and HTML dumps.");
+					Debug.WriteLine($"[ModDBModService] To open debug folder, call ModDBDebugHelper.OpenDebugFolder()");
+				}
+				catch (Exception debugEx)
+				{
+					Debug.WriteLine($"[ModDBModService] Failed to create debug report: {debugEx.Message}");
+				}
+			}
+			
 			if (_page != null) { await _page.CloseAsync(); _page = null; }
 		}
 		return file;

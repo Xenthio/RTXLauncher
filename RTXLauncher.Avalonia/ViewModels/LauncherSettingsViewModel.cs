@@ -27,6 +27,20 @@ public partial class LauncherSettingsViewModel : PageViewModel
 		set => SetProperty(_settingsData.CheckForUpdatesOnLaunch, value, _settingsData, (model, val) => model.CheckForUpdatesOnLaunch = val);
 	}
 
+	public bool ModDBDebugMode
+	{
+		get => ModDBModService.DebugMode;
+		set
+		{
+			if (ModDBModService.DebugMode != value)
+			{
+				ModDBModService.DebugMode = value;
+				ModDBModService.Headless = !value; // Show browser when debugging
+				OnPropertyChanged();
+			}
+		}
+	}
+
 	public string Theme
 	{
 		get => _settingsData.Theme;

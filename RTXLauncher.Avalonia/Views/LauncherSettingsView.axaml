@@ -28,5 +28,25 @@
 			</StackPanel>
 		</Border>
 
+		<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10">
+			<StackPanel Spacing="10" Margin="0">
+				<TextBlock Text="ModDB Debugging" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+				
+				<CheckBox IsChecked="{Binding ModDBDebugMode}">
+					Enable ModDB Debug Mode
+				</CheckBox>
+				
+				<TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20,0,0,0">
+					When enabled, ModDB downloads will:
+					• Show the browser window (non-headless)
+					• Capture screenshots at each step
+					• Save HTML dumps for analysis
+					• Log detailed selector information
+					
+					Debug files saved to: %APPDATA%\RTXLauncher\ModDBDebug\
+				</TextBlock>
+			</StackPanel>
+		</Border>
+
 	</StackPanel>
 </UserControl>
