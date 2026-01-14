@@ -40,14 +40,16 @@ public class QuickInstallService
 			{
 				Option = FixesPackageOption.Standard,
 				DisplayName = "garrys-mod-rtx-remixed",
-				Description = "The main project (x64 and x32)",
+				Description = "The main project",
 				Owner = "Xenthio",
 				Repo = "garrys-mod-rtx-remixed",
 				PatchOwner = "sambow23",
 				PatchRepo = "SourceRTXTweaks",
 				PatchBranch = "main",
 				PatchFile = "applypatch.py",
-				RequiresX64 = false
+				RequiresX64 = false,
+				RequiresLegacyBuild = true,
+				LegacyManifestId = "2195078592256565401" // May 1, 2025 - last known stable x86-64 build
 			},
 			new FixesPackageInfo
 			{
@@ -60,12 +62,14 @@ public class QuickInstallService
 				PatchRepo = "SourceRTXTweaks",
 				PatchBranch = "perf",
 				PatchFile = "applypatch.py",
-				RequiresX64 = true
+				RequiresX64 = true,
+				RequiresLegacyBuild = false,
+				LegacyManifestId = ""
 			}
 		};
 	}
 
-	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null)
+	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null)
 	{
 		// Helper to remap progress for sub-tasks
 		IProgress<InstallProgressReport> CreateSubProgress(int basePercent, int range)
@@ -96,6 +100,17 @@ public class QuickInstallService
 
 			await _installService.CreateNewGmodInstallAsync(vanillaDir, installDir, CreateSubProgress(10, 20));
 			installType = GarrysModUtility.GetInstallType(installDir); // Re-check type
+		}
+
+		// Step 2.5: Apply legacy downgrade if requested (must happen after vanilla install, before patches)
+		if (fixesPackageInfo.RequiresLegacyBuild && legacyDowngradeCallback != null)
+		{
+			progress.Report(new InstallProgressReport { Message = "Applying legacy build downgrade...", Percentage = 25 });
+			bool downgradeCompleted = await legacyDowngradeCallback();
+			if (!downgradeCompleted)
+			{
+				throw new OperationCanceledException("Legacy build downgrade was cancelled by user.");
+			}
 		}
 
 		// Validate architecture compatibility

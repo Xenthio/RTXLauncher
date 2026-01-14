@@ -411,10 +411,9 @@ public partial class AdvancedInstallViewModel : PageViewModel
 	{
 		// Show confirmation dialog with username input
 		var confirmed = await Utilities.DialogUtility.ShowConfirmationAsync(
-			"Downgrade Garry's Mod",
+			"Downgrade?",
 			"Downgrading the game improves stability at the cost of newer features.\n\n" +
-			"You will be prompted for Steam credentials and any required Steam Guard codes.\n\n" +
-			"Your credentials will not be stored and are only used for this process.\n\n" +
+			"You will be prompted for Steam credentials.\n\n" +
 			"Do you want to continue?");
 
 		if (!confirmed)
@@ -616,7 +615,6 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 	// --- 1. Add your sources dictionary as a private field ---
 	private readonly Dictionary<string, (string Owner, string Repo)> _remixSources = new()
 	{
-		{ "(OFFICIAL) NVIDIAGameWorks/rtx-remix", ("NVIDIAGameWorks", "rtx-remix") },
 		{ "sambow23/dxvk-remix-gmod", ("sambow23", "dxvk-remix-gmod") },
 	};
 

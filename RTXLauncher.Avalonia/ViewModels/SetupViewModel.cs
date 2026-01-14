@@ -18,6 +18,7 @@ public partial class SetupViewModel : PageViewModel
 {
 	// --- Services ---
 	private readonly QuickInstallService _quickInstallService;
+	private readonly DepotDowngradeService _depotDowngradeService;
 	private readonly IMessenger _messenger;
 
 	// --- UI State Properties ---
@@ -63,10 +64,23 @@ public partial class SetupViewModel : PageViewModel
 	/// </summary>
 	public bool ShowPreflightWarnings => PreflightWarnings.Count > 0;
 
-	public SetupViewModel(QuickInstallService quickInstallService, IMessenger messenger)
+	/// <summary>
+	/// Indicates whether the selected fixes package requires the legacy x86-64 build.
+	/// </summary>
+	[ObservableProperty]
+	private bool _requiresLegacyDowngrade;
+
+	/// <summary>
+	/// Indicates whether the user has already downgraded or skipped the downgrade.
+	/// </summary>
+	[ObservableProperty]
+	private bool _hasHandledDowngrade;
+
+	public SetupViewModel(QuickInstallService quickInstallService, DepotDowngradeService depotDowngradeService, IMessenger messenger)
 	{
 		Header = "Setup";
 		_quickInstallService = quickInstallService;
+		_depotDowngradeService = depotDowngradeService;
 		_messenger = messenger;
 
 		// Initialize fixes packages
@@ -78,6 +92,9 @@ public partial class SetupViewModel : PageViewModel
 		
 		// Check for auto-detected vanilla installation
 		CheckVanillaInstallation();
+
+		// Manually trigger the package changed handler for initial selection
+		OnSelectedFixesPackageChanged(_selectedFixesPackage);
 	}
 
 	/// <summary>
@@ -197,13 +214,51 @@ public partial class SetupViewModel : PageViewModel
 		var _progressHandle = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
 		IProgress<InstallProgressReport> progressHandle = _progressHandle;
 
+		// Create downgrade callback if package requires legacy build
+		Func<Task<bool>>? downgradeCallback = null;
+		if (SelectedFixesPackage.RequiresLegacyBuild && !HasHandledDowngrade)
+		{
+			downgradeCallback = async () =>
+			{
+				var result = await DialogUtility.ShowConfirmationAsync(
+					"Downgrade?",
+					"The selected fixes package works best with the legacy Garry's Mod x86-64 build (May 1, 2025).\n\n" +
+					"The downgrade will be applied to your RTX installation after the vanilla files are copied.\n\n" +
+					"You will need to provide your Steam credentials.\n\n" +
+					"This can be done later in the Advanced Install tab.\n\n" +
+					"Would you like to downgrade now?");
+
+				if (result)
+				{
+					// User wants to downgrade - run the downgrade process
+					await DowngradeLegacyBuildAsync();
+					// If downgrade failed, HasHandledDowngrade will be false
+					// But we still return true to continue installation
+				}
+				else
+				{
+					// User doesn't want to downgrade - mark as handled and continue
+					HasHandledDowngrade = true;
+				}
+
+				// Always return true to continue installation (with or without downgrade)
+				return true;
+			};
+		}
+
 		try
 		{
-			await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath);
+			await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath, downgradeCallback);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 			// Notify that packages were installed so Advanced Install tab can refresh
 			_messenger.Send(new PackagesUpdatedMessage());
+		}
+		catch (OperationCanceledException)
+		{
+			progressHandle.Report(new InstallProgressReport { Message = "Installation cancelled by user.", Percentage = 100 });
+			// If it fails, show the welcome screen again so they can retry.
+			IsWelcomeVisible = true;
 		}
 		catch (Exception ex)
 		{
@@ -227,7 +282,7 @@ public partial class SetupViewModel : PageViewModel
 		if (value == null) return;
 
 		// Clear existing warnings related to package compatibility
-		var compatWarnings = PreflightWarnings.Where(w => w.Contains("Performance") || w.Contains("64-bit")).ToList();
+		var compatWarnings = PreflightWarnings.Where(w => w.Contains("Performance") || w.Contains("64-bit") || w.Contains("legacy") || w.Contains("downgrade")).ToList();
 		foreach (var warning in compatWarnings)
 		{
 			PreflightWarnings.Remove(warning);
@@ -250,4 +305,101 @@ public partial class SetupViewModel : PageViewModel
 
 		OnPropertyChanged(nameof(ShowPreflightWarnings));
 	}
+
+	[RelayCommand]
+	private async Task DowngradeLegacyBuildAsync()
+	{
+		// Show credentials dialog
+		var credentialsViewModel = new SteamCredentialsViewModel
+		{
+			ManifestId = SelectedFixesPackage.LegacyManifestId
+		};
+		var credentialsDialog = new Views.SteamCredentialsWindow
+		{
+			DataContext = credentialsViewModel
+		};
+
+		var mainWindow = App.GetMainWindow();
+		if (mainWindow == null) return;
+
+		await credentialsDialog.ShowDialog(mainWindow);
+
+		if (!credentialsDialog.Result) return;
+
+		IsBusy = true;
+		var _progressHandle = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
+		IProgress<InstallProgressReport> progressHandle = _progressHandle;
+
+		try
+		{
+			var rtxInstallPath = GarrysModUtility.GetThisInstallFolder();
+
+			var authUi = new Services.DepotDownloaderAuthUi(_messenger);
+			var downloadRequest = new DepotDownloadRequest
+			{
+				ManifestId = credentialsViewModel.ManifestId,
+				Username = credentialsViewModel.Username,
+				Password = credentialsViewModel.Password,
+				UseQrCode = credentialsViewModel.UseQrCode,
+				RememberPassword = credentialsViewModel.RememberPassword,
+				SkipAppConfirmation = credentialsViewModel.SkipAppConfirmation
+			};
+
+			progressHandle.Report(new InstallProgressReport
+			{
+				Message = "Downloading legacy depot...",
+				Percentage = 0
+			});
+
+			string depotPath = await _depotDowngradeService.DownloadLegacyDepotAsync(
+				downloadRequest,
+				progressHandle,
+				authUi);
+
+			progressHandle.Report(new InstallProgressReport
+			{
+				Message = "Applying depot to RTX installation...",
+				Percentage = 90
+			});
+
+			await _depotDowngradeService.ApplyDepotToInstallationAsync(
+				depotPath,
+				rtxInstallPath,
+				progressHandle);
+
+			HasHandledDowngrade = true;
+			RequiresLegacyDowngrade = false;
+
+			// Remove the downgrade warning
+			var downgradeWarning = PreflightWarnings.FirstOrDefault(w => w.Contains("legacy x86-64 beta build"));
+			if (downgradeWarning != null)
+			{
+				PreflightWarnings.Remove(downgradeWarning);
+			}
+			PreflightWarnings.Add("✓ Legacy build has been applied. Installation will continue automatically.");
+			OnPropertyChanged(nameof(ShowPreflightWarnings));
+
+			progressHandle.Report(new InstallProgressReport
+			{
+				Message = "Downgrade completed successfully. Continuing with installation...",
+				Percentage = 100
+			});
+		}
+		catch (Exception ex)
+		{
+			progressHandle.Report(new InstallProgressReport
+			{
+				Message = $"Downgrade failed: {ex.Message}",
+				Percentage = 100
+			});
+
+			await DialogUtility.ShowMessageAsync("Downgrade Failed",
+				$"Failed to downgrade the game:\n\n{ex.Message}");
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+
 }

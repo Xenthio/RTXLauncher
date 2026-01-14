@@ -44,4 +44,6 @@ public class FixesPackageInfo
 	public string PatchBranch { get; init; } = string.Empty;
 	public string PatchFile { get; init; } = string.Empty;
 	public bool RequiresX64 { get; init; }
+	public bool RequiresLegacyBuild { get; init; }
+	public string LegacyManifestId { get; init; } = "2195078592256565401"; // Default to May 1, 2025
 }

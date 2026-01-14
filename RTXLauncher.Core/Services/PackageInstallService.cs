@@ -17,7 +17,6 @@ public class PackageInstallService
 
 	public static Dictionary<string, (string Owner, string Repo)> RemixSources = new Dictionary<string, (string, string)>
 	{
-		{ "(OFFICIAL) NVIDIAGameWorks/rtx-remix", ("NVIDIAGameWorks", "rtx-remix") },
 		{ "sambow23/dxvk-remix-gmod", ("sambow23", "dxvk-remix-gmod") },
 	};
 
