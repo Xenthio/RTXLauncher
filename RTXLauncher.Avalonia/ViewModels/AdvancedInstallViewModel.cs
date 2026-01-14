@@ -413,7 +413,8 @@ public partial class AdvancedInstallViewModel : PageViewModel
 		var confirmed = await Utilities.DialogUtility.ShowConfirmationAsync(
 			"Downgrade Garry's Mod",
 			"Downgrading the game improves stability at the cost of newer features.\n\n" +
-			"This will open DepotDownloader where you can enter your Steam password and 2FA code.\n\n" +
+			"You will be prompted for Steam credentials and any required Steam Guard codes.\n\n" +
+			"Your credentials will not be stored and are only used for this process.\n\n" +
 			"Do you want to continue?");
 
 		if (!confirmed)
@@ -421,11 +422,8 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			return;
 		}
 
-		// Show dialog for username only
-		var credentialsViewModel = new SteamCredentialsViewModel 
-		{ 
-			UsernameOnly = true  // Flag to show only username field
-		};
+		// Show credentials dialog
+		var credentialsViewModel = new SteamCredentialsViewModel();
 		var credentialsDialog = new Views.SteamCredentialsWindow
 		{
 			DataContext = credentialsViewModel
@@ -441,7 +439,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 
 		await credentialsDialog.ShowDialog(mainWindow);
 
-		if (!credentialsDialog.Result || string.IsNullOrWhiteSpace(credentialsViewModel.Username))
+		if (!credentialsDialog.Result || (!credentialsViewModel.UseQrCode && string.IsNullOrWhiteSpace(credentialsViewModel.Username)))
 		{
 			return;
 		}
@@ -466,11 +464,22 @@ public partial class AdvancedInstallViewModel : PageViewModel
 				_messenger.Send(new ProgressReportMessage(report));
 			});
 
-			// Download the depot (user will enter password/2FA in console)
+			var authUi = new Services.DepotDownloaderAuthUi(_messenger);
+			var downloadRequest = new DepotDownloadRequest
+			{
+				ManifestId = credentialsViewModel.ManifestId,
+				Username = credentialsViewModel.Username,
+				Password = credentialsViewModel.Password,
+				UseQrCode = credentialsViewModel.UseQrCode,
+				RememberPassword = credentialsViewModel.RememberPassword,
+				SkipAppConfirmation = credentialsViewModel.SkipAppConfirmation
+			};
+
+			// Download the depot (Steam auth is handled in the launcher UI)
 			string depotPath = await _depotDowngradeService.DownloadLegacyDepotAsync(
-				credentialsViewModel.Username,
-				credentialsViewModel.ManifestId,
-				progress);
+				downloadRequest,
+				progress,
+				authUi);
 
 			// Apply the depot to the installation
 			await _depotDowngradeService.ApplyDepotToInstallationAsync(depotPath, rtxInstallPath, progress);

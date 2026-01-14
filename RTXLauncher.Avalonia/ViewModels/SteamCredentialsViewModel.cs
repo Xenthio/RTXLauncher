@@ -20,6 +20,15 @@ public partial class SteamCredentialsViewModel : ObservableObject
 	private bool _usernameOnly = false;
 
 	[ObservableProperty]
+	private bool _useQrCode = false;
+
+	[ObservableProperty]
+	private bool _rememberPassword = false;
+
+	[ObservableProperty]
+	private bool _skipAppConfirmation = false;
+
+	[ObservableProperty]
 	private string _manifestId = "2195078592256565401"; // Default to known working manifest
 
 	public SteamCredentialsViewModel()

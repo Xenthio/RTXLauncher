@@ -21,6 +21,25 @@ public partial class SteamCredentialsWindow : Window
 		// Validate manifest ID if present
 		if (DataContext is SteamCredentialsViewModel viewModel)
 		{
+			// Validate username and password for non-QR login
+			if (!viewModel.UseQrCode)
+			{
+				if (string.IsNullOrWhiteSpace(viewModel.Username))
+				{
+					await Utilities.DialogUtility.ShowMessageAsync("Missing Username",
+						"Please enter your Steam username.");
+					return;
+				}
+
+				if (string.IsNullOrWhiteSpace(viewModel.Password))
+				{
+					await Utilities.DialogUtility.ShowMessageAsync("Missing Password",
+						"Please enter your Steam password.\n\n" +
+						"If you don't want to enter your password, use the QR code login option instead.");
+					return;
+				}
+			}
+
 			if (!string.IsNullOrWhiteSpace(viewModel.ManifestId))
 			{
 				// Check if manifest ID is numeric

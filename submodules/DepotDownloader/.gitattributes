@@ -1,0 +1,4 @@
+*.cs text eol=lf
+*.csproj text eol=lf
+*.config eol=lf
+*.json eol=lf
