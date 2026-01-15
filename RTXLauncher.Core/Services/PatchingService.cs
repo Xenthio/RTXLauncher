@@ -48,25 +48,25 @@ public class PatchingService
 				throw new Exception($"Patching is not supported for this installation type: {installType}");
 			}
 
-			var fileContents = new Dictionary<string, byte[]>();
-			var modifiedFiles = new Dictionary<string, byte[]>();
-			var missingFiles = new List<string>();
-			var fileCount = patchesToUse.Patches.Keys.Count;
-			int currentFileIndex = 0;
+		var fileContents = new Dictionary<string, byte[]>();
+		var modifiedFiles = new Dictionary<string, byte[]>();
+		var missingFiles = new List<string>();
+		var fileCount = patchesToUse.Patches.Keys.Count;
+		int currentFileIndex = 0;
 
-			foreach (string fileName in patchesToUse.Patches.Keys)
+		foreach (string fileName in patchesToUse.Patches.Keys)
+		{
+			string filePathOnDisk = ResolveFilePath(installPath, fileName, installType);
+			if (!File.Exists(filePathOnDisk))
 			{
-				string filePathOnDisk = Path.Combine(installPath, fileName.Replace('/', Path.DirectorySeparatorChar));
-				if (!File.Exists(filePathOnDisk))
-				{
-					missingFiles.Add(fileName);
-					continue;
-				}
-
-				fileContents[fileName] = File.ReadAllBytes(filePathOnDisk);
-				currentFileIndex++;
-				progress.Report(new InstallProgressReport { Message = $"Loaded file: {fileName}", Percentage = 15 + (int)((float)currentFileIndex / fileCount * 15) });
+				missingFiles.Add(fileName);
+				continue;
 			}
+
+			fileContents[fileName] = File.ReadAllBytes(filePathOnDisk);
+			currentFileIndex++;
+			progress.Report(new InstallProgressReport { Message = $"Loaded file: {fileName}", Percentage = 15 + (int)((float)currentFileIndex / fileCount * 15) });
+		}
 
 			if (missingFiles.Count > 0)
 			{
@@ -132,21 +132,21 @@ public class PatchingService
 			string backupDir = Path.Combine(installPath, $"backup_patches_{timestamp}");
 			Directory.CreateDirectory(backupDir);
 
-			int savedFiles = 0;
-			foreach (var filePair in modifiedFiles)
-			{
-				string fileName = filePair.Key;
-				byte[] modifiedContent = filePair.Value;
-				string originalPath = Path.Combine(installPath, fileName.Replace('/', Path.DirectorySeparatorChar));
-				string backupPath = Path.Combine(backupDir, fileName.Replace('/', Path.DirectorySeparatorChar));
+		int savedFiles = 0;
+		foreach (var filePair in modifiedFiles)
+		{
+			string fileName = filePair.Key;
+			byte[] modifiedContent = filePair.Value;
+			string originalPath = ResolveFilePath(installPath, fileName, installType);
+			string backupPath = Path.Combine(backupDir, fileName.Replace('/', Path.DirectorySeparatorChar));
 
-				Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
-				File.Copy(originalPath, backupPath, true);
+			Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+			File.Copy(originalPath, backupPath, true);
 
-				File.WriteAllBytes(originalPath, modifiedContent);
-				savedFiles++;
-				progress.Report(new InstallProgressReport { Message = $"Applied patch to {fileName}", Percentage = 90 + (int)((float)savedFiles / modifiedFiles.Count * 10) });
-			}
+			File.WriteAllBytes(originalPath, modifiedContent);
+			savedFiles++;
+			progress.Report(new InstallProgressReport { Message = $"Applied patch to {fileName}", Percentage = 90 + (int)((float)savedFiles / modifiedFiles.Count * 10) });
+		}
 
 			progress.Report(new InstallProgressReport { Message = $"Successfully patched {savedFiles} file(s). Backups are in {Path.GetFileName(backupDir)}.", Percentage = 100 });
 		});
@@ -550,6 +550,39 @@ public class PatchingService
 			hex.AppendFormat("{0:x2}", bytes[i]);
 		}
 		return hex.ToString();
+	}
+
+	/// <summary>
+	/// Resolves the correct file path for patching based on installation type.
+	/// For 32-bit installations, DLLs in bin/ are actually located in garrysmod/bin/
+	/// </summary>
+	private static string ResolveFilePath(string installPath, string fileName, string installType)
+	{
+		// Normalize the path separators
+		string normalizedFileName = fileName.Replace('/', Path.DirectorySeparatorChar);
+		
+		// Default path
+		string defaultPath = Path.Combine(installPath, normalizedFileName);
+		
+		// For 32-bit installations, check if the file is in bin/ and should be in garrysmod/bin/
+		if (installType == "gmod_main" || installType == "gmod_i386")
+		{
+			// Check if the path starts with bin\ and contains .dll
+			if (normalizedFileName.StartsWith("bin" + Path.DirectorySeparatorChar) && 
+			    (normalizedFileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+			     normalizedFileName.EndsWith(".so", StringComparison.OrdinalIgnoreCase)))
+			{
+				// Try garrysmod/bin/ first
+				string garrysmodPath = Path.Combine(installPath, "garrysmod", normalizedFileName);
+				if (File.Exists(garrysmodPath))
+				{
+					return garrysmodPath;
+				}
+			}
+		}
+		
+		// Return the default path for all other cases
+		return defaultPath;
 	}
 }
 

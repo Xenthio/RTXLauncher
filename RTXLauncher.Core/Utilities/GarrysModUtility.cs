@@ -1,5 +1,6 @@
 ﻿// Services/GarrysModUtility.cs
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace RTXLauncher.Core.Utilities;
 
@@ -27,24 +28,76 @@ public static class GarrysModUtility
 	}
 
 	/// <summary>
-	/// Determines the type of Garry's Mod installation at a given path.
+	/// Determines the type of Garry's Mod installation at a given path by reading Steam's ACF manifest.
+	/// Falls back to file-based detection if ACF cannot be read.
 	/// </summary>
 	/// <param name="path">The root directory of the installation to check.</param>
-	/// <returns>A string identifier like "gmod_x86-64", "gmod_main", or "unknown".</returns>
+	/// <returns>A string identifier like "gmod_x86-64", "gmod_i386", "gmod_main", or "unknown".</returns>
 	public static string GetInstallType(string? path)
 	{
 		if (string.IsNullOrEmpty(path)) return "unknown";
 
-		if (Directory.Exists(Path.Combine(path, "garrysmod")))
+		if (!Directory.Exists(Path.Combine(path, "garrysmod")))
 		{
-			if (File.Exists(Path.Combine(path, "bin", "win64", "gmod.exe"))) return "gmod_x86-64";
-			if (File.Exists(Path.Combine(path, "bin", "gmod.exe"))) return "gmod_i386";
-			if (File.Exists(Path.Combine(path, "gmod.exe"))) return "gmod_main";
-			if (File.Exists(Path.Combine(path, "hl2.exe"))) return "gmod_main-legacy";
-			return "gmod_unknown";
+			return "unknown";
 		}
 
-		return "unknown";
+		// Try to detect from Steam ACF manifest first
+		var acfType = GetInstallTypeFromSteamAcf(path);
+		if (acfType != null)
+		{
+			return acfType;
+		}
+
+		// Fallback to file-based detection
+		if (File.Exists(Path.Combine(path, "bin", "win64", "gmod.exe"))) return "gmod_x86-64";
+		if (File.Exists(Path.Combine(path, "bin", "gmod.exe"))) return "gmod_i386";
+		if (File.Exists(Path.Combine(path, "gmod.exe"))) return "gmod_main";
+		if (File.Exists(Path.Combine(path, "hl2.exe"))) return "gmod_main-legacy";
+		return "gmod_unknown";
+	}
+
+	/// <summary>
+	/// Reads the Steam ACF manifest to determine the game version based on the BetaKey.
+	/// </summary>
+	/// <param name="installPath">The game installation path (e.g., F:\Steam\steamapps\common\GarrysMod)</param>
+	/// <returns>"gmod_x86-64" if 64-bit, "gmod_i386" if 32-bit, or null if cannot be determined</returns>
+	private static string? GetInstallTypeFromSteamAcf(string installPath)
+	{
+		try
+		{
+			// Navigate up from installPath to find the steamapps directory
+			// installPath is typically: .../steamapps/common/GarrysMod
+			var installDir = new DirectoryInfo(installPath);
+			if (installDir.Parent?.Name != "common") return null;
+			if (installDir.Parent.Parent?.Name != "steamapps") return null;
+
+			var steamappsDir = installDir.Parent.Parent.FullName;
+			var acfPath = Path.Combine(steamappsDir, "appmanifest_4000.acf");
+
+			if (!File.Exists(acfPath)) return null;
+
+			var acfContent = File.ReadAllText(acfPath);
+
+			// Look for BetaKey in UserConfig or MountedConfig sections
+			// Pattern: "BetaKey"		"value"
+			var betaKeyMatch = Regex.Match(acfContent, @"""BetaKey""\s+""([^""]+)""");
+			if (!betaKeyMatch.Success) return null;
+
+			var betaKey = betaKeyMatch.Groups[1].Value;
+
+			return betaKey switch
+			{
+				"x86-64" => "gmod_x86-64",
+				"public" => "gmod_i386",
+				_ => null
+			};
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Error reading Steam ACF manifest: {ex.Message}");
+			return null;
+		}
 	}
 
 	/// <summary>

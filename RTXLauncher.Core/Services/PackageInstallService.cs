@@ -133,46 +133,67 @@ bin/win64/usd_ms.dll
 			progress.Report(new InstallProgressReport { Message = "Extracting package for inspection...", Percentage = 45 });
 			ZipFile.ExtractToDirectory(zipPath, extractTempDir);
 
-			// --- 3. Determine correct source and destination paths ---
-			progress.Report(new InstallProgressReport { Message = "Analyzing package structure...", Percentage = 55 });
-			var installType = GarrysModUtility.GetInstallType(installDir);
+		// --- 3. Determine correct source and destination paths ---
+		progress.Report(new InstallProgressReport { Message = "Analyzing package structure...", Percentage = 55 });
+		var installType = GarrysModUtility.GetInstallType(installDir);
 
-			string? sourcePath = null;
-			string? destPath = null;
+		string? sourcePath = null;
+		string? destPath = null;
 
-			// Find the deepest .trex or bin folder in the extracted contents
-			var trexFolder = Directory.GetDirectories(extractTempDir, "*.trex", SearchOption.AllDirectories).FirstOrDefault();
-			var binFolder = Directory.GetDirectories(extractTempDir, "bin", SearchOption.AllDirectories).FirstOrDefault();
+	// Find the deepest .trex or bin folder in the extracted contents
+	var trexFolder = Directory.GetDirectories(extractTempDir, "*.trex", SearchOption.AllDirectories).FirstOrDefault();
+	var binFolder = Directory.GetDirectories(extractTempDir, "bin", SearchOption.AllDirectories).FirstOrDefault();
 
-			if (installType == "gmod_x86-64" && trexFolder != null)
-			{
-				// Primary 64-bit case: .trex folder exists
-				sourcePath = trexFolder;
-				destPath = Path.Combine(installDir, "bin", "win64");
-				progress.Report(new InstallProgressReport { Message = "Found .trex folder for 64-bit install.", Percentage = 60 });
-			}
-			else if (binFolder != null)
-			{
-				// 32-bit case or fallback for 64-bit: bin folder exists
-				sourcePath = binFolder;
-				destPath = (installType == "gmod_x86-64")
-					? Path.Combine(installDir, "bin", "win64")
-					: Path.Combine(installDir, "bin");
-				progress.Report(new InstallProgressReport { Message = "Found bin folder for install.", Percentage = 60 });
-			}
-			else
-			{
-				throw new Exception("Remix package does not have a recognizable structure (missing 'bin' or '.trex' folder).");
-			}
+	if (installType == "gmod_x86-64")
+	{
+		// 64-bit: Copy contents of .trex (or bin) to bin/win64
+		if (trexFolder != null)
+		{
+			sourcePath = trexFolder;
+			destPath = Path.Combine(installDir, "bin", "win64");
+			progress.Report(new InstallProgressReport { Message = "Found .trex folder for 64-bit install.", Percentage = 60 });
+		}
+		else if (binFolder != null)
+		{
+			sourcePath = binFolder;
+			destPath = Path.Combine(installDir, "bin", "win64");
+			progress.Report(new InstallProgressReport { Message = "Found bin folder for 64-bit install.", Percentage = 60 });
+		}
+		else
+		{
+			var allDirs = Directory.GetDirectories(extractTempDir, "*", SearchOption.AllDirectories)
+				.Select(d => Path.GetRelativePath(extractTempDir, d))
+				.Take(20);
+			var dirList = string.Join(", ", allDirs);
+			throw new Exception($"Remix package does not have a recognizable structure (missing 'bin' or '.trex' folder).\n\nFound directories: {dirList}");
+		}
 
-			Directory.CreateDirectory(destPath);
+		Directory.CreateDirectory(destPath);
 
-			// --- 4. Copy the files from the determined source to the destination ---
-			var copyProgress = new Progress<InstallProgressReport>(report =>
-			{
-				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 60 + (int)(report.Percentage * 0.4) });
-			});
-			await CopyDirectoryWithProgress(sourcePath, destPath, true, copyProgress);
+		// Copy the contents
+		var copyProgress = new Progress<InstallProgressReport>(report =>
+		{
+			progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 60 + (int)(report.Percentage * 0.4) });
+		});
+		await CopyDirectoryWithProgress(sourcePath, destPath, true, copyProgress);
+	}
+	else
+	{
+		// 32-bit: Copy all archive contents (including .trex folder itself) to bin
+		progress.Report(new InstallProgressReport { Message = "Found package for 32-bit install.", Percentage = 60 });
+		
+		destPath = Path.Combine(installDir, "bin");
+		Directory.CreateDirectory(destPath);
+
+		// Copy all files and folders from the extracted archive to bin/
+		var copyProgress = new Progress<InstallProgressReport>(report =>
+		{
+			progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 60 + (int)(report.Percentage * 0.4) });
+		});
+		
+		// Copy all contents of extractTempDir (which includes .trex folder and any loose files)
+		await CopyDirectoryWithProgress(extractTempDir, destPath, true, copyProgress);
+	}
 
 			progress.Report(new InstallProgressReport { Message = "Remix installed successfully!", Percentage = 100 });
 		}

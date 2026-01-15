@@ -28,23 +28,24 @@ public static class BinaryRestorationUtility
 			throw new DirectoryNotFoundException("Could not find vanilla Garry's Mod installation. Cannot restore original binaries.");
 		}
 
-		// Determine install type to know which binaries to restore
-		var installType = GarrysModUtility.GetInstallType(rtxInstallPath);
-		
-		if (installType == "gmod_x86-64")
-		{
-			// 64-bit installation - restore bin/win64 binaries
-			RestoreBinFolder(vanillaPath, rtxInstallPath, "bin/win64", progress);
-		}
-		else if (installType == "gmod_main" || installType == "gmod_i386")
-		{
-			// 32-bit installation - restore bin binaries
-			RestoreBinFolder(vanillaPath, rtxInstallPath, "bin", progress);
-		}
-		else
-		{
-			throw new InvalidOperationException($"Cannot restore binaries for installation type: {installType}");
-		}
+	// Determine install type to know which binaries to restore
+	var installType = GarrysModUtility.GetInstallType(rtxInstallPath);
+	
+	if (installType == "gmod_x86-64")
+	{
+		// 64-bit installation - restore bin/win64 binaries
+		RestoreBinFolder(vanillaPath, rtxInstallPath, "bin/win64", progress);
+	}
+	else if (installType == "gmod_main" || installType == "gmod_i386")
+	{
+		// 32-bit installation - restore bin binaries (engine) and garrysmod/bin binaries (game DLLs)
+		RestoreBinFolder(vanillaPath, rtxInstallPath, "bin", progress);
+		RestoreBinFolder(vanillaPath, rtxInstallPath, "garrysmod/bin", progress);
+	}
+	else
+	{
+		throw new InvalidOperationException($"Cannot restore binaries for installation type: {installType}");
+	}
 
 		// Also restore the main game executable if it exists
 		RestoreGameExecutable(vanillaPath, rtxInstallPath, progress);
