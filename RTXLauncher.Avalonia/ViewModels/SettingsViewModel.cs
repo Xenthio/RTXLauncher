@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using RTXLauncher.Avalonia.Utilities;
@@ -195,6 +195,12 @@ public partial class SettingsViewModel : PageViewModel
 	{
 		get => _settingsData.LinuxVulkanDriver;
 		set => SetProperty(_settingsData.LinuxVulkanDriver, value, _settingsData, (model, val) => model.LinuxVulkanDriver = val);
+	}
+	
+	public string LinuxCustomEnvironmentVariables
+	{
+		get => _settingsData.LinuxCustomEnvironmentVariables;
+		set => SetProperty(_settingsData.LinuxCustomEnvironmentVariables, value, _settingsData, (model, val) => model.LinuxCustomEnvironmentVariables = val);
 	}
 	
 	public bool RtxInstalled => RemixUtility.IsInstalled();

@@ -1,4 +1,4 @@
-﻿using RTXLauncher.Core.Models;
+using RTXLauncher.Core.Models;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -174,6 +174,12 @@ public static class LauncherUtility
 					break;
 			}
 		}
+		
+		// Apply custom environment variables
+		if (!string.IsNullOrEmpty(settings.LinuxCustomEnvironmentVariables))
+		{
+			ApplyCustomEnvironmentVariables(processInfo, settings.LinuxCustomEnvironmentVariables);
+		}
 
 		// Try to ensure Steam client is running for SteamAPI
 		TryStartSteamClient();
@@ -327,9 +333,10 @@ public static class LauncherUtility
 			catch { /* Ignore errors */ }
 		}
 
-		// Remove duplicates by path, keeping first occurrence
+		// Remove duplicates by label, keeping first occurrence
+		// This prevents showing the same Proton version multiple times if it exists in multiple directories
 		var seen = new HashSet<string>();
-		results = results.Where(item => seen.Add(item.Path)).ToList();
+		results = results.Where(item => seen.Add(item.Label)).ToList();
 
 		return results;
 	}
@@ -346,6 +353,23 @@ public static class LauncherUtility
 			else
 			{
 				throw new FileNotFoundException($"Custom Proton path not found: {settings.LinuxProtonPath}");
+			}
+		}
+		
+		// Check if user has selected a specific Proton version by label
+		if (!string.IsNullOrEmpty(settings.LinuxSelectedProtonLabel) && settings.LinuxSelectedProtonLabel != "Custom")
+		{
+			var availableBuilds = ListProtonBuilds(settings);
+			var selectedBuild = availableBuilds.FirstOrDefault(build => build.Label == settings.LinuxSelectedProtonLabel);
+			
+			if (!string.IsNullOrEmpty(selectedBuild.Path) && File.Exists(selectedBuild.Path))
+			{
+				return selectedBuild.Path;
+			}
+			else
+			{
+				// Selected Proton version is no longer available, fall through to auto-detection
+				Console.WriteLine($"Warning: Selected Proton version '{settings.LinuxSelectedProtonLabel}' not found. Falling back to auto-detection.");
 			}
 		}
 		
@@ -412,6 +436,77 @@ public static class LauncherUtility
 			.Where(File.Exists)
 			.OrderByDescending(p => new FileInfo(p).LastWriteTime)
 			.FirstOrDefault();
+	}
+
+	/// <summary>
+	/// Parses and applies custom environment variables from a string.
+	/// Format: "VAR1=value1 VAR2=value2" (space-separated key=value pairs)
+	/// Supports quoted values with spaces: VAR="value with spaces"
+	/// </summary>
+	private static void ApplyCustomEnvironmentVariables(ProcessStartInfo processInfo, string customEnvVars)
+	{
+		if (string.IsNullOrWhiteSpace(customEnvVars))
+			return;
+
+		var parts = new List<string>();
+		var currentPart = new StringBuilder();
+		bool inQuotes = false;
+
+		// Parse the string, respecting quotes
+		foreach (char c in customEnvVars)
+		{
+			if (c == '"')
+			{
+				inQuotes = !inQuotes;
+			}
+			else if (char.IsWhiteSpace(c) && !inQuotes)
+			{
+				if (currentPart.Length > 0)
+				{
+					parts.Add(currentPart.ToString());
+					currentPart.Clear();
+				}
+			}
+			else
+			{
+				currentPart.Append(c);
+			}
+		}
+
+		// Add the last part if any
+		if (currentPart.Length > 0)
+		{
+			parts.Add(currentPart.ToString());
+		}
+
+		// Process each VAR=value pair
+		foreach (var part in parts)
+		{
+			var equalsIndex = part.IndexOf('=');
+			if (equalsIndex > 0 && equalsIndex < part.Length - 1)
+			{
+				var key = part.Substring(0, equalsIndex).Trim();
+				var value = part.Substring(equalsIndex + 1).Trim();
+
+				if (!string.IsNullOrEmpty(key))
+				{
+					try
+					{
+						// Set or override the environment variable
+						processInfo.EnvironmentVariables[key] = value;
+						Console.WriteLine($"Set custom environment variable: {key}={value}");
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine($"Warning: Failed to set environment variable '{key}': {ex.Message}");
+					}
+				}
+			}
+			else if (!string.IsNullOrWhiteSpace(part))
+			{
+				Console.WriteLine($"Warning: Invalid environment variable format (expected KEY=value): {part}");
+			}
+		}
 	}
 
 	private static IEnumerable<string> SplitArgsQuoted(string? commandLine)

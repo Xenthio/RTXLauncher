@@ -39,7 +39,7 @@
 			<!-- Linux-specific settings (only visible on Linux) -->
 			<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="10" 
 					IsVisible="{Binding IsLinux}">
-				<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+				<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 					<TextBlock Text="Linux Settings" FontWeight="Bold" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,15"/>
 				
 					<!-- Proton Version Selection -->
@@ -87,6 +87,20 @@
 					<CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,15,0,0"
 							  Content="Enable Proton Logging (PROTON_LOG=1)"
 							  IsChecked="{Binding LinuxEnableProtonLog}"/>
+					
+					<!-- Custom Environment Variables -->
+					<TextBlock Text="Custom Environment Variables:" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,15,0,5" FontWeight="SemiBold"/>
+					<TextBox Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3"
+							 Text="{Binding LinuxCustomEnvironmentVariables}"
+							 Watermark="VAR1=value1 VAR2=value2 (space-separated key=value pairs)"
+							 AcceptsReturn="True"
+							 TextWrapping="Wrap"
+							 MinHeight="60"
+							 HorizontalAlignment="Stretch"
+							 Margin="0,0,0,5"/>
+					<TextBlock Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="3" 
+							   Text="Examples: DXVK_HUD=1 RADV_PERFTEST=gpl VKD3D_CONFIG=dxr11"
+							   FontSize="11" Opacity="0.7" Margin="0,0,0,0"/>
 				</Grid>
 			</Border>
 
