@@ -52,6 +52,7 @@
     <PackageReference Include="Avalonia.Themes.Simple" Version="11.3.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
+    <PackageReference Include="QRCoder" Version="1.7.0" />
   </ItemGroup>
 
 	<ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
@@ -83,8 +84,10 @@
   <ItemGroup>
     <TrimmableAssembly Include="PuppeteerSharp" IsTrimmable="false" />
     <TrimmableAssembly Include="PuppeteerExtraSharp" IsTrimmable="false" />
+    <TrimmableAssembly Include="QRCoder" IsTrimmable="false" />
     <!-- Use partial trimming mode for PuppeteerSharp to preserve parameter names -->
     <TrimmerRootAssembly Include="PuppeteerSharp" />
     <TrimmerRootAssembly Include="PuppeteerExtraSharp" />
+    <TrimmerRootAssembly Include="QRCoder" />
   </ItemGroup>
 </Project>

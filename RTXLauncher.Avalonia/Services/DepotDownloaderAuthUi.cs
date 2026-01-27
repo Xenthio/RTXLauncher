@@ -11,6 +11,7 @@ namespace RTXLauncher.Avalonia.Services;
 public sealed class DepotDownloaderAuthUi : IDepotDownloaderAuthUi
 {
     private readonly IMessenger _messenger;
+    private QrCodeWindow? _qrCodeWindow;
 
     public DepotDownloaderAuthUi(IMessenger messenger)
     {
@@ -43,9 +44,31 @@ public sealed class DepotDownloaderAuthUi : IDepotDownloaderAuthUi
 
     public async Task ShowQrCodeAsync(string challengeUrl)
     {
-        await Utilities.DialogUtility.ShowMessageAsync(
-            "Steam QR Login",
-            "Scan this QR code using the Steam mobile app:\n\n" + challengeUrl);
+        var mainWindow = App.GetMainWindow();
+        if (mainWindow == null)
+        {
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_qrCodeWindow == null || !_qrCodeWindow.IsVisible)
+            {
+                var viewModel = new QrCodeViewModel();
+                _qrCodeWindow = new QrCodeWindow
+                {
+                    DataContext = viewModel
+                };
+                
+                _qrCodeWindow.Closed += (s, e) => _qrCodeWindow = null;
+                _qrCodeWindow.SetQrCode(challengeUrl);
+                _qrCodeWindow.Show(mainWindow);
+            }
+            else
+            {
+                _qrCodeWindow.SetQrCode(challengeUrl);
+            }
+        });
     }
 
     public void LogOutput(string message, bool isError)
@@ -55,6 +78,23 @@ public sealed class DepotDownloaderAuthUi : IDepotDownloaderAuthUi
             Message = message,
             Percentage = 30
         }));
+        
+        if (message.Contains("Success!") || message.Contains("logged in"))
+        {
+            CloseQrCodeWindow();
+        }
+    }
+
+    private void CloseQrCodeWindow()
+    {
+        if (_qrCodeWindow != null)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                _qrCodeWindow?.Close();
+                _qrCodeWindow = null;
+            });
+        }
     }
 
     private static async Task<string?> PromptForCodeAsync(string title, string message)
