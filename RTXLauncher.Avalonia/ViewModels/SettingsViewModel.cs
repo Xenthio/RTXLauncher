@@ -203,6 +203,12 @@ public partial class SettingsViewModel : PageViewModel
 		set => SetProperty(_settingsData.LinuxCustomEnvironmentVariables, value, _settingsData, (model, val) => model.LinuxCustomEnvironmentVariables = val);
 	}
 	
+	public string LinuxLaunchCommandPrefix
+	{
+		get => _settingsData.LinuxLaunchCommandPrefix;
+		set => SetProperty(_settingsData.LinuxLaunchCommandPrefix, value, _settingsData, (model, val) => model.LinuxLaunchCommandPrefix = val);
+	}
+	
 	public bool RtxInstalled => RemixUtility.IsInstalled();
 
 	public bool RtxEnabled

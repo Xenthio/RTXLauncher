@@ -25,6 +25,7 @@ public class SettingsData
 	[XmlAttribute] public string LinuxSelectedProtonLabel { get; set; } = "";
 	[XmlAttribute] public string LinuxVulkanDriver { get; set; } = "Auto";
 	[XmlAttribute] public string LinuxCustomEnvironmentVariables { get; set; } = "";
+	[XmlAttribute] public string LinuxLaunchCommandPrefix { get; set; } = "";
 
 
 	public bool RTXInstalled => RemixUtility.IsInstalled();

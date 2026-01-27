@@ -124,10 +124,40 @@ public static class LauncherUtility
 
 		var processInfo = new ProcessStartInfo
 		{
-			FileName = protonPath,
 			WorkingDirectory = gameDirectory,
 			UseShellExecute = false // Required to set environment variables
 		};
+
+		// Parse launch command prefix if provided
+		var prefixArgs = new List<string>();
+		if (!string.IsNullOrWhiteSpace(settings.LinuxLaunchCommandPrefix))
+		{
+			prefixArgs = SplitArgsQuoted(settings.LinuxLaunchCommandPrefix).ToList();
+			if (prefixArgs.Count > 0)
+			{
+				// First element is the command to execute
+				processInfo.FileName = prefixArgs[0];
+				
+				// Add remaining prefix arguments
+				for (int i = 1; i < prefixArgs.Count; i++)
+				{
+					processInfo.ArgumentList.Add(prefixArgs[i]);
+				}
+				
+				// Add proton as the next argument
+				processInfo.ArgumentList.Add(protonPath);
+			}
+			else
+			{
+				// Empty prefix, use proton directly
+				processInfo.FileName = protonPath;
+			}
+		}
+		else
+		{
+			// No prefix, use proton directly
+			processInfo.FileName = protonPath;
+		}
 
 		// Add arguments for Proton: proton run <game_executable> <game_args>
 		processInfo.ArgumentList.Add("run");
