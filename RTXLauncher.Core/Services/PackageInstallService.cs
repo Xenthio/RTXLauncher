@@ -155,9 +155,20 @@ bin/win64/usd_ms.dll
 		}
 		else if (binFolder != null)
 		{
-			sourcePath = binFolder;
+			// Check if the bin folder contains a win64 subfolder (pre-release package structure)
+			// If so, use bin/win64 as the source to avoid nesting (bin/win64/win64)
+			var win64Subfolder = Path.Combine(binFolder, "win64");
+			if (Directory.Exists(win64Subfolder))
+			{
+				sourcePath = win64Subfolder;
+				progress.Report(new InstallProgressReport { Message = "Found bin/win64 folder for 64-bit install.", Percentage = 60 });
+			}
+			else
+			{
+				sourcePath = binFolder;
+				progress.Report(new InstallProgressReport { Message = "Found bin folder for 64-bit install.", Percentage = 60 });
+			}
 			destPath = Path.Combine(installDir, "bin", "win64");
-			progress.Report(new InstallProgressReport { Message = "Found bin folder for 64-bit install.", Percentage = 60 });
 		}
 		else
 		{
