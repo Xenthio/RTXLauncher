@@ -613,9 +613,10 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 	private readonly IMessenger _messenger;
 
 	// --- 1. Add your sources dictionary as a private field ---
-	private readonly Dictionary<string, (string Owner, string Repo)> _remixSources = new()
+	private readonly Dictionary<string, (string Owner, string Repo, bool IsNightly)> _remixSources = new()
 	{
-		{ "sambow23/dxvk-remix-gmod", ("sambow23", "dxvk-remix-gmod") },
+		{ "sambow23/dxvk-remix-gmod (Stable)", ("sambow23", "dxvk-remix-gmod", false) },
+		{ "sambow23/dxvk-remix-gmod (Nightly)", ("sambow23", "dxvk-remix-gmod", true) },
 	};
 
 	public RemixPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService)
@@ -677,7 +678,13 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 		try
 		{
 			var releases = await GitHubService.FetchReleasesAsync(sourceInfo.Owner, sourceInfo.Repo);
-			foreach (var release in releases.OrderByDescending(r => r.PublishedAt))
+			
+			// Filter releases based on whether we want nightly or stable
+			var filteredReleases = sourceInfo.IsNightly
+				? releases.Where(r => r.Prerelease && r.TagName == "nightly")
+				: releases.Where(r => !r.Prerelease || r.TagName != "nightly");
+			
+			foreach (var release in filteredReleases.OrderByDescending(r => r.PublishedAt))
 			{
 				Releases.Add(release);
 			}
@@ -917,17 +924,21 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 	private readonly InstalledPackagesService _installedPackagesService;
 	
 	// --- 1. Add your sources dictionary ---
-	private readonly Dictionary<string, (string Owner, string Repo, string InstallType)> _packageSources = new()
+	private readonly Dictionary<string, (string Owner, string Repo, string InstallType, bool IsNightly)> _packageSources = new()
 	{
-		{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("Xenthio", "gmod-rtx-fixes-2", "Any") },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main") }
+		{ "Xenthio/gmod-rtx-fixes-2 (Stable)", ("Xenthio", "gmod-rtx-fixes-2", "Any", false) },
+		{ "Xenthio/gmod-rtx-fixes-2 (Nightly)", ("Xenthio", "gmod-rtx-fixes-2", "Any", true) },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Stable)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main", false) },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Nightly)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main", true) }
 	};
 
 	// Mapping of fixes package sources to their required binary patches
 	private readonly Dictionary<string, (string PatchSource, string Owner, string Repo, string FilePath, string Branch)> _requiredPatches = new()
 	{
-		{ "Xenthio/gmod-rtx-fixes-2 (Any)", ("sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") }
+		{ "Xenthio/gmod-rtx-fixes-2 (Stable)", ("sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
+		{ "Xenthio/gmod-rtx-fixes-2 (Nightly)", ("sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Stable)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
+		{ "sambow23/garrys-mod-rtx-remixed-perf (Nightly)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") }
 	};
 
 	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService, PatchingService patchingService, Func<string?> getManualVanillaPath, DepotDowngradeService depotDowngradeService)
@@ -974,7 +985,13 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		try
 		{
 			var releases = await GitHubService.FetchReleasesAsync(sourceInfo.Owner, sourceInfo.Repo);
-			foreach (var release in releases.OrderByDescending(r => r.PublishedAt))
+			
+			// Filter releases based on whether we want nightly or stable
+			var filteredReleases = sourceInfo.IsNightly
+				? releases.Where(r => r.Prerelease && r.TagName == "nightly")
+				: releases.Where(r => !r.Prerelease || r.TagName != "nightly");
+			
+			foreach (var release in filteredReleases.OrderByDescending(r => r.PublishedAt))
 			{
 				Releases.Add(release);
 			}
