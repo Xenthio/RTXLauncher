@@ -149,9 +149,19 @@ bin/win64/usd_ms.dll
 		// 64-bit: Copy contents of .trex (or bin) to bin/win64
 		if (trexFolder != null)
 		{
-			sourcePath = trexFolder;
+			// Check for nested win64 folder
+			var nestedWin64 = Path.Combine(trexFolder, "win64");
+			if (Directory.Exists(nestedWin64))
+			{
+				sourcePath = nestedWin64;
+				progress.Report(new InstallProgressReport { Message = "Found nested win64 folder inside .trex for 64-bit install.", Percentage = 60 });
+			}
+			else
+			{
+				sourcePath = trexFolder;
+				progress.Report(new InstallProgressReport { Message = "Found .trex folder for 64-bit install.", Percentage = 60 });
+			}
 			destPath = Path.Combine(installDir, "bin", "win64");
-			progress.Report(new InstallProgressReport { Message = "Found .trex folder for 64-bit install.", Percentage = 60 });
 		}
 		else if (binFolder != null)
 		{
