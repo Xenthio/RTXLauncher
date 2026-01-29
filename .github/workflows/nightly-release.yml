@@ -1,0 +1,213 @@
+name: Nightly Release
+
+on:
+  push:
+    branches: ["master"]
+  workflow_dispatch: {}
+
+jobs:
+  # ==========================================================
+  #      JOB 1: BUILD WINDOWS EXECUTABLES
+  # ==========================================================
+  build-windows:
+    runs-on: windows-latest
+    name: Build for Windows
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Setup variables
+      uses: actions/github-script@v7
+      with:
+        script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Install .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore Solution Dependencies
+      run: dotnet restore RTXLauncher.sln
+
+    - name: Build Solution
+      run: dotnet build RTXLauncher.sln --configuration Release --no-restore
+
+    - name: Publish Avalonia App (Windows)
+      run: >
+        dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj 
+        --configuration Release
+        /p:PublishProfile=Windows.pubxml 
+        /p:PublishDir="${{ github.workspace }}/publish/windows/"
+        
+    - name: Upload Windows Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: ./publish/windows/
+
+  # ==========================================================
+  #      JOB 2: BUILD LINUX EXECUTABLE
+  # ==========================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Build for Linux
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Setup variables
+      uses: actions/github-script@v7
+      with:
+        script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Install .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Install AOT Dependencies
+      run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+    - name: Restore Dependencies
+      run: dotnet restore ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj
+
+    - name: Build Project
+      run: dotnet build ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj --configuration Release --no-restore
+
+    - name: Publish Avalonia App (Linux)
+      run: >
+        dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj
+        --configuration Release
+        /p:PublishProfile=Linux.pubxml
+        /p:PublishDir="${{ github.workspace }}/publish/linux/"
+    
+    - name: Upload Linux Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-build
+        path: ${{ github.workspace }}/publish/linux/
+
+  # ==========================================================
+  #      JOB 3: CREATE NIGHTLY RELEASE
+  # ==========================================================
+  create-nightly-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Setup variables
+      uses: actions/github-script@v7
+      with:
+        script: core.exportVariable('GITHUB_SHA_SHORT', context.sha.substring(0, 7))
+    
+    - name: Download Windows artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-build
+        path: artifacts/windows
+    
+    - name: Download Linux artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-build
+        path: artifacts/linux
+    
+    - name: Package nightly releases
+      run: |
+        # Create Windows zip
+        cd artifacts/windows
+        zip -r ../../RTXLauncher-Windows-nightly.zip .
+        cd ../..
+        
+        # Create Linux tar.gz
+        cd artifacts/linux
+        tar -czf ../../RTXLauncher-Linux-nightly.tar.gz .
+        cd ../..
+    
+    - name: Delete existing nightly release
+      uses: actions/github-script@v7
+      continue-on-error: true
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          try {
+            const release = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag: 'nightly'
+            });
+            await github.rest.repos.deleteRelease({
+              owner,
+              repo,
+              release_id: release.data.id
+            });
+            console.log('Deleted existing nightly release');
+          } catch (error) {
+            console.log('No existing nightly release to delete');
+          }
+    
+    - name: Delete existing nightly tag
+      uses: actions/github-script@v7
+      continue-on-error: true
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          try {
+            await github.rest.git.deleteRef({
+              owner,
+              repo,
+              ref: 'tags/nightly'
+            });
+            console.log('Deleted existing nightly tag');
+          } catch (error) {
+            console.log('No existing nightly tag to delete');
+          }
+    
+    - name: Create nightly release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: nightly
+        name: "${{env.GITHUB_SHA_SHORT}} - Nightly"
+        body: |
+          Automated nightly build from commit ${{ github.sha }}
+          
+          **Commit:** ${{ github.event.head_commit.message }}
+          **Branch:** master
+          **Build Date:** ${{ github.event.head_commit.timestamp }}
+          
+          ## Downloads
+          - **Windows**: RTXLauncher-Windows-nightly.zip
+          - **Linux**: RTXLauncher-Linux-nightly.tar.gz
+          
+          ⚠️ This is an automated pre-release build and may be unstable.
+        prerelease: true
+        files: |
+          RTXLauncher-Windows-nightly.zip
+          RTXLauncher-Linux-nightly.tar.gz
