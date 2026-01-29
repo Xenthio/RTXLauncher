@@ -124,7 +124,11 @@ public class QuickInstallService
 		progress.Report(new InstallProgressReport { Message = "Fetching latest RTX Remix...", Percentage = 30 });
 		var (remixOwner, remixRepo) = ("sambow23", "dxvk-remix-gmod"); // From constant
 		var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
-		var latestRemix = remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault()
+		// Filter out nightly pre-releases to ensure we only use stable releases
+		var latestRemix = remixReleases
+			.Where(r => !r.Prerelease || r.TagName != "nightly")
+			.OrderByDescending(r => r.PublishedAt)
+			.FirstOrDefault()
 			?? throw new Exception("Could not find any RTX Remix releases.");
 
 		await _packageInstallService.InstallRemixPackageAsync(latestRemix, installDir, CreateSubProgress(35, 25));
@@ -173,7 +177,11 @@ public class QuickInstallService
 		// Step 5: Install recommended fixes package
 		progress.Report(new InstallProgressReport { Message = $"Fetching {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
 		var fixesReleases = await _githubService.FetchReleasesAsync(fixesPackageInfo.Owner, fixesPackageInfo.Repo);
-		var latestFixes = fixesReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault()
+		// Filter out nightly pre-releases to ensure we only use stable releases
+		var latestFixes = fixesReleases
+			.Where(r => !r.Prerelease || r.TagName != "nightly")
+			.OrderByDescending(r => r.PublishedAt)
+			.FirstOrDefault()
 			?? throw new Exception($"Could not find any releases for {fixesPackageInfo.Repo}.");
 
 		await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
