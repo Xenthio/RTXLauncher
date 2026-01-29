@@ -125,7 +125,7 @@ bin/win64/usd_ms.dll
 				int percentage = report.TotalBytes > 0 ? (int)((double)report.BytesDownloaded / report.TotalBytes * 40) : 20;
 				progress.Report(new InstallProgressReport { Message = $"Downloading: {report.BytesDownloaded / 1048576}MB", Percentage = percentage });
 			});
-			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress);
+			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress, asset.CreatedAt);
 
 			// --- 2. Extract to a temporary location for inspection ---
 			string extractTempDir = Path.Combine(tempDir, "extracted");
@@ -234,7 +234,7 @@ bin/win64/usd_ms.dll
 				int percentage = report.TotalBytes > 0 ? (int)((double)report.BytesDownloaded / report.TotalBytes * 40) : 20;
 				progress.Report(new InstallProgressReport { Message = $"Downloading: {report.BytesDownloaded / 1048576}MB", Percentage = percentage });
 			});
-			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress);
+			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress, asset.CreatedAt);
 
 			// Perform pre-install cleanup (remove outdated folders before extraction)
 			progress.Report(new InstallProgressReport { Message = "Removing outdated folders...", Percentage = 45 });
@@ -260,10 +260,13 @@ bin/win64/usd_ms.dll
 
 	// --- Private Helper Methods ---
 
-	private async Task DownloadFileAsync(string url, string destinationPath, IProgress<DownloadProgressReport> progress)
+	private async Task DownloadFileAsync(string url, string destinationPath, IProgress<DownloadProgressReport> progress, DateTime? assetTimestamp = null)
 	{
-		// Generate cache filename from URL hash
-		string urlHash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(url)));
+		// Generate cache filename from URL hash + optional timestamp
+		// Including the timestamp ensures that even if the URL is the same (e.g. nightly builds),
+		// we download the new version if the asset creation time has changed.
+		string cacheKeyInput = url + (assetTimestamp.HasValue ? assetTimestamp.Value.Ticks.ToString() : "");
+		string urlHash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(cacheKeyInput)));
 		string cacheFileName = Path.GetFileName(url.Split('?')[0]); // Get filename from URL without query params
 		string cachedFilePath = Path.Combine(CacheDirectory, $"{urlHash}_{cacheFileName}");
 
