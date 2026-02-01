@@ -785,6 +785,7 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 		{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py", "master") },
 		{ "sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
 		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
+		{ "Xenthio/SourceRTXTweaks (test changes)", ("Xenthio", "SourceRTXTweaks", "applypatch.py", "main") },
     };
 
 	public PatcherPackageViewModel(PatchingService patchingService, IMessenger messenger, InstalledPackagesService installedPackagesService, DepotDowngradeService depotDowngradeService, GitHubService githubService, PackageInstallService installService)
