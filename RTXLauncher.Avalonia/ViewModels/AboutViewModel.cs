@@ -95,10 +95,12 @@ public partial class AboutViewModel : PageViewModel
 			}
 
 			if (UpdateAvailable && result.LatestUpdate != null)
-			{
-				ReleaseNotes = $"Update available: {result.LatestUpdate.Version}\n\n" +
-					$"Current version: {CurrentVersion}\n\n" +
-					(result.LatestUpdate.Release?.Body ?? "No release notes available.");
+			{				
+				var releaseBody = result.LatestUpdate.Release?.Body ?? "No release notes available.";
+				
+				// Use the markdown formatter to process the release notes
+				ReleaseNotes = Utilities.MarkdownFormatter.FormatReleaseNotes(
+					result.LatestUpdate.Version, CurrentVersion, releaseBody, true);
 			}
 			else
 			{
@@ -201,24 +203,25 @@ public partial class AboutViewModel : PageViewModel
 	{
 		if (source.IsStaging)
 		{
-			ReleaseNotes = $"Development Build: {source.Version}\n\n" +
+			var markdown = "**Development Build:** " + source.Version + "\n\n" +
 				"This is the latest development build from the master branch.\n\n" +
-				"Warning: This version may contain experimental features and bugs.";
+				"**Warning:** This version may contain experimental features and bugs.";
+			ReleaseNotes = markdown;
 		}
 		else if (source.Release != null)
 		{
 			var isNewer = Core.Utilities.VersionUtility.CompareVersions(source.Version, CurrentVersion) > 0;
-			var status = isNewer ? "🆕 Newer version available" : "ℹ️ Same or older version";
 			
-			ReleaseNotes = $"{source.Name}\n{status}\n\n" +
-				$"Published: {source.Release.PublishedAt:yyyy-MM-dd}\n\n" +
-				(source.Release.Body ?? "No release notes available.");
+			// Use the markdown formatter to process the release notes
+			var releaseBody = source.Release.Body ?? "No release notes available.";
+			ReleaseNotes = Utilities.MarkdownFormatter.FormatReleaseNotes(
+				source.Version, CurrentVersion, releaseBody, isNewer);
 				
 			UpdateAvailable = isNewer;
 		}
 		else
 		{
-			ReleaseNotes = $"{source.Name}\n\nNo additional information available.";
+			ReleaseNotes = $"**{source.Name}**\n\nNo additional information available.";
 		}
 	}
 }
