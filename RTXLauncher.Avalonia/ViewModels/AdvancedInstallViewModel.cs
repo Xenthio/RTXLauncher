@@ -494,12 +494,13 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			if (patchesInfo != null && !string.IsNullOrEmpty(patchesInfo.Source))
 			{
 				// Parse owner/repo from source
-				var parts = patchesInfo.Source.Split('/');
+				var sourceBase = patchesInfo.Source.Split('(')[0].Trim();
+				var parts = sourceBase.Split('/');
 				if (parts.Length == 2)
 				{
 					string patchOwner = parts[0];
 					string patchRepo = parts[1];
-					string patchBranch = patchesInfo.Version ?? "master";
+					string patchBranch = patchesInfo.Branch ?? patchesInfo.Version ?? "master";
 					string patchFile = "applypatch.py";
 
 					await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, rtxInstallPath, progress, patchBranch);
@@ -516,8 +517,9 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			var fixesInfo = await _installedPackagesService.GetFixesVersionAsync();
 			if (fixesInfo != null && !string.IsNullOrEmpty(fixesInfo.Source))
 			{
-				// Parse owner/repo from source
-				var parts = fixesInfo.Source.Split('/');
+				// Parse owner/repo from source, stripping any display suffix like "(Nightly)"
+				var fixesSourceBase = fixesInfo.Source.Split('(')[0].Trim();
+				var parts = fixesSourceBase.Split('/');
 				if (parts.Length == 2)
 				{
 					string fixesOwner = parts[0];
@@ -550,7 +552,8 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			if (remixInfo != null && !string.IsNullOrEmpty(remixInfo.Source))
 			{
 				// Parse owner/repo from source
-				var parts = remixInfo.Source.Split('/');
+				var remixSourceBase = remixInfo.Source.Split('(')[0].Trim();
+				var parts = remixSourceBase.Split('/');
 				if (parts.Length == 2)
 				{
 					string remixOwner = parts[0];
