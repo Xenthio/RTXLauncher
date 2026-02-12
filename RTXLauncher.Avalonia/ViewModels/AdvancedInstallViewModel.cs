@@ -871,7 +871,8 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 						Percentage = 30
 					});
 
-					var parts = remixInfo.Source.Split('/');
+					var remixSourceBase = remixInfo.Source.Split('(')[0].Trim();
+					var parts = remixSourceBase.Split('/');
 					if (parts.Length == 2)
 					{
 						var remixReleases = await _githubService.FetchReleasesAsync(parts[0], parts[1]);
@@ -1152,7 +1153,8 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 								Percentage = 82 
 							});
 
-							var parts = remixInfo.Source.Split('/');
+							var remixSourceBase = remixInfo.Source.Split('(')[0].Trim();
+							var parts = remixSourceBase.Split('/');
 							if (parts.Length == 2)
 							{
 								var remixReleases = await GitHubService!.FetchReleasesAsync(parts[0], parts[1]);
