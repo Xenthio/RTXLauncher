@@ -32,6 +32,33 @@ public enum FixesPackageOption
 	Performance
 }
 
+/// <summary>
+/// Optional local zip file overrides for quick install.
+/// When a path is set, that step will use the local zip instead of downloading from GitHub.
+/// </summary>
+public class LocalZipOverrides
+{
+	/// <summary>
+	/// Local zip path for RTX Remix package. Null means download from GitHub.
+	/// </summary>
+	public string? RemixZipPath { get; set; }
+
+	/// <summary>
+	/// Local zip path for binary patches (must contain applypatch.py). Null means download from GitHub.
+	/// </summary>
+	public string? PatchesZipPath { get; set; }
+
+	/// <summary>
+	/// Local zip path for fixes package. Null means download from GitHub.
+	/// </summary>
+	public string? FixesZipPath { get; set; }
+
+	/// <summary>
+	/// Returns true if any local zip override is set.
+	/// </summary>
+	public bool HasAnyOverride => RemixZipPath != null || PatchesZipPath != null || FixesZipPath != null;
+}
+
 public class FixesPackageInfo
 {
 	public FixesPackageOption Option { get; init; }

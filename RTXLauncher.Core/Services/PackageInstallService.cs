@@ -171,11 +171,10 @@ bin/win64/usd_ms.dll
 		}
 		else
 		{
-			var allDirs = Directory.GetDirectories(extractTempDir, "*", SearchOption.AllDirectories)
-				.Select(d => Path.GetRelativePath(extractTempDir, d))
-				.Take(20);
-			var dirList = string.Join(", ", allDirs);
-			throw new Exception($"Remix package does not have a recognizable structure (missing 'bin' or '.trex' folder).\n\nFound directories: {dirList}");
+			// No .trex or bin folder found - copy entire extracted contents directly (e.g. dxvk-remix-gmod zips)
+			sourcePath = extractTempDir;
+			destPath = Path.Combine(installDir, "bin", "win64");
+			progress.Report(new InstallProgressReport { Message = "No .trex/bin folder found, copying all contents for 64-bit install.", Percentage = 60 });
 		}
 
 		Directory.CreateDirectory(destPath);
@@ -258,6 +257,129 @@ bin/win64/usd_ms.dll
 		}
 	}
 
+	/// <summary>
+	/// Installs RTX Remix from a local zip file, using the same logic as InstallRemixPackageAsync
+	/// but skipping the download step.
+	/// </summary>
+	public async Task InstallRemixFromLocalZipAsync(string zipPath, string installDir, IProgress<InstallProgressReport> progress)
+	{
+		if (!File.Exists(zipPath))
+			throw new FileNotFoundException($"Zip file not found: {zipPath}");
+
+		string tempDir = Path.Combine(Path.GetTempPath(), $"RTXLauncherRemix_{Path.GetRandomFileName()}");
+		Directory.CreateDirectory(tempDir);
+
+		try
+		{
+			// --- 1. Extract to a temporary location for inspection ---
+			string extractTempDir = Path.Combine(tempDir, "extracted");
+			Directory.CreateDirectory(extractTempDir);
+			progress.Report(new InstallProgressReport { Message = "Extracting local zip for inspection...", Percentage = 20 });
+			ZipFile.ExtractToDirectory(zipPath, extractTempDir);
+
+			// --- 2. Determine correct source and destination paths ---
+			progress.Report(new InstallProgressReport { Message = "Analyzing package structure...", Percentage = 40 });
+			var installType = GarrysModUtility.GetInstallType(installDir);
+
+			string? sourcePath = null;
+			string? destPath = null;
+
+			var trexFolder = Directory.GetDirectories(extractTempDir, "*.trex", SearchOption.AllDirectories).FirstOrDefault();
+			var binFolder = Directory.GetDirectories(extractTempDir, "bin", SearchOption.AllDirectories).FirstOrDefault();
+
+			if (installType == "gmod_x86-64")
+			{
+				if (trexFolder != null)
+				{
+					var nestedWin64 = Path.Combine(trexFolder, "win64");
+					if (Directory.Exists(nestedWin64))
+					{
+						sourcePath = nestedWin64;
+						progress.Report(new InstallProgressReport { Message = "Found nested win64 folder inside .trex for 64-bit install.", Percentage = 50 });
+					}
+					else
+					{
+						sourcePath = trexFolder;
+						progress.Report(new InstallProgressReport { Message = "Found .trex folder for 64-bit install.", Percentage = 50 });
+					}
+					destPath = Path.Combine(installDir, "bin", "win64");
+				}
+				else if (binFolder != null)
+				{
+					sourcePath = binFolder;
+					destPath = Path.Combine(installDir, "bin", "win64");
+					progress.Report(new InstallProgressReport { Message = "Found bin folder for 64-bit install.", Percentage = 50 });
+				}
+				else
+				{
+					// No .trex or bin folder found - copy entire extracted contents directly (e.g. dxvk-remix-gmod zips)
+					sourcePath = extractTempDir;
+					destPath = Path.Combine(installDir, "bin", "win64");
+					progress.Report(new InstallProgressReport { Message = "No .trex/bin folder found, copying all contents for 64-bit install.", Percentage = 50 });
+				}
+
+				Directory.CreateDirectory(destPath);
+
+				var copyProgress = new Progress<InstallProgressReport>(report =>
+				{
+					progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (int)(report.Percentage * 0.5) });
+				});
+				await CopyDirectoryWithProgress(sourcePath, destPath, true, copyProgress);
+			}
+			else
+			{
+				progress.Report(new InstallProgressReport { Message = "Found package for 32-bit install.", Percentage = 50 });
+				destPath = Path.Combine(installDir, "bin");
+				Directory.CreateDirectory(destPath);
+
+				var copyProgress = new Progress<InstallProgressReport>(report =>
+				{
+					progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (int)(report.Percentage * 0.5) });
+				});
+				await CopyDirectoryWithProgress(extractTempDir, destPath, true, copyProgress);
+			}
+
+			progress.Report(new InstallProgressReport { Message = "Remix installed successfully from local zip!", Percentage = 100 });
+		}
+		finally
+		{
+			if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+		}
+	}
+
+	/// <summary>
+	/// Installs a standard package (like Fixes) from a local zip file, using the same logic as
+	/// InstallStandardPackageAsync but skipping the download step.
+	/// </summary>
+	public async Task InstallStandardFromLocalZipAsync(string zipPath, string installDir, string defaultIgnorePatterns, IProgress<InstallProgressReport> progress)
+	{
+		if (!File.Exists(zipPath))
+			throw new FileNotFoundException($"Zip file not found: {zipPath}");
+
+		try
+		{
+			// Perform pre-install cleanup (remove outdated folders before extraction)
+			progress.Report(new InstallProgressReport { Message = "Removing outdated folders...", Percentage = 10 });
+			var preCleanupMessages = CleanupUtility.PerformPreInstallCleanup(installDir);
+			foreach (var message in preCleanupMessages)
+			{
+				progress.Report(new InstallProgressReport { Message = $"Pre-cleanup: {message}", Percentage = 10 });
+			}
+
+			var extractProgress = new Progress<InstallProgressReport>(report =>
+			{
+				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 20 + (int)(report.Percentage * 0.8) });
+			});
+			await ExtractZipWithIgnoreAsync(zipPath, installDir, defaultIgnorePatterns, extractProgress);
+
+			progress.Report(new InstallProgressReport { Message = "Installation complete from local zip!", Percentage = 100 });
+		}
+		catch (Exception ex)
+		{
+			throw new Exception($"Failed to install from local zip: {ex.Message}", ex);
+		}
+	}
+
 	// --- Private Helper Methods ---
 
 	private async Task DownloadFileAsync(string url, string destinationPath, IProgress<DownloadProgressReport> progress, DateTime? assetTimestamp = null)
@@ -326,7 +448,7 @@ bin/win64/usd_ms.dll
 		File.Copy(cachedFilePath, destinationPath, overwrite: true);
 	}
 
-	private async Task ExtractZipWithIgnoreAsync(string zipPath, string installDir, string defaultIgnore, IProgress<InstallProgressReport> progress)
+	private async Task ExtractZipWithIgnoreAsync(string zipPath, string installDir, string defaultIgnore, IProgress<InstallProgressReport> progress, string? wrapperPrefix = null)
 	{
 		await Task.Run(() =>
 		{
@@ -343,15 +465,38 @@ bin/win64/usd_ms.dll
 				ignoredPaths.UnionWith(customPatterns);
 			}
 
-			var entriesToExtract = zip.Entries.Where(e => !ShouldIgnore(e.FullName, ignoredPaths)).ToList();
+			var entriesToExtract = new List<(ZipArchiveEntry Entry, string RelativePath)>();
+			foreach (var entry in zip.Entries)
+			{
+				string relativePath = entry.FullName;
+
+				// Strip wrapper prefix if present (e.g., "repo-name-v1.0/bin/..." -> "bin/...")
+				if (wrapperPrefix != null && relativePath.StartsWith(wrapperPrefix, StringComparison.OrdinalIgnoreCase))
+				{
+					relativePath = relativePath.Substring(wrapperPrefix.Length);
+					if (string.IsNullOrEmpty(relativePath)) continue; // Skip the wrapper directory entry itself
+				}
+				else if (wrapperPrefix != null)
+				{
+					// Entry that matches the wrapper folder name exactly (without trailing slash)
+					var wrapperDir = wrapperPrefix.TrimEnd('/');
+					if (relativePath.TrimEnd('/') == wrapperDir) continue;
+				}
+
+				if (!ShouldIgnore(relativePath, ignoredPaths))
+				{
+					entriesToExtract.Add((entry, relativePath));
+				}
+			}
+
 			int total = entriesToExtract.Count;
 			int processed = 0;
 
-			foreach (var entry in entriesToExtract)
+			foreach (var (entry, relativePath) in entriesToExtract)
 			{
-				string destPath = Path.Combine(installDir, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
+				string destPath = Path.Combine(installDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
 
-				if (entry.FullName.EndsWith("/") || entry.FullName.EndsWith("\\"))
+				if (relativePath.EndsWith("/") || relativePath.EndsWith("\\"))
 				{
 					Directory.CreateDirectory(destPath);
 				}

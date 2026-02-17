@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Platform.Storage;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using RTXLauncher.Avalonia.Utilities;
@@ -62,6 +63,26 @@ public partial class SetupViewModel : PageViewModel
 	/// A simple boolean property for the View to bind to, indicating if there are any warnings.
 	/// </summary>
 	public bool ShowPreflightWarnings => PreflightWarnings.Count > 0;
+
+	// --- Local Zip Override Properties ---
+
+	[ObservableProperty]
+	private bool _useLocalRemixZip;
+
+	[ObservableProperty]
+	private string? _localRemixZipPath;
+
+	[ObservableProperty]
+	private bool _useLocalPatchesZip;
+
+	[ObservableProperty]
+	private string? _localPatchesZipPath;
+
+	[ObservableProperty]
+	private bool _useLocalFixesZip;
+
+	[ObservableProperty]
+	private string? _localFixesZipPath;
 
 	public SetupViewModel(QuickInstallService quickInstallService, IMessenger messenger)
 	{
@@ -134,6 +155,42 @@ public partial class SetupViewModel : PageViewModel
 			// Add a warning if we can't find it
 			PreflightWarnings.Insert(0, "Warning: Could not auto-detect vanilla Garry's Mod installation. Please specify the location manually using the button below.");
 			OnPropertyChanged(nameof(ShowPreflightWarnings));
+		}
+	}
+
+	[RelayCommand]
+	private async Task BrowseLocalRemixZipAsync()
+	{
+		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var result = await DialogUtility.ShowFilePickerAsync("Select RTX Remix zip package", zipFilter);
+		if (!string.IsNullOrEmpty(result))
+		{
+			LocalRemixZipPath = result;
+			UseLocalRemixZip = true;
+		}
+	}
+
+	[RelayCommand]
+	private async Task BrowseLocalPatchesZipAsync()
+	{
+		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var result = await DialogUtility.ShowFilePickerAsync("Select binary patches zip (must contain applypatch.py)", zipFilter);
+		if (!string.IsNullOrEmpty(result))
+		{
+			LocalPatchesZipPath = result;
+			UseLocalPatchesZip = true;
+		}
+	}
+
+	[RelayCommand]
+	private async Task BrowseLocalFixesZipAsync()
+	{
+		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var result = await DialogUtility.ShowFilePickerAsync("Select fixes package zip", zipFilter);
+		if (!string.IsNullOrEmpty(result))
+		{
+			LocalFixesZipPath = result;
+			UseLocalFixesZip = true;
 		}
 	}
 
@@ -237,7 +294,19 @@ public partial class SetupViewModel : PageViewModel
 	try
 	{
 		// No automatic downgrade prompt - users can manually downgrade via Advanced Install if needed
-		await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath, legacyDowngradeCallback: null);
+		// Build local zip overrides if any checkboxes are enabled
+		LocalZipOverrides? localZipOverrides = null;
+		if (UseLocalRemixZip || UseLocalPatchesZip || UseLocalFixesZip)
+		{
+			localZipOverrides = new LocalZipOverrides
+			{
+				RemixZipPath = UseLocalRemixZip ? LocalRemixZipPath : null,
+				PatchesZipPath = UseLocalPatchesZip ? LocalPatchesZipPath : null,
+				FixesZipPath = UseLocalFixesZip ? LocalFixesZipPath : null
+			};
+		}
+
+		await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath, legacyDowngradeCallback: null, localZipOverrides: localZipOverrides);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 			// Notify that packages were installed so Advanced Install tab can refresh

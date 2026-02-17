@@ -108,7 +108,7 @@
                                        Target="{Binding ElementName=VersionComboBox}"
                                        VerticalAlignment="Center"
                                        IsVisible="{Binding Releases.Count}"/>
-								<Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+								<Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
 									<ComboBox Grid.Column="0"
                                               x:Name="VersionComboBox"
                                               ItemsSource="{Binding Releases}"
@@ -119,6 +119,11 @@
 									<Button Grid.Column="1"
                                             Content="{Binding ButtonText}"
                                             Command="{Binding InstallCommand}"
+                                            IsEnabled="{Binding IsNotBusy}"
+                                            HorizontalAlignment="Stretch"/>
+									<Button Grid.Column="2"
+                                            Content="Install Local Zip"
+                                            Command="{Binding InstallFromLocalZipCommand}"
                                             IsEnabled="{Binding IsNotBusy}"
                                             HorizontalAlignment="Stretch"/>
 								</Grid>

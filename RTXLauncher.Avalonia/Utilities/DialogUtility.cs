@@ -45,6 +45,41 @@ public static class DialogUtility
 	}
 
 	/// <summary>
+	/// Shows a file picker dialog and returns the selected file path.
+	/// </summary>
+	/// <param name="title">The title of the dialog</param>
+	/// <param name="fileTypes">File type filters (e.g., new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } })</param>
+	/// <returns>The selected file path, or null if cancelled</returns>
+	public async static Task<string?> ShowFilePickerAsync(string title, params FilePickerFileType[] fileTypes)
+	{
+		if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+		{
+			var mainWindow = desktop.MainWindow;
+			if (mainWindow?.StorageProvider is { } storageProvider)
+			{
+				var options = new FilePickerOpenOptions
+				{
+					Title = title,
+					AllowMultiple = false
+				};
+
+				if (fileTypes.Length > 0)
+				{
+					options.FileTypeFilter = fileTypes;
+				}
+
+				var files = await storageProvider.OpenFilePickerAsync(options);
+
+				if (files.Count > 0)
+				{
+					return files[0].TryGetLocalPath();
+				}
+			}
+		}
+		return null;
+	}
+
+	/// <summary>
 	/// Shows a folder picker dialog and returns the selected folder path.
 	/// </summary>
 	/// <param name="title">The title of the dialog</param>

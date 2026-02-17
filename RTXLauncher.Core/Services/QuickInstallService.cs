@@ -69,7 +69,7 @@ public class QuickInstallService
 		};
 	}
 
-	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null)
+	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null, LocalZipOverrides? localZipOverrides = null)
 	{
 		// Helper to remap progress for sub-tasks
 		IProgress<InstallProgressReport> CreateSubProgress(int basePercent, int range)
@@ -120,77 +120,116 @@ public class QuickInstallService
 			throw new InvalidOperationException($"The '{fixesPackageInfo.DisplayName}' fixes package requires a 64-bit installation. Your current installation is 32-bit.");
 		}
 
-		// Step 3: Install latest RTX Remix
-		progress.Report(new InstallProgressReport { Message = "Fetching latest RTX Remix...", Percentage = 30 });
-		var (remixOwner, remixRepo) = ("sambow23", "dxvk-remix-gmod"); // From constant
-		var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
-		// Filter out nightly pre-releases to ensure we only use stable releases
-		var latestRemix = remixReleases
-			.Where(r => !r.Prerelease || r.TagName != "nightly")
-			.OrderByDescending(r => r.PublishedAt)
-			.FirstOrDefault()
-			?? throw new Exception("Could not find any RTX Remix releases.");
+		// Step 3: Install RTX Remix (from local zip or GitHub)
+		if (localZipOverrides?.RemixZipPath != null)
+		{
+			progress.Report(new InstallProgressReport { Message = "Installing RTX Remix from local zip...", Percentage = 30 });
+			await _packageInstallService.InstallRemixFromLocalZipAsync(localZipOverrides.RemixZipPath, installDir, CreateSubProgress(35, 25));
 
-		await _packageInstallService.InstallRemixPackageAsync(latestRemix, installDir, CreateSubProgress(35, 25));
+			await _installedPackagesService.SetRemixVersionAsync(
+				"Local zip",
+				Path.GetFileName(localZipOverrides.RemixZipPath),
+				Path.GetFileName(localZipOverrides.RemixZipPath));
+		}
+		else
+		{
+			progress.Report(new InstallProgressReport { Message = "Fetching latest RTX Remix...", Percentage = 30 });
+			var (remixOwner, remixRepo) = ("sambow23", "dxvk-remix-gmod"); // From constant
+			var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
+			// Filter out nightly pre-releases to ensure we only use stable releases
+			var latestRemix = remixReleases
+				.Where(r => !r.Prerelease || r.TagName != "nightly")
+				.OrderByDescending(r => r.PublishedAt)
+				.FirstOrDefault()
+				?? throw new Exception("Could not find any RTX Remix releases.");
 
-		// Save Remix version info
-		await _installedPackagesService.SetRemixVersionAsync(
-			$"{remixOwner}/{remixRepo}",
-			latestRemix.TagName,
-			latestRemix.Name ?? latestRemix.TagName);
+			await _packageInstallService.InstallRemixPackageAsync(latestRemix, installDir, CreateSubProgress(35, 25));
 
-		// Step 4: Apply recommended patches
+			// Save Remix version info
+			await _installedPackagesService.SetRemixVersionAsync(
+				$"{remixOwner}/{remixRepo}",
+				latestRemix.TagName,
+				latestRemix.Name ?? latestRemix.TagName);
+		}
+
+		// Step 4: Apply patches (from local zip or GitHub)
 		progress.Report(new InstallProgressReport { Message = $"Applying {fixesPackageInfo.DisplayName} patches...", Percentage = 60 });
-		string patchOwner, patchRepo, patchFile, patchBranch;
-		
-		if (isX64)
+
+		if (localZipOverrides?.PatchesZipPath != null)
 		{
-			patchOwner = fixesPackageInfo.PatchOwner;
-			patchRepo = fixesPackageInfo.PatchRepo;
-			patchFile = fixesPackageInfo.PatchFile;
-			patchBranch = fixesPackageInfo.PatchBranch;
+			progress.Report(new InstallProgressReport { Message = "Applying binary patches from local zip...", Percentage = 60 });
+			await _patchingService.ApplyPatchesFromLocalZipAsync(localZipOverrides.PatchesZipPath, installDir, CreateSubProgress(65, 15));
+
+			await _installedPackagesService.SetPatchesVersionAsync(
+				"Local zip",
+				Path.GetFileName(localZipOverrides.PatchesZipPath));
 		}
 		else
 		{
-			// 32-bit always uses BlueAmulet patches
-			patchOwner = "BlueAmulet";
-			patchRepo = "SourceRTXTweaks";
-			patchFile = "applypatch.py";
-			patchBranch = "master";
+			string patchOwner, patchRepo, patchFile, patchBranch;
+			
+			if (isX64)
+			{
+				patchOwner = fixesPackageInfo.PatchOwner;
+				patchRepo = fixesPackageInfo.PatchRepo;
+				patchFile = fixesPackageInfo.PatchFile;
+				patchBranch = fixesPackageInfo.PatchBranch;
+			}
+			else
+			{
+				// 32-bit always uses BlueAmulet patches
+				patchOwner = "BlueAmulet";
+				patchRepo = "SourceRTXTweaks";
+				patchFile = "applypatch.py";
+				patchBranch = "master";
+			}
+
+			// Use branch-specific patching if needed
+			if (!string.IsNullOrEmpty(patchBranch) && patchBranch != "master")
+			{
+				await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15), patchBranch);
+			}
+			else
+			{
+				await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15));
+			}
+
+			// Save Patches version info
+			await _installedPackagesService.SetPatchesVersionAsync(
+				$"{patchOwner}/{patchRepo}",
+				patchBranch);
 		}
 
-		// Use branch-specific patching if needed
-		if (!string.IsNullOrEmpty(patchBranch) && patchBranch != "master")
+		// Step 5: Install fixes package (from local zip or GitHub)
+		if (localZipOverrides?.FixesZipPath != null)
 		{
-			await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15), patchBranch);
+			progress.Report(new InstallProgressReport { Message = "Installing fixes package from local zip...", Percentage = 80 });
+			await _packageInstallService.InstallStandardFromLocalZipAsync(localZipOverrides.FixesZipPath, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
+
+			await _installedPackagesService.SetFixesVersionAsync(
+				"Local zip",
+				Path.GetFileName(localZipOverrides.FixesZipPath),
+				Path.GetFileName(localZipOverrides.FixesZipPath));
 		}
 		else
 		{
-			await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15));
+			progress.Report(new InstallProgressReport { Message = $"Fetching {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
+			var fixesReleases = await _githubService.FetchReleasesAsync(fixesPackageInfo.Owner, fixesPackageInfo.Repo);
+			// Filter out nightly pre-releases to ensure we only use stable releases
+			var latestFixes = fixesReleases
+				.Where(r => !r.Prerelease || r.TagName != "nightly")
+				.OrderByDescending(r => r.PublishedAt)
+				.FirstOrDefault()
+				?? throw new Exception($"Could not find any releases for {fixesPackageInfo.Repo}.");
+
+			await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
+
+			// Save Fixes version info
+			await _installedPackagesService.SetFixesVersionAsync(
+				$"{fixesPackageInfo.Owner}/{fixesPackageInfo.Repo}",
+				latestFixes.TagName,
+				latestFixes.Name ?? latestFixes.TagName);
 		}
-
-		// Save Patches version info
-		await _installedPackagesService.SetPatchesVersionAsync(
-			$"{patchOwner}/{patchRepo}",
-			patchBranch);
-
-		// Step 5: Install recommended fixes package
-		progress.Report(new InstallProgressReport { Message = $"Fetching {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
-		var fixesReleases = await _githubService.FetchReleasesAsync(fixesPackageInfo.Owner, fixesPackageInfo.Repo);
-		// Filter out nightly pre-releases to ensure we only use stable releases
-		var latestFixes = fixesReleases
-			.Where(r => !r.Prerelease || r.TagName != "nightly")
-			.OrderByDescending(r => r.PublishedAt)
-			.FirstOrDefault()
-			?? throw new Exception($"Could not find any releases for {fixesPackageInfo.Repo}.");
-
-		await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
-
-		// Save Fixes version info
-		await _installedPackagesService.SetFixesVersionAsync(
-			$"{fixesPackageInfo.Owner}/{fixesPackageInfo.Repo}",
-			latestFixes.TagName,
-			latestFixes.Name ?? latestFixes.TagName);
 
 		// The pre-install cleanup is handled automatically within InstallStandardPackageAsync
 		// (removes outdated folders before extraction)

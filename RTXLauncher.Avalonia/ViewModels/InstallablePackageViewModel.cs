@@ -55,6 +55,10 @@ public abstract partial class InstallablePackageViewModel : ViewModelBase
 	[RelayCommand]
 	protected abstract Task Install();
 
+	// The command for installing from a local zip file
+	[RelayCommand]
+	protected abstract Task InstallFromLocalZip();
+
 	// Abstract methods to be implemented by specific package types
 	protected abstract Task LoadSources();
 	protected abstract Task LoadReleases();

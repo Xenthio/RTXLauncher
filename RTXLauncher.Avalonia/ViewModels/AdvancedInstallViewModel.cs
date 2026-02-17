@@ -1,3 +1,4 @@
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -771,6 +772,74 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 			IsBusy = false;
 		}
 	}
+
+	protected override async Task InstallFromLocalZip()
+	{
+		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var zipPath = await Utilities.DialogUtility.ShowFilePickerAsync("Select RTX Remix zip package", zipFilter);
+		if (string.IsNullOrEmpty(zipPath)) return;
+
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = "ERROR: Could not find a valid RTX GMod installation directory.", 
+				Percentage = 100 
+			}));
+			return;
+		}
+
+		// Check for existing rtx.conf and prompt for backup
+		if (RemixUtility.RtxConfigExists(installDir))
+		{
+			var shouldBackup = await Utilities.DialogUtility.ShowConfirmationAsync(
+				"RTX Config Found",
+				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+				"The backup will be saved as rtx.conf.backup_[timestamp]");
+
+			if (shouldBackup)
+			{
+				var backupPath = RemixUtility.BackupRtxConfig(installDir);
+				if (backupPath != null)
+				{
+					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+					{ 
+						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
+						Percentage = 5 
+					}));
+				}
+			}
+		}
+
+		IsBusy = true;
+		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
+		IProgress<InstallProgressReport> progress = progressHandler;
+
+		try
+		{
+			await _installService.InstallRemixFromLocalZipAsync(zipPath, installDir, progress);
+
+			// Save installed version as local zip
+			if (InstalledPackagesService != null)
+			{
+				await InstalledPackagesService.SetRemixVersionAsync(
+					"Local zip",
+					Path.GetFileName(zipPath),
+					Path.GetFileName(zipPath));
+				await RefreshInstalledVersionAsync();
+				_messenger.Send(new PackagesUpdatedMessage());
+			}
+		}
+		catch (Exception ex)
+		{
+			progress.Report(new InstallProgressReport { Message = $"ERROR: {ex.Message}", Percentage = 100 });
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
 }
 
 // In a file like ViewModels/Packages/PatcherPackageViewModel.cs
@@ -905,6 +974,93 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 				await RefreshInstalledVersionAsync();
 				
 				// Notify other views that packages were updated
+				_messenger.Send(new PackagesUpdatedMessage());
+			}
+		}
+		catch (Exception ex)
+		{
+			progress.Report(new InstallProgressReport { Message = $"FATAL ERROR: {ex.Message}", Percentage = 100 });
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+
+	protected override async Task InstallFromLocalZip()
+	{
+		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var zipPath = await Utilities.DialogUtility.ShowFilePickerAsync("Select binary patches zip (must contain applypatch.py)", zipFilter);
+		if (string.IsNullOrEmpty(zipPath)) return;
+
+		IsBusy = true;
+		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
+		IProgress<InstallProgressReport> progress = progressHandler;
+
+		try
+		{
+			var installDir = GarrysModUtility.GetThisInstallFolder();
+			if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
+			{
+				throw new DirectoryNotFoundException("Could not find a valid RTX GMod installation directory.");
+			}
+
+			// If installation is downgraded, restore original binaries first
+			var packages = await InstalledPackagesService!.GetInstalledPackagesAsync();
+			if (packages.IsDowngraded && !string.IsNullOrEmpty(packages.DowngradedDepotPath))
+			{
+				progress.Report(new InstallProgressReport
+				{
+					Message = "Restoring original binaries before patching...",
+					Percentage = 10
+				});
+
+				await _depotDowngradeService.RestoreBinariesFromDepotAsync(
+					packages.DowngradedDepotPath,
+					installDir,
+					progress);
+
+				// Reinstall RTX Remix since bin folder restoration wipes it out
+				var remixInfo = await InstalledPackagesService.GetRemixVersionAsync();
+				if (remixInfo != null && !string.IsNullOrEmpty(remixInfo.Source))
+				{
+					progress.Report(new InstallProgressReport
+					{
+						Message = "Reinstalling RTX Remix after binary restoration...",
+						Percentage = 30
+					});
+
+					var remixSourceBase = remixInfo.Source.Split('(')[0].Trim();
+					var parts = remixSourceBase.Split('/');
+					if (parts.Length == 2)
+					{
+						var remixReleases = await _githubService.FetchReleasesAsync(parts[0], parts[1]);
+						var latestRemix = remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
+
+						if (latestRemix != null)
+						{
+							var remixProgress = new Progress<InstallProgressReport>(report =>
+							{
+								progress.Report(new InstallProgressReport
+								{
+									Message = report.Message,
+									Percentage = 30 + (int)(report.Percentage * 0.2)
+								});
+							});
+
+							await _installService.InstallRemixPackageAsync(latestRemix, installDir, remixProgress);
+						}
+					}
+				}
+			}
+
+			await _patchingService.ApplyPatchesFromLocalZipAsync(zipPath, installDir, progress);
+
+			// Save installed version
+			if (InstalledPackagesService != null)
+			{
+				await InstalledPackagesService.SetPatchesVersionAsync("Local zip", Path.GetFileName(zipPath));
+				await RefreshInstalledVersionAsync();
 				_messenger.Send(new PackagesUpdatedMessage());
 			}
 		}
@@ -1242,6 +1398,90 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 			}
 			
 			// Notify other views that packages were updated
+			_messenger.Send(new PackagesUpdatedMessage());
+		}
+		catch (Exception ex)
+		{
+			progress.Report(new InstallProgressReport { Message = $"ERROR: {ex.Message}", Percentage = 100 });
+		}
+		finally
+		{
+			IsBusy = false;
+		}
+	}
+
+	protected override async Task InstallFromLocalZip()
+	{
+		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var zipPath = await Utilities.DialogUtility.ShowFilePickerAsync("Select fixes package zip", zipFilter);
+		if (string.IsNullOrEmpty(zipPath)) return;
+
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+			{ 
+				Message = "ERROR: Could not find a valid RTX GMod installation directory.", 
+				Percentage = 100 
+			}));
+			return;
+		}
+
+		// Check for existing rtx.conf and prompt for backup
+		if (RemixUtility.RtxConfigExists(installDir))
+		{
+			var shouldBackup = await Utilities.DialogUtility.ShowConfirmationAsync(
+				"RTX Config Found",
+				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+				"The backup will be saved as rtx.conf.backup_[timestamp]");
+
+			if (shouldBackup)
+			{
+				var backupPath = RemixUtility.BackupRtxConfig(installDir);
+				if (backupPath != null)
+				{
+					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
+					{ 
+						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
+						Percentage = 5 
+					}));
+				}
+			}
+		}
+
+		IsBusy = true;
+		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
+		IProgress<InstallProgressReport> progress = progressHandler;
+
+		try
+		{
+			// Install fixes package from local zip (takes 0-80%)
+			var fixesProgress = new Progress<InstallProgressReport>(report =>
+			{
+				progress.Report(new InstallProgressReport 
+				{ 
+					Message = report.Message, 
+					Percentage = (int)(report.Percentage * 0.8) 
+				});
+			});
+			await _installService.InstallStandardFromLocalZipAsync(zipPath, installDir, PackageInstallService.DefaultIgnorePatterns, fixesProgress);
+
+			// Save installed version
+			if (InstalledPackagesService != null)
+			{
+				await InstalledPackagesService.SetFixesVersionAsync(
+					"Local zip",
+					Path.GetFileName(zipPath),
+					Path.GetFileName(zipPath));
+				await RefreshInstalledVersionAsync();
+			}
+
+			progress.Report(new InstallProgressReport 
+			{ 
+				Message = "Fixes package installed successfully from local zip!", 
+				Percentage = 100 
+			});
+
 			_messenger.Send(new PackagesUpdatedMessage());
 		}
 		catch (Exception ex)

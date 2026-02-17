@@ -151,6 +151,160 @@ public class PatchingService
 			progress.Report(new InstallProgressReport { Message = $"Successfully patched {savedFiles} file(s). Backups are in {Path.GetFileName(backupDir)}.", Percentage = 100 });
 		});
 	}
+	/// <summary>
+	/// Applies binary patches from a local zip file. The zip is expected to contain an applypatch.py file.
+	/// </summary>
+	public async Task ApplyPatchesFromLocalZipAsync(string zipPath, string installPath, IProgress<InstallProgressReport> progress)
+	{
+		if (!File.Exists(zipPath))
+			throw new FileNotFoundException($"Zip file not found: {zipPath}");
+
+		string tempDir = Path.Combine(Path.GetTempPath(), $"RTXLauncherPatches_{Path.GetRandomFileName()}");
+		Directory.CreateDirectory(tempDir);
+
+		try
+		{
+			progress.Report(new InstallProgressReport { Message = "Extracting patch archive...", Percentage = 2 });
+			System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, tempDir);
+
+			// Search for applypatch.py in the extracted contents
+			var patchFiles = Directory.GetFiles(tempDir, "applypatch.py", SearchOption.AllDirectories);
+			if (patchFiles.Length == 0)
+			{
+				throw new FileNotFoundException("Could not find 'applypatch.py' in the zip archive. " +
+					"The zip must contain an applypatch.py patch definition file.");
+			}
+
+			string patchFilePath = patchFiles[0];
+			progress.Report(new InstallProgressReport { Message = $"Found patch file: {Path.GetRelativePath(tempDir, patchFilePath)}", Percentage = 5 });
+
+			string patchFileContent = await File.ReadAllTextAsync(patchFilePath);
+
+			await Task.Run(() =>
+			{
+				progress.Report(new InstallProgressReport { Message = "Parsing patch definitions...", Percentage = 10 });
+				var (patches32, patches64) = PatchParser.ParsePatches(patchFileContent);
+
+				var installType = GarrysModUtility.GetInstallType(installPath);
+				PatchParser.PatchDictionary patchesToUse;
+
+				if (installType == "gmod_x86-64")
+				{
+					patchesToUse = patches64;
+					progress.Report(new InstallProgressReport { Message = "Detected 64-bit installation...", Percentage = 15 });
+				}
+				else if (installType == "gmod_main" || installType == "gmod_i386")
+				{
+					patchesToUse = patches32;
+					progress.Report(new InstallProgressReport { Message = "Detected 32-bit installation...", Percentage = 15 });
+				}
+				else
+				{
+					throw new Exception($"Patching is not supported for this installation type: {installType}");
+				}
+
+				var fileContents = new Dictionary<string, byte[]>();
+				var modifiedFiles = new Dictionary<string, byte[]>();
+				var missingFiles = new List<string>();
+				var fileCount = patchesToUse.Patches.Keys.Count;
+				int currentFileIndex = 0;
+
+				foreach (string fileName in patchesToUse.Patches.Keys)
+				{
+					string filePathOnDisk = ResolveFilePath(installPath, fileName, installType);
+					if (!File.Exists(filePathOnDisk))
+					{
+						missingFiles.Add(fileName);
+						continue;
+					}
+
+					fileContents[fileName] = File.ReadAllBytes(filePathOnDisk);
+					currentFileIndex++;
+					progress.Report(new InstallProgressReport { Message = $"Loaded file: {fileName}", Percentage = 15 + (int)((float)currentFileIndex / fileCount * 15) });
+				}
+
+				if (missingFiles.Count > 0)
+				{
+					throw new FileNotFoundException($"Patching failed. Missing required files: {string.Join(", ", missingFiles)}");
+				}
+
+				progress.Report(new InstallProgressReport { Message = "Applying patches...", Percentage = 30 });
+				int totalPatches = patchesToUse.Patches.Sum(p => p.Value.Count);
+				int completedPatches = 0;
+
+				foreach (var filePair in patchesToUse.Patches)
+				{
+					string fileName = filePair.Key;
+					var patches = filePair.Value;
+					byte[] currentFileContent = fileContents[fileName];
+
+					foreach (var patchData in patches)
+					{
+						bool patched = false;
+
+						if (patchData.Count >= 2 && patchData[0] is List<object> patterns && patchData[1] is string patchHex)
+						{
+							if (patterns.Count > 0 && patterns[0] is List<object>)
+							{
+								foreach (var pattern in patterns.Cast<List<object>>())
+								{
+									if (TryApplyPattern(fileName, currentFileContent, pattern, ref modifiedFiles, patchHex, progress, completedPatches, totalPatches))
+									{
+										patched = true;
+										break;
+									}
+								}
+							}
+							else
+							{
+								patched = TryApplyPattern(fileName, currentFileContent, patterns, ref modifiedFiles, patchHex, progress, completedPatches, totalPatches);
+							}
+						}
+
+						if (!patched)
+						{
+							progress.Report(new InstallProgressReport { Message = $"Warning: A patch for {fileName} was not applied (pattern not found).", Percentage = 30 + (int)((float)completedPatches / totalPatches * 60) });
+						}
+						completedPatches++;
+					}
+				}
+
+				if (modifiedFiles.Count == 0)
+				{
+					progress.Report(new InstallProgressReport { Message = "Patching complete. No applicable patches found for your game files.", Percentage = 100 });
+					return;
+				}
+
+				progress.Report(new InstallProgressReport { Message = "Creating file backups...", Percentage = 90 });
+				string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+				string backupDir = Path.Combine(installPath, $"backup_patches_{timestamp}");
+				Directory.CreateDirectory(backupDir);
+
+				int savedFiles = 0;
+				foreach (var filePair in modifiedFiles)
+				{
+					string fileName = filePair.Key;
+					byte[] modifiedContent = filePair.Value;
+					string originalPath = ResolveFilePath(installPath, fileName, installType);
+					string backupPath = Path.Combine(backupDir, fileName.Replace('/', Path.DirectorySeparatorChar));
+
+					Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+					File.Copy(originalPath, backupPath, true);
+
+					File.WriteAllBytes(originalPath, modifiedContent);
+					savedFiles++;
+					progress.Report(new InstallProgressReport { Message = $"Applied patch to {fileName}", Percentage = 90 + (int)((float)savedFiles / modifiedFiles.Count * 10) });
+				}
+
+				progress.Report(new InstallProgressReport { Message = $"Successfully patched {savedFiles} file(s) from local zip. Backups are in {Path.GetFileName(backupDir)}.", Percentage = 100 });
+			});
+		}
+		finally
+		{
+			if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+		}
+	}
+
 	// --- Private Helper Methods (Ported from your original code) ---
 
 	private async Task<string> FetchPatchFileContentAsync(string owner, string repo, string filePath, string branch = "master")
