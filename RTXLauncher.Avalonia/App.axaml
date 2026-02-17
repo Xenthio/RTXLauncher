@@ -3,7 +3,7 @@
              x:Class="RTXLauncher.Avalonia.App"
              xmlns:local="using:RTXLauncher.Avalonia"
              xmlns:themes="using:RTXLauncher.Avalonia.Themes"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Dark">
 	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
 	<Application.Resources>
