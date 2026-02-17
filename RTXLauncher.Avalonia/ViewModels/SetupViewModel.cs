@@ -64,6 +64,17 @@ public partial class SetupViewModel : PageViewModel
 	/// </summary>
 	public bool ShowPreflightWarnings => PreflightWarnings.Count > 0;
 
+	/// <summary>
+	/// Available release channels (Stable, Nightly).
+	/// </summary>
+	public ReleaseChannel[] AvailableReleaseChannels { get; } = Enum.GetValues<ReleaseChannel>();
+
+	/// <summary>
+	/// The currently selected release channel.
+	/// </summary>
+	[ObservableProperty]
+	private ReleaseChannel _selectedReleaseChannel = ReleaseChannel.Stable;
+
 	// --- Local Zip Override Properties ---
 
 	[ObservableProperty]
@@ -306,7 +317,7 @@ public partial class SetupViewModel : PageViewModel
 			};
 		}
 
-		await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath, legacyDowngradeCallback: null, localZipOverrides: localZipOverrides);
+		await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath, legacyDowngradeCallback: null, localZipOverrides: localZipOverrides, releaseChannel: SelectedReleaseChannel);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 			// Notify that packages were installed so Advanced Install tab can refresh

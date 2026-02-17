@@ -32,6 +32,12 @@ public enum FixesPackageOption
 	Performance
 }
 
+public enum ReleaseChannel
+{
+	Stable,
+	Nightly
+}
+
 /// <summary>
 /// Optional local zip file overrides for quick install.
 /// When a path is set, that step will use the local zip instead of downloading from GitHub.

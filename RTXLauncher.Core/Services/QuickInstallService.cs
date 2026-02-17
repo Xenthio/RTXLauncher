@@ -69,7 +69,7 @@ public class QuickInstallService
 		};
 	}
 
-	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null, LocalZipOverrides? localZipOverrides = null)
+	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null, LocalZipOverrides? localZipOverrides = null, ReleaseChannel releaseChannel = ReleaseChannel.Stable)
 	{
 		// Helper to remap progress for sub-tasks
 		IProgress<InstallProgressReport> CreateSubProgress(int basePercent, int range)
@@ -85,6 +85,7 @@ public class QuickInstallService
 		}
 
 		// Get the selected fixes package info
+		var channelLabel = releaseChannel == ReleaseChannel.Nightly ? "nightly" : "latest stable";
 		var fixesPackageInfo = GetAvailableFixesPackages().First(p => p.Option == fixesPackageOption);
 
 		// Step 1: Check for existing installation
@@ -133,15 +134,17 @@ public class QuickInstallService
 		}
 		else
 		{
-			progress.Report(new InstallProgressReport { Message = "Fetching latest RTX Remix...", Percentage = 30 });
+			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} RTX Remix...", Percentage = 30 });
 			var (remixOwner, remixRepo) = ("sambow23", "dxvk-remix-gmod"); // From constant
 			var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
-			// Filter out nightly pre-releases to ensure we only use stable releases
-			var latestRemix = remixReleases
-				.Where(r => !r.Prerelease || r.TagName != "nightly")
-				.OrderByDescending(r => r.PublishedAt)
-				.FirstOrDefault()
-				?? throw new Exception("Could not find any RTX Remix releases.");
+			var latestRemix = releaseChannel == ReleaseChannel.Nightly
+				? remixReleases.FirstOrDefault(r => r.TagName == "nightly")
+					?? throw new Exception("Could not find a nightly RTX Remix release.")
+				: remixReleases
+					.Where(r => !r.Prerelease || r.TagName != "nightly")
+					.OrderByDescending(r => r.PublishedAt)
+					.FirstOrDefault()
+					?? throw new Exception("Could not find any stable RTX Remix releases.");
 
 			await _packageInstallService.InstallRemixPackageAsync(latestRemix, installDir, CreateSubProgress(35, 25));
 
@@ -213,14 +216,16 @@ public class QuickInstallService
 		}
 		else
 		{
-			progress.Report(new InstallProgressReport { Message = $"Fetching {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
+			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
 			var fixesReleases = await _githubService.FetchReleasesAsync(fixesPackageInfo.Owner, fixesPackageInfo.Repo);
-			// Filter out nightly pre-releases to ensure we only use stable releases
-			var latestFixes = fixesReleases
-				.Where(r => !r.Prerelease || r.TagName != "nightly")
-				.OrderByDescending(r => r.PublishedAt)
-				.FirstOrDefault()
-				?? throw new Exception($"Could not find any releases for {fixesPackageInfo.Repo}.");
+			var latestFixes = releaseChannel == ReleaseChannel.Nightly
+				? fixesReleases.FirstOrDefault(r => r.TagName == "nightly")
+					?? throw new Exception($"Could not find a nightly release for {fixesPackageInfo.Repo}.")
+				: fixesReleases
+					.Where(r => !r.Prerelease || r.TagName != "nightly")
+					.OrderByDescending(r => r.PublishedAt)
+					.FirstOrDefault()
+					?? throw new Exception($"Could not find any stable releases for {fixesPackageInfo.Repo}.");
 
 			await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
 
