@@ -1,4 +1,4 @@
-﻿// Place these in a common folder like 'Models' or 'Services'
+// Place these in a common folder like 'Models' or 'Services'
 namespace RTXLauncher.Core.Models;
 
 public class InstallProgressReport
@@ -24,12 +24,6 @@ public class DownloadProgressReport : InstallProgressReport
 {
 	public long BytesDownloaded { get; init; }
 	public long TotalBytes { get; init; }
-}
-
-public enum FixesPackageOption
-{
-	Standard,
-	Performance
 }
 
 public enum ReleaseChannel
@@ -63,20 +57,4 @@ public class LocalZipOverrides
 	/// Returns true if any local zip override is set.
 	/// </summary>
 	public bool HasAnyOverride => RemixZipPath != null || PatchesZipPath != null || FixesZipPath != null;
-}
-
-public class FixesPackageInfo
-{
-	public FixesPackageOption Option { get; init; }
-	public string DisplayName { get; init; } = string.Empty;
-	public string Description { get; init; } = string.Empty;
-	public string Owner { get; init; } = string.Empty;
-	public string Repo { get; init; } = string.Empty;
-	public string PatchOwner { get; init; } = string.Empty;
-	public string PatchRepo { get; init; } = string.Empty;
-	public string PatchBranch { get; init; } = string.Empty;
-	public string PatchFile { get; init; } = string.Empty;
-	public bool RequiresX64 { get; init; }
-	public bool RequiresLegacyBuild { get; init; }
-	public string LegacyManifestId { get; init; } = "2195078592256565401"; // Default to May 1, 2025
 }

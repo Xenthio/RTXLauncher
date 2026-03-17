@@ -9,7 +9,7 @@ public class SettingsData
 	[XmlAttribute] public bool UseCustomResolution { get; set; } = false;
 	[XmlAttribute] public int Width { get; set; } = 1920;
 	[XmlAttribute] public int Height { get; set; } = 1080;
-	[XmlAttribute] public bool LoadWorkshopAddons { get; set; } = true;
+	[XmlAttribute] public bool LoadWorkshopAddons { get; set; } = false;
 	[XmlAttribute] public bool DisableChromium { get; set; } = false;
 	[XmlAttribute] public bool ConsoleEnabled { get; set; } = true;
 	[XmlAttribute] public bool DeveloperMode { get; set; } = false;
@@ -33,6 +33,7 @@ public class SettingsData
 
 	// Launcher settings
 	[XmlAttribute] public bool CheckForUpdatesOnLaunch { get; set; } = true;
+	[XmlAttribute] public bool UseLocalInstallPath { get; set; } = false;
 	[XmlAttribute] public string Theme { get; set; } = "Simple";
 
 	// Setup completion tracking

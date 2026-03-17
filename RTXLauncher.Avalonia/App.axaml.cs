@@ -10,6 +10,7 @@ using RTXLauncher.Avalonia.Utilities;
 using RTXLauncher.Avalonia.ViewModels;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
+using RTXLauncher.Core.Utilities;
 using System.Linq;     // Add this if your MainWindow is in this namespace
 
 namespace RTXLauncher.Avalonia;
@@ -25,6 +26,7 @@ public partial class App : Application
 		// Initialize the settings service
 		_settingsService = new SettingsService();
 		_settingsData = _settingsService.LoadSettings();
+		GarrysModUtility.UseLocalInstallPath = _settingsData.UseLocalInstallPath;
 	}
 
 	public override void Initialize()

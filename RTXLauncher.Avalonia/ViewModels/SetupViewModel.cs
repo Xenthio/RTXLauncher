@@ -1,4 +1,4 @@
-﻿using Avalonia.Platform.Storage;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -7,7 +7,6 @@ using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -47,17 +46,6 @@ public partial class SetupViewModel : PageViewModel
 	/// A collection of warnings to show the user before they install.
 	/// </summary>
 	public ObservableCollection<string> PreflightWarnings { get; } = new();
-
-	/// <summary>
-	/// Available fixes packages for the user to choose from.
-	/// </summary>
-	public List<FixesPackageInfo> AvailableFixesPackages { get; }
-
-	/// <summary>
-	/// The currently selected fixes package.
-	/// </summary>
-	[ObservableProperty]
-	private FixesPackageInfo _selectedFixesPackage;
 
 	/// <summary>
 	/// A simple boolean property for the View to bind to, indicating if there are any warnings.
@@ -101,18 +89,11 @@ public partial class SetupViewModel : PageViewModel
 		_quickInstallService = quickInstallService;
 		_messenger = messenger;
 
-		// Initialize fixes packages
-		AvailableFixesPackages = QuickInstallService.GetAvailableFixesPackages();
-		_selectedFixesPackage = AvailableFixesPackages.First(p => p.Option == FixesPackageOption.Standard); // Default to Standard
-
 		// Run the initial checks to determine which view to show.
 		CheckInitialState();
 		
 		// Check for auto-detected vanilla installation
 		CheckVanillaInstallation();
-
-		// Manually trigger the package changed handler for initial selection
-		OnSelectedFixesPackageChanged(_selectedFixesPackage);
 	}
 
 	/// <summary>
@@ -136,13 +117,7 @@ public partial class SetupViewModel : PageViewModel
 		// Now, perform pre-flight checks for potential issues.
 		PreflightWarnings.Clear();
 		var currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-		// Check if running from Downloads folder.
-		if (currentDirectory.Contains(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), StringComparison.OrdinalIgnoreCase))
-		{
-			PreflightWarnings.Add("Warning: It looks like you are running the launcher from your Downloads folder. It is strongly recommended to move it to a dedicated folder (e.g., C:\\Games\\GModRTX) before installing.");
-		}
-
+		
 		// A placeholder for the symlink check. A real check is complex and OS-dependent.
 		// For now, we can add a general warning.
 		// PreflightWarnings.Add("Note: If installation fails, you may need to run this launcher as an Administrator to allow it to create file links (symlinks).");
@@ -236,28 +211,45 @@ public partial class SetupViewModel : PageViewModel
 	[RelayCommand(CanExecute = nameof(CanRunInstall))]
 	private async Task RunInstallAsync()
 	{
-		var installDir = GarrysModUtility.GetThisInstallFolder();
+		await RunInstallCoreAsync(SelectedReleaseChannel, wipeExistingInstall: false, promptForConfigBackup: true);
+	}
 
-		// Check for existing rtx.conf and prompt for backup before starting install
-		if (RemixUtility.RtxConfigExists(installDir))
+	[RelayCommand(CanExecute = nameof(CanRunInstall))]
+	private async Task ReRunQuickInstallAsync()
+	{
+		var confirmed = await DialogUtility.ShowConfirmationAsync(
+			"Reinstall",
+			"This will delete the current RTX installation data and reinstall the game.\n\nDo you want to continue?");
+
+		if (!confirmed)
 		{
-			var shouldBackup = await DialogUtility.ShowConfirmationAsync(
-				"RTX Config Found",
-				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
-				"The backup will be saved as rtx.conf.backup_[timestamp]");
+			return;
+		}
 
-			if (shouldBackup)
-			{
-				var backupPath = RemixUtility.BackupRtxConfig(installDir);
-				if (backupPath != null)
-				{
-					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
-					{ 
-						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
-						Percentage = 0 
-					}));
-				}
-			}
+		await BackupRtxConfigIfRequestedAsync();
+
+		var useNightly = await DialogUtility.ShowBinaryChoiceAsync(
+			"Choose Release Channel",
+			"Which branch do you want to use for this reinstall?",
+			"Nightly",
+			"Stable");
+
+		if (useNightly == null)
+		{
+			return;
+		}
+
+		var releaseChannel = useNightly.Value ? ReleaseChannel.Nightly : ReleaseChannel.Stable;
+		SelectedReleaseChannel = releaseChannel;
+
+		await RunInstallCoreAsync(releaseChannel, wipeExistingInstall: true, promptForConfigBackup: false);
+	}
+
+	private async Task RunInstallCoreAsync(ReleaseChannel releaseChannel, bool wipeExistingInstall, bool promptForConfigBackup)
+	{
+		if (promptForConfigBackup)
+		{
+			await BackupRtxConfigIfRequestedAsync();
 		}
 
 		IsBusy = true;
@@ -265,59 +257,64 @@ public partial class SetupViewModel : PageViewModel
 		IsWelcomeVisible = false;
 		IsCompletedVisible = false;
 
-	var _progressHandle = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
-	IProgress<InstallProgressReport> progressHandle = _progressHandle;
+		var _progressHandle = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
+		IProgress<InstallProgressReport> progressHandle = _progressHandle;
 
-	// Check the vanilla installation type to see if user has 32-bit or 64-bit
-	var vanillaPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath);
-	var vanillaInstallType = GarrysModUtility.GetInstallType(vanillaPath);
+		// Check the vanilla installation type to see if user has 32-bit or 64-bit
+		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath);
+		var vanillaInstallType = GarrysModUtility.GetInstallType(vanillaPath);
 
-	// Prompt 32-bit users to upgrade to 64-bit for better performance and features
-	if (vanillaInstallType == "gmod_i386" || vanillaInstallType == "gmod_main")
-	{
-		var upgrade = await DialogUtility.ShowConfirmationAsync(
-			"Switch to x64?",
-			"You are currently using the 32-bit version of Garry's Mod.\n\n" +
-			"The x64 version offers better performance and support for Remix API Features.\n" +
-			"\n" +
-			"To switch, you need to:\n" +			
-			"1. Open Steam\n" +
-			"2. Right-click Garry's Mod → Properties → Betas\n" +
-			"3. Select the 'x86-64' branch.\n" +
-			"4. Restart the launcher after the update completes\n\n" +
-			"Would you like to cancel this installation and switch to x64 now?");
-
-		if (upgrade)
+		// Prompt 32-bit users to upgrade to 64-bit for better performance and features
+		if (vanillaInstallType == "gmod_i386" || vanillaInstallType == "gmod_main")
 		{
-			// User wants to switch to 64-bit - cancel installation and show instructions
-			progressHandle.Report(new InstallProgressReport 
-			{ 
-				Message = "Installation cancelled. Please switch to 64-bit in Steam and restart the launcher.", 
-				Percentage = 0 
-			});
-		IsWelcomeVisible = true;
-		IsBusy = false;
-		return;
-	}
-	// User declined - continue with 32-bit installation
-}
+			var upgrade = await DialogUtility.ShowConfirmationAsync(
+				"Switch to x64?",
+				"You are currently using the 32-bit version of Garry's Mod.\n\n" +
+				"The x64 version offers better performance and support for Remix API Features.\n" +
+				"\n" +
+				"To switch, you need to:\n" +
+				"1. Open Steam\n" +
+				"2. Right-click Garry's Mod → Properties → Betas\n" +
+				"3. Select the 'x86-64' branch.\n" +
+				"4. Restart the launcher after the update completes\n\n" +
+				"Would you like to cancel this installation and switch to x64 now?");
 
-	try
-	{
-		// No automatic downgrade prompt - users can manually downgrade via Advanced Install if needed
-		// Build local zip overrides if any checkboxes are enabled
-		LocalZipOverrides? localZipOverrides = null;
-		if (UseLocalRemixZip || UseLocalPatchesZip || UseLocalFixesZip)
-		{
-			localZipOverrides = new LocalZipOverrides
+			if (upgrade)
 			{
-				RemixZipPath = UseLocalRemixZip ? LocalRemixZipPath : null,
-				PatchesZipPath = UseLocalPatchesZip ? LocalPatchesZipPath : null,
-				FixesZipPath = UseLocalFixesZip ? LocalFixesZipPath : null
-			};
+				// User wants to switch to 64-bit - cancel installation and show instructions
+				progressHandle.Report(new InstallProgressReport
+				{
+					Message = "Installation cancelled. Please switch to 64-bit in Steam and restart the launcher.",
+					Percentage = 0
+				});
+				IsWelcomeVisible = true;
+				IsBusy = false;
+				return;
+			}
+			// User declined - continue with 32-bit installation
 		}
 
-		await _quickInstallService.PerformQuickInstallAsync(progressHandle, SelectedFixesPackage.Option, ManualVanillaPath, legacyDowngradeCallback: null, localZipOverrides: localZipOverrides, releaseChannel: SelectedReleaseChannel);
+		try
+		{
+			if (wipeExistingInstall)
+			{
+				await _quickInstallService.RemoveExistingInstallationAsync(progressHandle);
+			}
+
+			// No automatic downgrade prompt - users can manually downgrade via Advanced Install if needed
+			// Build local zip overrides if any checkboxes are enabled
+			LocalZipOverrides? localZipOverrides = null;
+			if (UseLocalRemixZip || UseLocalPatchesZip || UseLocalFixesZip)
+			{
+				localZipOverrides = new LocalZipOverrides
+				{
+					RemixZipPath = UseLocalRemixZip ? LocalRemixZipPath : null,
+					PatchesZipPath = UseLocalPatchesZip ? LocalPatchesZipPath : null,
+					FixesZipPath = UseLocalFixesZip ? LocalFixesZipPath : null
+				};
+			}
+
+			await _quickInstallService.PerformQuickInstallAsync(progressHandle, manualVanillaPath: ManualVanillaPath, legacyDowngradeCallback: null, localZipOverrides: localZipOverrides, releaseChannel: releaseChannel);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 			// Notify that packages were installed so Advanced Install tab can refresh
@@ -343,37 +340,32 @@ public partial class SetupViewModel : PageViewModel
 
 	private bool CanRunInstall() => !IsBusy;
 
-	/// <summary>
-	/// Called when the selected fixes package changes to validate compatibility.
-	/// </summary>
-	partial void OnSelectedFixesPackageChanged(FixesPackageInfo value)
+	private async Task BackupRtxConfigIfRequestedAsync()
 	{
-		if (value == null) return;
-
-		// Clear existing warnings related to package compatibility
-		var compatWarnings = PreflightWarnings.Where(w => w.Contains("Performance") || w.Contains("64-bit") || w.Contains("legacy") || w.Contains("downgrade")).ToList();
-		foreach (var warning in compatWarnings)
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		if (!RemixUtility.RtxConfigExists(installDir))
 		{
-			PreflightWarnings.Remove(warning);
+			return;
 		}
 
-		// If the selected package requires x64, add a warning if we can detect it's x32
-		if (value.RequiresX64)
+		var shouldBackup = await DialogUtility.ShowConfirmationAsync(
+			"RTX Config Found",
+			"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
+			"The backup will be saved as rtx.conf.backup_[timestamp]");
+
+		if (!shouldBackup)
 		{
-			var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
-			if (installType != "unknown" && installType != "gmod_x86-64")
-			{
-				PreflightWarnings.Add($"Warning: The '{value.DisplayName}' package requires a 64-bit installation. Your current installation appears to be 32-bit. The installation will fail if you proceed with this option.");
-			}
-			else if (installType == "unknown")
-			{
-				// We don't know yet, but we should still inform the user
-				PreflightWarnings.Add($"Note: The '{value.DisplayName}' package requires a 64-bit Garry's Mod installation. Make sure your Steam copy of Garry's Mod is the 64-bit version.");
-			}
+			return;
 		}
 
-		OnPropertyChanged(nameof(ShowPreflightWarnings));
+		var backupPath = RemixUtility.BackupRtxConfig(installDir);
+		if (backupPath != null)
+		{
+			_messenger.Send(new ProgressReportMessage(new InstallProgressReport
+			{
+				Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}",
+				Percentage = 0
+			}));
+		}
 	}
-
-
 }

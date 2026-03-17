@@ -1,11 +1,14 @@
-﻿using RTXLauncher.Core.Models;
+using RTXLauncher.Core.Models;
 using System.Xml.Serialization;
 
 namespace RTXLauncher.Core.Services;
 
 public class SettingsService
 {
-	private readonly string _filePath = "settings.xml";
+	private static readonly string _filePath = Path.Combine(
+		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+		"RTXLauncher",
+		"settings.xml");
 
 	public SettingsData LoadSettings()
 	{
@@ -32,6 +35,7 @@ public class SettingsService
 	{
 		try
 		{
+			Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 			var serializer = new XmlSerializer(typeof(SettingsData));
 			using var writer = new StreamWriter(_filePath);
 			serializer.Serialize(writer, settings);

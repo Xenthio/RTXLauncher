@@ -1,4 +1,4 @@
-﻿// Services/PackageInstallService.cs
+// Services/PackageInstallService.cs
 
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Utilities;
@@ -22,15 +22,13 @@ public class PackageInstallService
 
 	public static Dictionary<string, (string Owner, string Repo, string InstallType)> PackageSources = new Dictionary<string, (string, string, string)>
 	{
-		{ "Xenthio/garrys-mod-rtx-remixed (Any)", ("Xenthio", "garrys-mod-rtx-remixed", "Any") },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Any)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main") }
+		{ "Xenthio/garrys-mod-rtx-remixed (Any)", ("Xenthio", "garrys-mod-rtx-remixed", "Any") }
 	};
 
 	public static Dictionary<string, (string Owner, string Repo, string FilePath, string Branch)> PatchSources = new Dictionary<string, (string, string, string, string)>
 	{
 		{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py", "master") },
-		{ "sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
-		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
+		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
 		{ "Xenthio/SourceRTXTweaks (outdated, here to test multiple repos)", ("Xenthio", "SourceRTXTweaks", "applypatch.py", "master") }
 	};
 

@@ -204,6 +204,11 @@ public static class LauncherUtility
 					break;
 			}
 		}
+
+		if (ShouldApplyNvidiaTweaks(settings))
+		{
+			ApplyNvidiaTweaks(processInfo);
+		}
 		
 		// Apply custom environment variables
 		if (!string.IsNullOrEmpty(settings.LinuxCustomEnvironmentVariables))
@@ -466,6 +471,37 @@ public static class LauncherUtility
 			.Where(File.Exists)
 			.OrderByDescending(p => new FileInfo(p).LastWriteTime)
 			.FirstOrDefault();
+	}
+
+	private static bool ShouldApplyNvidiaTweaks(SettingsData settings)
+	{
+		if (string.Equals(settings.LinuxVulkanDriver, "NVIDIA", StringComparison.OrdinalIgnoreCase))
+		{
+			return true;
+		}
+
+		if (!string.Equals(settings.LinuxVulkanDriver, "Auto", StringComparison.OrdinalIgnoreCase))
+		{
+			return false;
+		}
+
+		var currentIcd = Environment.GetEnvironmentVariable("VK_ICD_FILENAMES");
+		if (!string.IsNullOrWhiteSpace(currentIcd) &&
+			currentIcd.Contains("nvidia_icd", StringComparison.OrdinalIgnoreCase))
+		{
+			return true;
+		}
+
+		return File.Exists("/proc/driver/nvidia/version") ||
+			Directory.Exists("/proc/driver/nvidia") ||
+			Directory.Exists("/sys/module/nvidia");
+	}
+
+	private static void ApplyNvidiaTweaks(ProcessStartInfo processInfo)
+	{
+		processInfo.EnvironmentVariables["WINE_DISABLE_HARDWARE_SCHEDULING"] = "1";
+		processInfo.EnvironmentVariables["PROTON_HIDE_NVIDIA_GPU"] = "0";
+		processInfo.EnvironmentVariables["PROTON_ENABLE_NVAPI"] = "1";
 	}
 
 	/// <summary>

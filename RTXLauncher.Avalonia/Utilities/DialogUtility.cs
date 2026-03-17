@@ -1,7 +1,9 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Layout;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using System.Linq;
@@ -42,6 +44,76 @@ public static class DialogUtility
 			Icon.Warning
 		);
 		await messageBox.ShowAsync();
+	}
+
+	public async static Task<bool?> ShowBinaryChoiceAsync(string title, string message, string primaryButtonText, string secondaryButtonText)
+	{
+		if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop || desktop.MainWindow == null)
+		{
+			return null;
+		}
+
+		bool? result = null;
+
+		var primaryButton = new Button
+		{
+			Content = primaryButtonText,
+			MinWidth = 100
+		};
+		var secondaryButton = new Button
+		{
+			Content = secondaryButtonText,
+			MinWidth = 100
+		};
+
+		var dialog = new Window
+		{
+			Title = title,
+			CanResize = false,
+			ShowInTaskbar = false,
+			WindowStartupLocation = WindowStartupLocation.CenterOwner,
+			SizeToContent = SizeToContent.WidthAndHeight,
+			Content = new StackPanel
+			{
+				Margin = new Thickness(20),
+				Spacing = 16,
+				Children =
+				{
+					new TextBlock
+					{
+						Text = message,
+						TextWrapping = TextWrapping.Wrap,
+						MaxWidth = 420
+					},
+					new StackPanel
+					{
+						Orientation = Orientation.Horizontal,
+						Spacing = 12,
+						HorizontalAlignment = HorizontalAlignment.Center,
+						Children =
+						{
+							primaryButton,
+							secondaryButton
+						}
+					}
+				}
+			}
+		};
+
+		primaryButton.Click += (_, _) =>
+		{
+			result = true;
+			dialog.Close();
+		};
+
+		secondaryButton.Click += (_, _) =>
+		{
+			result = false;
+			dialog.Close();
+		};
+
+		await dialog.ShowDialog(desktop.MainWindow);
+		return result;
 	}
 
 	/// <summary>

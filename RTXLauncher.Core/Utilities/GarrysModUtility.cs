@@ -1,4 +1,4 @@
-﻿// Services/GarrysModUtility.cs
+// Services/GarrysModUtility.cs
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -7,14 +7,31 @@ namespace RTXLauncher.Core.Utilities;
 public static class GarrysModUtility
 {
 	/// <summary>
-	/// Gets the directory where the current launcher executable is located.
+	/// When enabled, use the launcher executable directory as the install root.
+	/// </summary>
+	public static bool UseLocalInstallPath { get; set; } = false;
+
+	/// <summary>
+	/// Gets the preferred Garry's Mod RTX installation folder.
+	/// By default this is a per-user app data directory, but developers can opt
+	/// back into the historical "next to the launcher" behavior.
 	/// </summary>
 	public static string GetThisInstallFolder()
 	{
-		// Get the full path of the process executable (e.g., C:\MyFolder\RTXLauncher.WinForms.exe)
-		string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+		if (UseLocalInstallPath)
+		{
+			return GetLauncherDirectory();
+		}
 
-		// Get the directory of that executable
+		return Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+			"RTXLauncher",
+			"Game");
+	}
+
+	private static string GetLauncherDirectory()
+	{
+		string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
 		return Path.GetDirectoryName(exePath) ?? "N/A";
 	}
 

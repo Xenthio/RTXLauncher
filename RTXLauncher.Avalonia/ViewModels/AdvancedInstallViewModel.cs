@@ -280,7 +280,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 				if (installedPatches != null)
 				{
 					// Parse the source to extract owner and repo
-					// Source format examples: "BlueAmulet/SourceRTXTweaks", "sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)"
+					// Source format examples: "BlueAmulet/SourceRTXTweaks", "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed)"
 					var sourceBase = installedPatches.Source.Split('(')[0].Trim(); // Remove any suffix like "(for ...)"
 					var parts = sourceBase.Split('/');
 					
@@ -855,8 +855,7 @@ public partial class PatcherPackageViewModel : InstallablePackageViewModel
 	private readonly Dictionary<string, (string Owner, string Repo, string FilePath, string Branch)> _patchSources = new()
 	{
 		{ "BlueAmulet/SourceRTXTweaks", ("BlueAmulet", "SourceRTXTweaks", "applypatch.py", "master") },
-		{ "sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
-		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
+		{ "sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed)", ("sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
 		{ "Xenthio/SourceRTXTweaks (test changes)", ("Xenthio", "SourceRTXTweaks", "applypatch.py", "main") },
     };
 
@@ -1087,19 +1086,15 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 	// --- 1. Add your sources dictionary ---
 	private readonly Dictionary<string, (string Owner, string Repo, string InstallType, bool IsNightly)> _packageSources = new()
 	{
-		{ "Xenthio/gmod-rtx-fixes-2 (Stable)", ("Xenthio", "gmod-rtx-fixes-2", "Any", false) },
-		{ "Xenthio/gmod-rtx-fixes-2 (Nightly)", ("Xenthio", "gmod-rtx-fixes-2", "Any", true) },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Stable)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main", false) },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Nightly)", ("sambow23", "garrys-mod-rtx-remixed-perf", "main", true) }
+		{ "Xenthio/garrys-mod-rtx-remixed (Stable)", ("Xenthio", "garrys-mod-rtx-remixed", "Any", false) },
+		{ "Xenthio/garrys-mod-rtx-remixed (Nightly)", ("Xenthio", "garrys-mod-rtx-remixed", "Any", true) }
 	};
 
 	// Mapping of fixes package sources to their required binary patches
 	private readonly Dictionary<string, (string PatchSource, string Owner, string Repo, string FilePath, string Branch)> _requiredPatches = new()
 	{
-		{ "Xenthio/gmod-rtx-fixes-2 (Stable)", ("sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
-		{ "Xenthio/gmod-rtx-fixes-2 (Nightly)", ("sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Stable)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") },
-		{ "sambow23/garrys-mod-rtx-remixed-perf (Nightly)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed-perf)", "sambow23", "SourceRTXTweaks", "applypatch.py", "perf") }
+		{ "Xenthio/garrys-mod-rtx-remixed (Stable)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") },
+		{ "Xenthio/garrys-mod-rtx-remixed (Nightly)", ("sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed)", "sambow23", "SourceRTXTweaks", "applypatch.py", "main") }
 	};
 
 	public FixesPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService, PatchingService patchingService, Func<string?> getManualVanillaPath, DepotDowngradeService depotDowngradeService)
@@ -1119,6 +1114,22 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		if (InstalledPackagesService == null) return;
 		var version = await InstalledPackagesService.GetFixesVersionAsync();
 		SetInstalledVersionDisplay(version);
+	}
+
+	protected override void SetInstalledVersionDisplay(InstalledPackageVersion? version)
+	{
+		if (version != null)
+		{
+			InstalledVersion = GetInstalledFixesDisplay(version);
+			InstalledSource = version.Source;
+			HasInstalledVersion = true;
+		}
+		else
+		{
+			InstalledVersion = null;
+			InstalledSource = null;
+			HasInstalledVersion = false;
+		}
 	}
 
 	// --- 2. Implement LoadSources ---
@@ -1265,7 +1276,7 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 				await InstalledPackagesService.SetFixesVersionAsync(
 					SelectedSource,
 					SelectedRelease.TagName,
-					SelectedRelease.Name ?? SelectedRelease.TagName);
+					GetFixesReleaseDisplayName(SelectedRelease));
 				await RefreshInstalledVersionAsync();
 			}
 
@@ -1492,5 +1503,68 @@ public partial class FixesPackageViewModel : InstallablePackageViewModel
 		{
 			IsBusy = false;
 		}
+	}
+
+	private static string GetInstalledFixesDisplay(InstalledPackageVersion version)
+	{
+		var nightlyIdentifier = ExtractNightlyIdentifier(version.ReleaseName);
+		if (!string.IsNullOrWhiteSpace(nightlyIdentifier))
+		{
+			return nightlyIdentifier;
+		}
+
+		if (!string.IsNullOrWhiteSpace(version.ReleaseName))
+		{
+			return version.ReleaseName;
+		}
+
+		nightlyIdentifier = ExtractNightlyIdentifier(version.Version);
+		if (!string.IsNullOrWhiteSpace(nightlyIdentifier))
+		{
+			return nightlyIdentifier;
+		}
+
+		return version.Version;
+	}
+
+	private static string GetFixesReleaseDisplayName(GitHubRelease release)
+	{
+		if (release.Prerelease || string.Equals(release.TagName, "nightly", StringComparison.OrdinalIgnoreCase))
+		{
+			string[] patterns = { "-gmod.zip", "-release.zip", ".zip" };
+			foreach (var pattern in patterns)
+			{
+				var asset = release.Assets.FirstOrDefault(a => a.Name.EndsWith(pattern, StringComparison.OrdinalIgnoreCase) && !a.Name.Contains("-symbols"));
+				if (asset != null)
+				{
+					return Path.GetFileNameWithoutExtension(asset.Name);
+				}
+			}
+		}
+
+		return release.Name ?? release.TagName;
+	}
+
+	private static string? ExtractNightlyIdentifier(string? value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return null;
+		}
+
+		var fileName = Path.GetFileNameWithoutExtension(value);
+		const string marker = "-nightly-";
+		var markerIndex = fileName.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+		if (markerIndex >= 0)
+		{
+			return fileName.Substring(markerIndex + 1);
+		}
+
+		if (fileName.StartsWith("nightly-", StringComparison.OrdinalIgnoreCase))
+		{
+			return fileName;
+		}
+
+		return null;
 	}
 }

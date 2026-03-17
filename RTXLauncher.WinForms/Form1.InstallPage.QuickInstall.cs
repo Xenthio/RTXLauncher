@@ -1,4 +1,4 @@
-﻿// Form1.InstallPage.QuickInstall.cs
+// Form1.InstallPage.QuickInstall.cs
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Utilities;
@@ -66,11 +66,11 @@ namespace RTXLauncher.WinForms
 				}
 
 				// Step 3: Apply recommended patches
-				var (owner, repo, file, branch) = PackageInstallService.PatchSources["sambow23/SourceRTXTweaks (for gmod-rtx-fixes-2)"];
+				var (owner, repo, file, branch) = PackageInstallService.PatchSources["sambow23/SourceRTXTweaks (for garrys-mod-rtx-remixed)"];
 				await _patchingService.ApplyPatchesAsync(owner, repo, file, installDir, progress, branch);
 
 				// Step 4: Install recommended fixes
-				var fixesReleases = await _githubService.FetchReleasesAsync("Xenthio", "gmod-rtx-fixes-2");
+				var fixesReleases = await _githubService.FetchReleasesAsync("Xenthio", "garrys-mod-rtx-remixed");
 				var latestFixes = fixesReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
 				if (latestFixes != null)
 				{

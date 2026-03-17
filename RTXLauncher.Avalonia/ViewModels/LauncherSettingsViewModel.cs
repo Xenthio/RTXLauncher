@@ -1,7 +1,8 @@
-﻿using Avalonia;
+using Avalonia;
 using RTXLauncher.Avalonia.Utilities;
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Services;
+using RTXLauncher.Core.Utilities;
 using System.Collections.Generic;
 
 namespace RTXLauncher.Avalonia.ViewModels;
@@ -25,6 +26,18 @@ public partial class LauncherSettingsViewModel : PageViewModel
 	{
 		get => _settingsData.CheckForUpdatesOnLaunch;
 		set => SetProperty(_settingsData.CheckForUpdatesOnLaunch, value, _settingsData, (model, val) => model.CheckForUpdatesOnLaunch = val);
+	}
+
+	public bool UseLocalInstallPath
+	{
+		get => _settingsData.UseLocalInstallPath;
+		set
+		{
+			if (SetProperty(_settingsData.UseLocalInstallPath, value, _settingsData, (model, val) => model.UseLocalInstallPath = val))
+			{
+				GarrysModUtility.UseLocalInstallPath = value;
+			}
+		}
 	}
 
 	public bool ModDBDebugMode

@@ -267,10 +267,10 @@ public partial class SettingsViewModel : PageViewModel
 				}
 			}
 			
-			// Default to first available Proton build
-			if (AvailableProtonBuilds.Count > 0)
+			var preferredProtonBuild = GetPreferredProtonBuildLabel();
+			if (!string.IsNullOrEmpty(preferredProtonBuild))
 			{
-				SelectedProtonBuild = AvailableProtonBuilds[0].Label;
+				SelectedProtonBuild = preferredProtonBuild;
 				LinuxSelectedProtonLabel = SelectedProtonBuild;
 				IsCustomProtonPathVisible = false;
 			}
@@ -315,15 +315,27 @@ public partial class SettingsViewModel : PageViewModel
 	private void ClearProtonPath()
 	{
 		LinuxProtonPath = "";
-		// Switch back to first available Proton build
-		if (AvailableProtonBuilds.Count > 0)
+		var preferredProtonBuild = GetPreferredProtonBuildLabel();
+		if (!string.IsNullOrEmpty(preferredProtonBuild))
 		{
-			SelectedProtonBuild = AvailableProtonBuilds[0].Label;
+			SelectedProtonBuild = preferredProtonBuild;
 		}
 		_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
 		{ 
 			Message = "Switched back to auto-detected Proton version." 
 		}));
+	}
+
+	private string? GetPreferredProtonBuildLabel()
+	{
+		var experimentalBuild = AvailableProtonBuilds.FirstOrDefault(build =>
+			string.Equals(build.Label, "Proton - Experimental", StringComparison.OrdinalIgnoreCase));
+		if (!string.IsNullOrEmpty(experimentalBuild.Label))
+		{
+			return experimentalBuild.Label;
+		}
+
+		return AvailableProtonBuilds.FirstOrDefault().Label;
 	}
 	
 	private void LoadVulkanDrivers()

@@ -1,4 +1,4 @@
-﻿// Services/QuickInstallService.cs
+// Services/QuickInstallService.cs
 
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Utilities;
@@ -7,11 +7,16 @@ namespace RTXLauncher.Core.Services;
 
 public class QuickInstallService
 {
-	// Define the recommended sources as constants
-	private const string RecommendedRemixSource = "sambow23/dxvk-remix-gmod";
-	private const string RecommendedFixesSource = "Xenthio/garrys-mod-rtx-remixed (Any)";
-	private const string RecommendedPatchesSourceX64 = "sambow23/SourceRTXTweaks";
-	private const string RecommendedPatchesSourceX86 = "BlueAmulet/SourceRTXTweaks";
+	private const string FixesDisplayName = "garrys-mod-rtx-remixed";
+	private const string FixesOwner = "Xenthio";
+	private const string FixesRepo = "garrys-mod-rtx-remixed";
+	private const string PatchOwnerX64 = "sambow23";
+	private const string PatchRepoX64 = "SourceRTXTweaks";
+	private const string PatchBranchX64 = "main";
+	private const string PatchOwnerX86 = "BlueAmulet";
+	private const string PatchRepoX86 = "SourceRTXTweaks";
+	private const string PatchBranchX86 = "master";
+	private const string PatchFile = "applypatch.py";
 
 	// Dependencies on all our other services
 	private readonly GarrysModInstallService _installService;
@@ -29,47 +34,32 @@ public class QuickInstallService
 		_installedPackagesService = installedPackagesService;
 	}
 
-	/// <summary>
-	/// Gets the available fixes package options for the user to choose from.
-	/// </summary>
-	public static List<FixesPackageInfo> GetAvailableFixesPackages()
+	public async Task RemoveExistingInstallationAsync(IProgress<InstallProgressReport> progress)
 	{
-		return new List<FixesPackageInfo>
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		progress.Report(new InstallProgressReport { Message = "Removing existing installation data...", Percentage = 0 });
+
+		await Task.Run(() =>
 		{
-			new FixesPackageInfo
+			if (!Directory.Exists(installDir))
 			{
-				Option = FixesPackageOption.Standard,
-				DisplayName = "garrys-mod-rtx-remixed",
-				Description = "The main project",
-				Owner = "Xenthio",
-				Repo = "garrys-mod-rtx-remixed",
-				PatchOwner = "sambow23",
-				PatchRepo = "SourceRTXTweaks",
-				PatchBranch = "main",
-				PatchFile = "applypatch.py",
-				RequiresX64 = false,
-				RequiresLegacyBuild = true,
-				LegacyManifestId = "2195078592256565401" // May 1, 2025 - last known stable x86-64 build
-			},
-			new FixesPackageInfo
-			{
-				Option = FixesPackageOption.Performance,
-				DisplayName = "garrys-mod-rtx-remixed-perf",
-				Description = "Performance-focused version with custom rendering features (64-bit only)",
-				Owner = "sambow23",
-				Repo = "garrys-mod-rtx-remixed-perf",
-				PatchOwner = "sambow23",
-				PatchRepo = "SourceRTXTweaks",
-				PatchBranch = "perf",
-				PatchFile = "applypatch.py",
-				RequiresX64 = true,
-				RequiresLegacyBuild = false,
-				LegacyManifestId = ""
+				return;
 			}
-		};
+
+			if (!GarrysModUtility.UseLocalInstallPath)
+			{
+				Directory.Delete(installDir, recursive: true);
+				return;
+			}
+
+			DeleteLocalInstallContents(installDir);
+		});
+
+		_installedPackagesService.ClearCache();
+		progress.Report(new InstallProgressReport { Message = "Existing installation data removed.", Percentage = 100 });
 	}
 
-	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, FixesPackageOption fixesPackageOption = FixesPackageOption.Standard, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null, LocalZipOverrides? localZipOverrides = null, ReleaseChannel releaseChannel = ReleaseChannel.Stable)
+	public async Task PerformQuickInstallAsync(IProgress<InstallProgressReport> progress, string? manualVanillaPath = null, Func<Task<bool>>? legacyDowngradeCallback = null, LocalZipOverrides? localZipOverrides = null, ReleaseChannel releaseChannel = ReleaseChannel.Stable)
 	{
 		// Helper to remap progress for sub-tasks
 		IProgress<InstallProgressReport> CreateSubProgress(int basePercent, int range)
@@ -84,9 +74,7 @@ public class QuickInstallService
 			});
 		}
 
-		// Get the selected fixes package info
 		var channelLabel = releaseChannel == ReleaseChannel.Nightly ? "nightly" : "latest stable";
-		var fixesPackageInfo = GetAvailableFixesPackages().First(p => p.Option == fixesPackageOption);
 
 		// Step 1: Check for existing installation
 		progress.Report(new InstallProgressReport { Message = "Checking for existing RTX installation...", Percentage = 5 });
@@ -104,7 +92,7 @@ public class QuickInstallService
 		}
 
 		// Step 2.5: Apply legacy downgrade if requested (must happen after vanilla install, before patches)
-		if (fixesPackageInfo.RequiresLegacyBuild && legacyDowngradeCallback != null)
+		if (legacyDowngradeCallback != null)
 		{
 			progress.Report(new InstallProgressReport { Message = "Applying legacy build downgrade...", Percentage = 25 });
 			bool downgradeCompleted = await legacyDowngradeCallback();
@@ -114,12 +102,7 @@ public class QuickInstallService
 			}
 		}
 
-		// Validate architecture compatibility
 		bool isX64 = installType == "gmod_x86-64";
-		if (fixesPackageInfo.RequiresX64 && !isX64)
-		{
-			throw new InvalidOperationException($"The '{fixesPackageInfo.DisplayName}' fixes package requires a 64-bit installation. Your current installation is 32-bit.");
-		}
 
 		// Step 3: Install RTX Remix (from local zip or GitHub)
 		if (localZipOverrides?.RemixZipPath != null)
@@ -156,7 +139,7 @@ public class QuickInstallService
 		}
 
 		// Step 4: Apply patches (from local zip or GitHub)
-		progress.Report(new InstallProgressReport { Message = $"Applying {fixesPackageInfo.DisplayName} patches...", Percentage = 60 });
+		progress.Report(new InstallProgressReport { Message = $"Applying {FixesDisplayName} patches...", Percentage = 60 });
 
 		if (localZipOverrides?.PatchesZipPath != null)
 		{
@@ -173,18 +156,17 @@ public class QuickInstallService
 			
 			if (isX64)
 			{
-				patchOwner = fixesPackageInfo.PatchOwner;
-				patchRepo = fixesPackageInfo.PatchRepo;
-				patchFile = fixesPackageInfo.PatchFile;
-				patchBranch = fixesPackageInfo.PatchBranch;
+				patchOwner = PatchOwnerX64;
+				patchRepo = PatchRepoX64;
+				patchFile = PatchFile;
+				patchBranch = PatchBranchX64;
 			}
 			else
 			{
-				// 32-bit always uses BlueAmulet patches
-				patchOwner = "BlueAmulet";
-				patchRepo = "SourceRTXTweaks";
-				patchFile = "applypatch.py";
-				patchBranch = "master";
+				patchOwner = PatchOwnerX86;
+				patchRepo = PatchRepoX86;
+				patchFile = PatchFile;
+				patchBranch = PatchBranchX86;
 			}
 
 			// Use branch-specific patching if needed
@@ -216,24 +198,24 @@ public class QuickInstallService
 		}
 		else
 		{
-			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} {fixesPackageInfo.DisplayName} fixes package...", Percentage = 80 });
-			var fixesReleases = await _githubService.FetchReleasesAsync(fixesPackageInfo.Owner, fixesPackageInfo.Repo);
+			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} {FixesDisplayName} fixes package...", Percentage = 80 });
+			var fixesReleases = await _githubService.FetchReleasesAsync(FixesOwner, FixesRepo);
 			var latestFixes = releaseChannel == ReleaseChannel.Nightly
 				? fixesReleases.FirstOrDefault(r => r.TagName == "nightly")
-					?? throw new Exception($"Could not find a nightly release for {fixesPackageInfo.Repo}.")
+					?? throw new Exception($"Could not find a nightly release for {FixesRepo}.")
 				: fixesReleases
 					.Where(r => !r.Prerelease || r.TagName != "nightly")
 					.OrderByDescending(r => r.PublishedAt)
 					.FirstOrDefault()
-					?? throw new Exception($"Could not find any stable releases for {fixesPackageInfo.Repo}.");
+					?? throw new Exception($"Could not find any stable releases for {FixesRepo}.");
 
 			await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
 
 			// Save Fixes version info
 			await _installedPackagesService.SetFixesVersionAsync(
-				$"{fixesPackageInfo.Owner}/{fixesPackageInfo.Repo}",
+				$"{FixesOwner}/{FixesRepo}",
 				latestFixes.TagName,
-				latestFixes.Name ?? latestFixes.TagName);
+				GetFixesReleaseDisplayName(latestFixes));
 		}
 
 		// The pre-install cleanup is handled automatically within InstallStandardPackageAsync
@@ -242,5 +224,68 @@ public class QuickInstallService
 		// TODO: Process .launcherdependencies (can be added here later)
 
 		progress.Report(new InstallProgressReport { Message = "Quick Install finished successfully!", Percentage = 100 });
+	}
+
+	private static string GetFixesReleaseDisplayName(GitHubRelease release)
+	{
+		if (release.Prerelease || string.Equals(release.TagName, "nightly", StringComparison.OrdinalIgnoreCase))
+		{
+			string[] patterns = { "-gmod.zip", "-release.zip", ".zip" };
+			foreach (var pattern in patterns)
+			{
+				var asset = release.Assets.FirstOrDefault(a => a.Name.EndsWith(pattern, StringComparison.OrdinalIgnoreCase) && !a.Name.Contains("-symbols"));
+				if (asset != null)
+				{
+					return Path.GetFileNameWithoutExtension(asset.Name);
+				}
+			}
+		}
+
+		return release.Name ?? release.TagName;
+	}
+
+	private static void DeleteLocalInstallContents(string installDir)
+	{
+		var directoriesToDelete = new[]
+		{
+			"bin",
+			"garrysmod",
+			"platform",
+			"rtx-remix",
+			"sourceengine"
+		};
+
+		foreach (var directoryName in directoriesToDelete)
+		{
+			var directoryPath = Path.Combine(installDir, directoryName);
+			if (Directory.Exists(directoryPath))
+			{
+				Directory.Delete(directoryPath, recursive: true);
+			}
+		}
+
+		var filesToDelete = new[]
+		{
+			"gmod.exe",
+			"hl2.exe",
+			"installed_packages.json",
+			"patcherlauncher.exe",
+			"rtx.conf",
+			"steam_appid.txt"
+		};
+
+		foreach (var fileName in filesToDelete)
+		{
+			var filePath = Path.Combine(installDir, fileName);
+			if (File.Exists(filePath))
+			{
+				File.Delete(filePath);
+			}
+		}
+
+		foreach (var backupPath in Directory.EnumerateFiles(installDir, "rtx.conf.backup_*", SearchOption.TopDirectoryOnly))
+		{
+			File.Delete(backupPath);
+		}
 	}
 }

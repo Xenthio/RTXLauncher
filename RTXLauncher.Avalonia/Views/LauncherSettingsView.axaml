@@ -16,6 +16,9 @@
 				<CheckBox IsChecked="{Binding CheckForUpdatesOnLaunch}">
 					Check for updates on launch
 				</CheckBox>
+				<CheckBox IsChecked="{Binding UseLocalInstallPath}">
+					Use local install path (developer)
+				</CheckBox>
 				<StackPanel>
 					<Label Content="Theme" VerticalAlignment="Center" Target="{Binding ElementName=ThemeComboBox}"/>
 					<ComboBox Margin="0,4,0,0"

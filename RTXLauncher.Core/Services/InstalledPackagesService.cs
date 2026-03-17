@@ -14,13 +14,13 @@ namespace RTXLauncher.Core.Services;
 public class InstalledPackagesService
 {
 	private const string FileName = "installed_packages.json";
-	private readonly string _filePath;
 	private InstalledPackagesInfo? _cache;
+	private string? _cachedFilePath;
 
-	public InstalledPackagesService()
+	private static string GetFilePath()
 	{
 		var installFolder = GarrysModUtility.GetThisInstallFolder();
-		_filePath = Path.Combine(installFolder, FileName);
+		return Path.Combine(installFolder, FileName);
 	}
 
 	/// <summary>
@@ -28,12 +28,19 @@ public class InstalledPackagesService
 	/// </summary>
 	public async Task<InstalledPackagesInfo> GetInstalledPackagesAsync()
 	{
+		var filePath = GetFilePath();
+		if (!string.Equals(_cachedFilePath, filePath, StringComparison.Ordinal))
+		{
+			_cache = null;
+			_cachedFilePath = filePath;
+		}
+
 		if (_cache != null)
 		{
 			return _cache;
 		}
 
-		if (!File.Exists(_filePath))
+		if (!File.Exists(filePath))
 		{
 			_cache = new InstalledPackagesInfo();
 			return _cache;
@@ -41,7 +48,7 @@ public class InstalledPackagesService
 
 		try
 		{
-			var json = await File.ReadAllTextAsync(_filePath);
+			var json = await File.ReadAllTextAsync(filePath);
 			_cache = JsonSerializer.Deserialize(json, InstalledPackagesJsonContext.Default.InstalledPackagesInfo) 
 				?? new InstalledPackagesInfo();
 			return _cache;
@@ -163,14 +170,15 @@ public class InstalledPackagesService
 
 		try
 		{
-			var directory = Path.GetDirectoryName(_filePath);
+			var filePath = GetFilePath();
+			var directory = Path.GetDirectoryName(filePath);
 			if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
 			{
 				Directory.CreateDirectory(directory);
 			}
 
 			var json = JsonSerializer.Serialize(_cache, InstalledPackagesJsonContext.Default.InstalledPackagesInfo);
-			await File.WriteAllTextAsync(_filePath, json);
+			await File.WriteAllTextAsync(filePath, json);
 		}
 		catch (Exception ex)
 		{
