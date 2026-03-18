@@ -37,6 +37,7 @@ public class QuickInstallService
 	public async Task RemoveExistingInstallationAsync(IProgress<InstallProgressReport> progress)
 	{
 		var installDir = GarrysModUtility.GetThisInstallFolder();
+		EnsureSupportedInstallPath(installDir);
 		progress.Report(new InstallProgressReport { Message = "Removing existing installation data...", Percentage = 0 });
 
 		await Task.Run(() =>
@@ -79,6 +80,7 @@ public class QuickInstallService
 		// Step 1: Check for existing installation
 		progress.Report(new InstallProgressReport { Message = "Checking for existing RTX installation...", Percentage = 5 });
 		var installDir = GarrysModUtility.GetThisInstallFolder();
+		EnsureSupportedInstallPath(installDir);
 		var installType = GarrysModUtility.GetInstallType(installDir);
 
 		if (installType == "unknown")
@@ -242,6 +244,16 @@ public class QuickInstallService
 		}
 
 		return release.Name ?? release.TagName;
+	}
+
+	private static void EnsureSupportedInstallPath(string installDir)
+	{
+		if (GarrysModUtility.IsPathUnderOneDrive(installDir, out var oneDriveRoot))
+		{
+			throw new InvalidOperationException(
+				$"The selected RTX install folder is inside OneDrive ({oneDriveRoot}). " +
+				"Please choose a local folder outside OneDrive, such as C:\\Games\\GModRTX.");
+		}
 	}
 
 	private static void DeleteLocalInstallContents(string installDir)

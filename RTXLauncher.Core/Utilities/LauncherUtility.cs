@@ -1,12 +1,15 @@
 using RTXLauncher.Core.Models;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Text;
 
 namespace RTXLauncher.Core.Utilities;
 
 public static class LauncherUtility
 {
+	private const string StartMenuShortcutName = "Garry's Mod RTX Launcher.lnk";
+
 	/// <summary>
 	/// Opens the application's installation folder in the file explorer.
 	/// This reuses logic from GarrysModUtility to find the correct path.
@@ -32,6 +35,102 @@ public static class LauncherUtility
 		{
 			throw new Exception("Could not open the installation folder.", ex);
 		}
+	}
+
+	public static string GetCurrentLauncherExecutablePath()
+	{
+		var executablePath = Process.GetCurrentProcess().MainModule?.FileName;
+		if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
+		{
+			throw new FileNotFoundException("Could not determine the current launcher executable path.");
+		}
+
+		return executablePath;
+	}
+
+	public static string CopyLauncherToInstallFolder(string installPath)
+	{
+		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			throw new PlatformNotSupportedException("Copying the launcher to the install folder is only supported on Windows.");
+		}
+
+		if (string.IsNullOrWhiteSpace(installPath))
+		{
+			throw new ArgumentException("Install path cannot be empty.", nameof(installPath));
+		}
+
+		Directory.CreateDirectory(installPath);
+
+		var sourceExecutablePath = GetCurrentLauncherExecutablePath();
+		var targetExecutablePath = Path.Combine(installPath, Path.GetFileName(sourceExecutablePath));
+
+		if (PathsEqual(sourceExecutablePath, targetExecutablePath))
+		{
+			return targetExecutablePath;
+		}
+
+		File.Copy(sourceExecutablePath, targetExecutablePath, overwrite: true);
+		return targetExecutablePath;
+	}
+
+	public static string CreateOrUpdateStartMenuShortcut(string targetExecutablePath, string workingDirectory)
+	{
+		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			throw new PlatformNotSupportedException("Creating Start Menu shortcuts is only supported on Windows.");
+		}
+
+		if (string.IsNullOrWhiteSpace(targetExecutablePath) || !File.Exists(targetExecutablePath))
+		{
+			throw new FileNotFoundException("The launcher executable for the Start Menu shortcut could not be found.", targetExecutablePath);
+		}
+
+		if (string.IsNullOrWhiteSpace(workingDirectory))
+		{
+			throw new ArgumentException("Working directory cannot be empty.", nameof(workingDirectory));
+		}
+
+		Directory.CreateDirectory(workingDirectory);
+
+		var programsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+		Directory.CreateDirectory(programsDirectory);
+		var shortcutPath = Path.Combine(programsDirectory, StartMenuShortcutName);
+
+		var shellType = Type.GetTypeFromProgID("WScript.Shell")
+			?? throw new InvalidOperationException("Windows Script Host is unavailable, so the Start Menu shortcut could not be created.");
+		var shell = Activator.CreateInstance(shellType)
+			?? throw new InvalidOperationException("Could not initialize the Windows Script Host shell.");
+
+		object? shortcut = null;
+		try
+		{
+			shortcut = shellType.InvokeMember(
+				"CreateShortcut",
+				BindingFlags.InvokeMethod,
+				null,
+				shell,
+				new object[] { shortcutPath });
+
+			if (shortcut == null)
+			{
+				throw new InvalidOperationException("Could not create the Start Menu shortcut.");
+			}
+
+			var shortcutType = shortcut.GetType();
+			shortcutType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, shortcut, new object[] { targetExecutablePath });
+			shortcutType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, shortcut, new object[] { workingDirectory });
+			shortcutType.InvokeMember("Description", BindingFlags.SetProperty, null, shortcut, new object[] { "Launch Garry's Mod RTX Launcher" });
+			shortcutType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { targetExecutablePath });
+			shortcutType.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, null);
+		}
+		finally
+		{
+			ReleaseComObject(shortcut);
+			ReleaseComObject(shell);
+		}
+
+		return shortcutPath;
 	}
 
 	/// <summary>
@@ -608,5 +707,21 @@ public static class LauncherUtility
 		"1280x800",
 		"1280x720"
 	};
+
+	private static bool PathsEqual(string left, string right)
+	{
+		return string.Equals(
+			Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+			Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+			StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static void ReleaseComObject(object? value)
+	{
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && value != null && Marshal.IsComObject(value))
+		{
+			Marshal.FinalReleaseComObject(value);
+		}
+	}
 
 }

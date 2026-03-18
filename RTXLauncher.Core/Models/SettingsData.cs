@@ -38,4 +38,6 @@ public class SettingsData
 
 	// Setup completion tracking
 	[XmlAttribute] public bool SetupCompleted { get; set; } = false;
+	[XmlAttribute] public bool CopyLauncherToInstallFolder { get; set; } = false;
+	[XmlAttribute] public bool AddLauncherToStartMenu { get; set; } = false;
 }

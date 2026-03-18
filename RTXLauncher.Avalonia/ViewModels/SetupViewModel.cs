@@ -47,6 +47,8 @@ public partial class SetupViewModel : PageViewModel
 	[ObservableProperty]
 	private string _effectiveInstallPath = string.Empty;
 
+	public bool ShowWindowsLauncherOptions => OperatingSystem.IsWindows();
+
 	/// <summary>
 	/// A collection of warnings to show the user before they install.
 	/// </summary>
@@ -89,6 +91,18 @@ public partial class SetupViewModel : PageViewModel
 	private string? _localFixesZipPath;
 
 	public string DefaultInstallPath => GarrysModUtility.GetDefaultInstallFolder();
+
+	public bool CopyLauncherToInstallFolder
+	{
+		get => _settingsData.CopyLauncherToInstallFolder;
+		set => SetProperty(_settingsData.CopyLauncherToInstallFolder, value, _settingsData, (model, val) => model.CopyLauncherToInstallFolder = val);
+	}
+
+	public bool AddLauncherToStartMenu
+	{
+		get => _settingsData.AddLauncherToStartMenu;
+		set => SetProperty(_settingsData.AddLauncherToStartMenu, value, _settingsData, (model, val) => model.AddLauncherToStartMenu = val);
+	}
 
 	public string? CustomInstallPath => string.IsNullOrWhiteSpace(_settingsData.ManuallySpecifiedInstallPath)
 		? null
@@ -343,6 +357,8 @@ public partial class SetupViewModel : PageViewModel
 
 		try
 		{
+			_settingsService.SaveSettings(_settingsData);
+
 			if (wipeExistingInstall)
 			{
 				await _quickInstallService.RemoveExistingInstallationAsync(progressHandle);
@@ -362,10 +378,16 @@ public partial class SetupViewModel : PageViewModel
 			}
 
 			await _quickInstallService.PerformQuickInstallAsync(progressHandle, manualVanillaPath: ManualVanillaPath, legacyDowngradeCallback: null, localZipOverrides: localZipOverrides, releaseChannel: releaseChannel);
+			await RunPostInstallLauncherActionsAsync(progressHandle);
 			// After installation, re-run the check. It should now show the 'Completed' view.
 			CheckInitialState();
 			// Notify that packages were installed so Advanced Install tab can refresh
 			_messenger.Send(new PackagesUpdatedMessage());
+			progressHandle.Report(new InstallProgressReport
+			{
+				Message = "Installation completed successfully.",
+				Percentage = 100
+			});
 		}
 		catch (OperationCanceledException)
 		{
@@ -427,6 +449,14 @@ public partial class SetupViewModel : PageViewModel
 
 		var fullInstallPath = Path.GetFullPath(installPath);
 		var currentInstallPath = Path.GetFullPath(GarrysModUtility.GetThisInstallFolder());
+		if (GarrysModUtility.IsPathUnderOneDrive(fullInstallPath, out _))
+		{
+			errorMessage =
+				"OneDrive-managed folders are not supported for RTX installs.\n\n" +
+				"Please choose a local folder outside OneDrive, for example C:\\Games\\GModRTX.";
+			return false;
+		}
+
 		if (PathsEqual(fullInstallPath, currentInstallPath))
 		{
 			return true;
@@ -475,6 +505,40 @@ public partial class SetupViewModel : PageViewModel
 		var normalizedLeft = Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 		var normalizedRight = Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 		return string.Equals(normalizedLeft, normalizedRight, comparison);
+	}
+
+	private async Task RunPostInstallLauncherActionsAsync(IProgress<InstallProgressReport> progressHandle)
+	{
+		if (!ShowWindowsLauncherOptions || (!CopyLauncherToInstallFolder && !AddLauncherToStartMenu))
+		{
+			return;
+		}
+
+		var installDir = GarrysModUtility.GetThisInstallFolder();
+		await Task.Run(() =>
+		{
+			string launcherPath = LauncherUtility.GetCurrentLauncherExecutablePath();
+
+			if (CopyLauncherToInstallFolder)
+			{
+				progressHandle.Report(new InstallProgressReport
+				{
+					Message = "Copying launcher to the RTX install folder...",
+					Percentage = 96
+				});
+				launcherPath = LauncherUtility.CopyLauncherToInstallFolder(installDir);
+			}
+
+			if (AddLauncherToStartMenu)
+			{
+				progressHandle.Report(new InstallProgressReport
+				{
+					Message = "Adding launcher to the Start Menu...",
+					Percentage = 98
+				});
+				LauncherUtility.CreateOrUpdateStartMenuShortcut(launcherPath, installDir);
+			}
+		});
 	}
 
 	private async Task BackupRtxConfigIfRequestedAsync()

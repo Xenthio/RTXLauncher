@@ -295,6 +295,18 @@ public partial class Form1 : Form
 						MessageBoxIcon.Warning);
 					return;
 				}
+
+				if (GarrysModUtility.IsPathUnderOneDrive(installDir, out _))
+				{
+					MessageBox.Show(
+						"OneDrive-managed folders are not supported for RTX installs.\n\n" +
+						"Please choose a local folder outside OneDrive, for example C:\\Games\\GModRTX.",
+						"Invalid Install Location",
+						MessageBoxButtons.OK,
+						MessageBoxIcon.Warning);
+					return;
+				}
+
 				//SteamLibraryUtility.ManuallySpecifiedGameInstallPath = installDir;
 				if (settingsDataBindingSource.DataSource is SettingsData settings)
 				{

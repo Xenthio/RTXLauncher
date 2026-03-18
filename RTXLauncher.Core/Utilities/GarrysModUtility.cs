@@ -45,6 +45,40 @@ public static class GarrysModUtility
 			"Game");
 	}
 
+	/// <summary>
+	/// Detects whether a path points to a OneDrive-managed folder on Windows.
+	/// </summary>
+	public static bool IsPathUnderOneDrive(string? path, out string? oneDriveRoot)
+	{
+		oneDriveRoot = null;
+
+		if (!OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(path))
+		{
+			return false;
+		}
+
+		string normalizedPath;
+		try
+		{
+			normalizedPath = NormalizePath(path);
+		}
+		catch
+		{
+			return false;
+		}
+
+		foreach (var candidateRoot in GetOneDriveRoots())
+		{
+			if (PathsEqual(normalizedPath, candidateRoot) || IsChildPathOf(normalizedPath, candidateRoot))
+			{
+				oneDriveRoot = candidateRoot;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private static string GetLauncherDirectory()
 	{
 		string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
@@ -150,5 +184,53 @@ public static class GarrysModUtility
 			Path.Combine(execPath, "hl2.exe")
 		};
 		return candidates.FirstOrDefault(File.Exists);
+	}
+
+	private static IEnumerable<string> GetOneDriveRoots()
+	{
+		var candidateRoots = new[]
+		{
+			Environment.GetEnvironmentVariable("OneDrive"),
+			Environment.GetEnvironmentVariable("OneDriveConsumer"),
+			Environment.GetEnvironmentVariable("OneDriveCommercial")
+		};
+
+		foreach (var candidateRoot in candidateRoots)
+		{
+			if (string.IsNullOrWhiteSpace(candidateRoot))
+			{
+				continue;
+			}
+
+			string normalizedRoot;
+			try
+			{
+				normalizedRoot = NormalizePath(candidateRoot);
+			}
+			catch
+			{
+				continue;
+			}
+
+			yield return normalizedRoot;
+		}
+	}
+
+	private static bool IsChildPathOf(string path, string parentPath)
+	{
+		var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+		return path.StartsWith(parentPath + Path.DirectorySeparatorChar, comparison) ||
+			path.StartsWith(parentPath + Path.AltDirectorySeparatorChar, comparison);
+	}
+
+	private static string NormalizePath(string path)
+	{
+		return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+	}
+
+	private static bool PathsEqual(string left, string right)
+	{
+		var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+		return string.Equals(NormalizePath(left), NormalizePath(right), comparison);
 	}
 }
