@@ -160,7 +160,13 @@ public partial class SettingsViewModel : PageViewModel
 	public string ManuallySpecifiedInstallPath
 	{
 		get => _settingsData.ManuallySpecifiedInstallPath;
-		set => SetProperty(_settingsData.ManuallySpecifiedInstallPath, value, _settingsData, (model, val) => model.ManuallySpecifiedInstallPath = val);
+		set
+		{
+			if (SetProperty(_settingsData.ManuallySpecifiedInstallPath, value, _settingsData, (model, val) => model.ManuallySpecifiedInstallPath = val))
+			{
+				GarrysModUtility.ManuallySpecifiedInstallPath = value;
+			}
+		}
 	}
 	
 	// ===================================================================

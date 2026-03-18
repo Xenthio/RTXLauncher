@@ -18,6 +18,7 @@ internal class Program
 		{
 			var settings = new SettingsService().LoadSettings();
 			GarrysModUtility.UseLocalInstallPath = settings.UseLocalInstallPath;
+			GarrysModUtility.ManuallySpecifiedInstallPath = settings.ManuallySpecifiedInstallPath;
 			LauncherUtility.LaunchGame(settings, 0, 0);
 			return;
 		}

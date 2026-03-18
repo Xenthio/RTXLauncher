@@ -12,17 +12,33 @@ public static class GarrysModUtility
 	public static bool UseLocalInstallPath { get; set; } = false;
 
 	/// <summary>
+	/// Optional user-selected installation root for the RTX game copy.
+	/// </summary>
+	public static string ManuallySpecifiedInstallPath { get; set; } = string.Empty;
+
+	/// <summary>
 	/// Gets the preferred Garry's Mod RTX installation folder.
-	/// By default this is a per-user app data directory, but developers can opt
-	/// back into the historical "next to the launcher" behavior.
+	/// An explicit user-selected location takes precedence. Otherwise, developers
+	/// can opt back into the historical "next to the launcher" behavior, and the
+	/// default remains a per-user app data directory.
 	/// </summary>
 	public static string GetThisInstallFolder()
 	{
+		if (!string.IsNullOrWhiteSpace(ManuallySpecifiedInstallPath))
+		{
+			return Path.GetFullPath(ManuallySpecifiedInstallPath);
+		}
+
 		if (UseLocalInstallPath)
 		{
 			return GetLauncherDirectory();
 		}
 
+		return GetDefaultInstallFolder();
+	}
+
+	public static string GetDefaultInstallFolder()
+	{
 		return Path.Combine(
 			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
 			"RTXLauncher",

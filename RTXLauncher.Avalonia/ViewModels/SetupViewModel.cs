@@ -19,6 +19,8 @@ public partial class SetupViewModel : PageViewModel
 	// --- Services ---
 	private readonly QuickInstallService _quickInstallService;
 	private readonly IMessenger _messenger;
+	private readonly SettingsService _settingsService;
+	private readonly SettingsData _settingsData;
 
 	// --- UI State Properties ---
 	[ObservableProperty]
@@ -41,6 +43,9 @@ public partial class SetupViewModel : PageViewModel
 	/// </summary>
 	[ObservableProperty]
 	private string _autoDetectedPath = "Checking...";
+
+	[ObservableProperty]
+	private string _effectiveInstallPath = string.Empty;
 
 	/// <summary>
 	/// A collection of warnings to show the user before they install.
@@ -83,17 +88,27 @@ public partial class SetupViewModel : PageViewModel
 	[ObservableProperty]
 	private string? _localFixesZipPath;
 
-	public SetupViewModel(QuickInstallService quickInstallService, IMessenger messenger)
+	public string DefaultInstallPath => GarrysModUtility.GetDefaultInstallFolder();
+
+	public string? CustomInstallPath => string.IsNullOrWhiteSpace(_settingsData.ManuallySpecifiedInstallPath)
+		? null
+		: _settingsData.ManuallySpecifiedInstallPath;
+
+	public bool HasCustomInstallPath => !string.IsNullOrWhiteSpace(CustomInstallPath);
+
+	public SetupViewModel(QuickInstallService quickInstallService, IMessenger messenger, SettingsService settingsService, SettingsData settingsData)
 	{
 		Header = "Setup";
 		_quickInstallService = quickInstallService;
 		_messenger = messenger;
+		_settingsService = settingsService;
+		_settingsData = settingsData;
+
+		GarrysModUtility.ManuallySpecifiedInstallPath = _settingsData.ManuallySpecifiedInstallPath;
+		RefreshInstallPathState();
 
 		// Run the initial checks to determine which view to show.
-		CheckInitialState();
-		
-		// Check for auto-detected vanilla installation
-		CheckVanillaInstallation();
+		RefreshSetupState();
 	}
 
 	/// <summary>
@@ -130,6 +145,13 @@ public partial class SetupViewModel : PageViewModel
 	/// </summary>
 	private void CheckVanillaInstallation()
 	{
+		var missingWarning = "Warning: Could not auto-detect vanilla Garry's Mod installation. Please specify the location manually using the button below.";
+		var existingWarning = PreflightWarnings.FirstOrDefault(w => w.Contains("Could not auto-detect vanilla Garry's Mod installation"));
+		if (existingWarning != null)
+		{
+			PreflightWarnings.Remove(existingWarning);
+		}
+
 		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder();
 		if (!string.IsNullOrEmpty(vanillaPath))
 		{
@@ -138,10 +160,10 @@ public partial class SetupViewModel : PageViewModel
 		else
 		{
 			AutoDetectedPath = "Not found - please specify manually";
-			// Add a warning if we can't find it
-			PreflightWarnings.Insert(0, "Warning: Could not auto-detect vanilla Garry's Mod installation. Please specify the location manually using the button below.");
-			OnPropertyChanged(nameof(ShowPreflightWarnings));
+			PreflightWarnings.Insert(0, missingWarning);
 		}
+
+		OnPropertyChanged(nameof(ShowPreflightWarnings));
 	}
 
 	[RelayCommand]
@@ -206,6 +228,31 @@ public partial class SetupViewModel : PageViewModel
 					"Please select the folder containing 'garrysmod' and 'gmod.exe' or 'hl2.exe'.");
 			}
 		}
+	}
+
+	[RelayCommand]
+	private async Task BrowseInstallPathAsync()
+	{
+		var result = await DialogUtility.ShowFolderPickerAsync("Select the RTX Garry's Mod installation folder");
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			return;
+		}
+
+		result = Path.GetFullPath(result);
+		if (!TryValidateInstallPath(result, out var errorMessage))
+		{
+			await DialogUtility.ShowMessageAsync("Invalid Install Location", errorMessage);
+			return;
+		}
+
+		await UpdateInstallPathAsync(result);
+	}
+
+	[RelayCommand]
+	private async Task ResetInstallPathAsync()
+	{
+		await UpdateInstallPathAsync(string.Empty);
 	}
 
 	[RelayCommand(CanExecute = nameof(CanRunInstall))]
@@ -339,6 +386,96 @@ public partial class SetupViewModel : PageViewModel
 	}
 
 	private bool CanRunInstall() => !IsBusy;
+
+	private void RefreshInstallPathState()
+	{
+		EffectiveInstallPath = GarrysModUtility.GetThisInstallFolder();
+		OnPropertyChanged(nameof(DefaultInstallPath));
+		OnPropertyChanged(nameof(CustomInstallPath));
+		OnPropertyChanged(nameof(HasCustomInstallPath));
+	}
+
+	private void RefreshSetupState()
+	{
+		CheckInitialState();
+		CheckVanillaInstallation();
+	}
+
+	private async Task UpdateInstallPathAsync(string installPath)
+	{
+		var previousInstallPath = _settingsData.ManuallySpecifiedInstallPath;
+		try
+		{
+			_settingsData.ManuallySpecifiedInstallPath = installPath;
+			_settingsService.SaveSettings(_settingsData);
+			GarrysModUtility.ManuallySpecifiedInstallPath = installPath;
+			RefreshInstallPathState();
+			RefreshSetupState();
+			_messenger.Send(new InstallPathChangedMessage());
+		}
+		catch (Exception ex)
+		{
+			_settingsData.ManuallySpecifiedInstallPath = previousInstallPath;
+			await DialogUtility.ShowErrorAsync("Failed to Save Install Path",
+				$"Could not save the selected RTX install path.\n\n{ex.Message}");
+		}
+	}
+
+	private bool TryValidateInstallPath(string installPath, out string errorMessage)
+	{
+		errorMessage = string.Empty;
+
+		var fullInstallPath = Path.GetFullPath(installPath);
+		var currentInstallPath = Path.GetFullPath(GarrysModUtility.GetThisInstallFolder());
+		if (PathsEqual(fullInstallPath, currentInstallPath))
+		{
+			return true;
+		}
+
+		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath);
+		if (!string.IsNullOrEmpty(vanillaPath) && PathsEqual(fullInstallPath, vanillaPath))
+		{
+			errorMessage =
+				"This folder is the live vanilla Garry's Mod install.\n\n" +
+				"Please choose a separate folder for the RTX copy.";
+			return false;
+		}
+
+		if (!Directory.Exists(fullInstallPath))
+		{
+			return true;
+		}
+
+		if (!Directory.EnumerateFileSystemEntries(fullInstallPath).Any())
+		{
+			return true;
+		}
+
+		if (LooksLikeExistingRtxInstall(fullInstallPath))
+		{
+			return true;
+		}
+
+		errorMessage =
+			"Please choose an empty folder or an existing RTX install folder.\n\n" +
+			"Reinstalling can delete everything inside the selected folder.";
+		return false;
+	}
+
+	private static bool LooksLikeExistingRtxInstall(string installPath)
+	{
+		return File.Exists(Path.Combine(installPath, "installed_packages.json")) ||
+			Directory.Exists(Path.Combine(installPath, "rtx-remix")) ||
+			File.Exists(Path.Combine(installPath, "rtx.conf"));
+	}
+
+	private static bool PathsEqual(string left, string right)
+	{
+		var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+		var normalizedLeft = Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+		var normalizedRight = Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+		return string.Equals(normalizedLeft, normalizedRight, comparison);
+	}
 
 	private async Task BackupRtxConfigIfRequestedAsync()
 	{

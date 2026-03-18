@@ -27,6 +27,7 @@ public partial class App : Application
 		_settingsService = new SettingsService();
 		_settingsData = _settingsService.LoadSettings();
 		GarrysModUtility.UseLocalInstallPath = _settingsData.UseLocalInstallPath;
+		GarrysModUtility.ManuallySpecifiedInstallPath = _settingsData.ManuallySpecifiedInstallPath;
 	}
 
 	public override void Initialize()

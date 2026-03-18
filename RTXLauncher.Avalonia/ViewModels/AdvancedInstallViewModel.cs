@@ -62,6 +62,12 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			_ = RefreshAllPackagesAsync();
 		});
 
+		_messenger.Register<InstallPathChangedMessage>(this, (recipient, message) =>
+		{
+			RefreshInstallInfo();
+			_ = RefreshAllPackagesAsync();
+		});
+
 		// To add a new package, you just add it to this list!
 		Packages.Add(new RemixPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService));
 		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger, _installedPackagesService, _depotDowngradeService, _githubService, _packageInstallService));

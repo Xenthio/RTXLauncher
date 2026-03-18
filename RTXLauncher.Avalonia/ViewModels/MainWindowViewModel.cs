@@ -111,7 +111,7 @@ public partial class MainWindowViewModel : ViewModelBase
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
 		};
 
-		var setupViewModel = new SetupViewModel(quickInstallService, _messenger);
+		var setupViewModel = new SetupViewModel(quickInstallService, _messenger, _settingsService, _settingsData);
 
 		// if not installed, show setup first, else put it before advanced install
 		var installType = GarrysModUtility.GetInstallType(GarrysModUtility.GetThisInstallFolder());
