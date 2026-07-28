@@ -164,14 +164,13 @@ public static class LauncherUtility
 			throw new FileNotFoundException("Could not find a valid game executable (gmod.exe or hl2.exe) in the installation directory.");
 		}
 
+		var installDirectory = GarrysModUtility.GetThisInstallFolder();
 		var launchOptions = BuildLaunchArgs(settings, screenWidth, screenHeight, isLinux: false);
+		var processInfo = CreateGameProcessStartInfo(installDirectory);
+		processInfo.FileName = gameExecutablePath;
+		processInfo.Arguments = string.Join(" ", launchOptions);
 
-		Process.Start(new ProcessStartInfo
-		{
-			FileName = gameExecutablePath,
-			Arguments = string.Join(" ", launchOptions),
-			WorkingDirectory = Path.GetDirectoryName(gameExecutablePath)
-		});
+		Process.Start(processInfo);
 	}
 
 	/// <summary>
@@ -185,8 +184,10 @@ public static class LauncherUtility
 			throw new FileNotFoundException("Could not find a valid Windows game executable (gmod.exe or hl2.exe). This is required to run under Proton.");
 		}
 
-		var gameDirectory = Path.GetDirectoryName(gameExecutablePath)
-			?? throw new DirectoryNotFoundException("Could not determine the game's parent directory.");
+		// Source resolves relative game paths (including garrysmod/gameinfo.txt) from
+		// the process working directory. The executable may live under bin/win64, so
+		// its parent directory is not necessarily the game installation root.
+		var installDirectory = GarrysModUtility.GetThisInstallFolder();
 
 		// --- Call the centralized SteamLibraryUtility with override support ---
 		string? steamRoot = null;
@@ -219,13 +220,9 @@ public static class LauncherUtility
 		Directory.CreateDirectory(compatDataPath);
 
 		// Write steam_appid.txt to satisfy SteamAPI
-		File.WriteAllText(Path.Combine(gameDirectory, "steam_appid.txt"), "4000");
+		File.WriteAllText(Path.Combine(installDirectory, "steam_appid.txt"), "4000");
 
-		var processInfo = new ProcessStartInfo
-		{
-			WorkingDirectory = gameDirectory,
-			UseShellExecute = false // Required to set environment variables
-		};
+		var processInfo = CreateGameProcessStartInfo(installDirectory);
 
 		// Parse launch command prefix if provided
 		var prefixArgs = new List<string>();
@@ -324,9 +321,11 @@ public static class LauncherUtility
 	/// <summary>
 	/// Shared method to build launch arguments for both platforms.
 	/// </summary>
-	private static List<string> BuildLaunchArgs(SettingsData settings, int width, int height, bool isLinux)
+	internal static List<string> BuildLaunchArgs(SettingsData settings, int width, int height, bool isLinux)
 	{
-		var args = new List<string>();
+		// Keep the game directory explicit. Source still resolves this relative path
+		// from the installation-root working directory configured by the launchers.
+		var args = new List<string> { "-game", "garrysmod" };
 
 		// Console flag
 		if (settings.ConsoleEnabled) args.Add("-console");
@@ -372,6 +371,20 @@ public static class LauncherUtility
 		}
 
 		return args;
+	}
+
+	internal static ProcessStartInfo CreateGameProcessStartInfo(string installDirectory)
+	{
+		if (string.IsNullOrWhiteSpace(installDirectory))
+		{
+			throw new ArgumentException("Install directory cannot be empty.", nameof(installDirectory));
+		}
+
+		return new ProcessStartInfo
+		{
+			WorkingDirectory = installDirectory,
+			UseShellExecute = false
+		};
 	}
 
 	/// <summary>
