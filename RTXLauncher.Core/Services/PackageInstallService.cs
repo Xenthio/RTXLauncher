@@ -451,6 +451,7 @@ bin/win64/usd_ms.dll
 		await Task.Run(() =>
 		{
 			var ignoredPaths = ParseIgnorePatterns(defaultIgnore);
+			var extractedTimestampUtc = DateTime.UtcNow;
 
 			using var zip = ZipFile.OpenRead(zipPath);
 			var launcherIgnoreEntry = zip.Entries.FirstOrDefault(e => e.Name.Equals(".launcherignore", StringComparison.OrdinalIgnoreCase));
@@ -502,6 +503,10 @@ bin/win64/usd_ms.dll
 				{
 					Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 					entry.ExtractToFile(destPath, true);
+					// ZIP timestamps do not reliably include timezone information. Using the
+					// installation time prevents entries created on UTC build agents from
+					// appearing several hours in the future when extracted in another timezone.
+					File.SetLastWriteTimeUtc(destPath, extractedTimestampUtc);
 				}
 				processed++;
 				progress.Report(new InstallProgressReport { Message = $"Extracting: {entry.Name}", Percentage = (processed * 100) / total });
