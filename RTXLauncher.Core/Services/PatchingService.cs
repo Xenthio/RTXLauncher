@@ -121,6 +121,12 @@ public class PatchingService
 				}
 			}
 
+			ApplyBuiltInMaterialSystemPatch(
+				installPath,
+				installType,
+				modifiedFiles,
+				progress);
+
 			if (modifiedFiles.Count == 0)
 			{
 				progress.Report(new InstallProgressReport { Message = "Patching complete. No applicable patches found for your game files.", Percentage = 100 });
@@ -269,6 +275,12 @@ public class PatchingService
 					}
 				}
 
+				ApplyBuiltInMaterialSystemPatch(
+					installPath,
+					installType,
+					modifiedFiles,
+					progress);
+
 				if (modifiedFiles.Count == 0)
 				{
 					progress.Report(new InstallProgressReport { Message = "Patching complete. No applicable patches found for your game files.", Percentage = 100 });
@@ -306,6 +318,68 @@ public class PatchingService
 	}
 
 	// --- Private Helper Methods (Ported from your original code) ---
+
+	private static void ApplyBuiltInMaterialSystemPatch(
+		string installPath,
+		string installType,
+		Dictionary<string, byte[]> modifiedFiles,
+		IProgress<InstallProgressReport> progress)
+	{
+		if (installType != "gmod_x86-64")
+			return;
+
+		const string fileName = MaterialSystemFallbackPatch.RelativePath;
+		byte[] currentContent;
+
+		if (modifiedFiles.TryGetValue(fileName, out byte[]? remotelyPatchedContent))
+		{
+			currentContent = remotelyPatchedContent;
+		}
+		else
+		{
+			string filePathOnDisk = ResolveFilePath(installPath, fileName, installType);
+			if (!File.Exists(filePathOnDisk))
+			{
+				progress.Report(new InstallProgressReport
+				{
+					Message = $"Warning: {fileName} was not found; skipped the static fallback-material guard.",
+					Percentage = 88
+				});
+				return;
+			}
+
+			currentContent = File.ReadAllBytes(filePathOnDisk);
+		}
+
+		MaterialSystemFallbackPatchResult result = MaterialSystemFallbackPatch.Apply(currentContent);
+		switch (result.Status)
+		{
+			case MaterialSystemFallbackPatchStatus.Applied:
+				modifiedFiles[fileName] = result.Bytes;
+				progress.Report(new InstallProgressReport
+				{
+					Message = $"Applied static patch to {fileName}: {result.Message}",
+					Percentage = 88
+				});
+				break;
+
+			case MaterialSystemFallbackPatchStatus.AlreadyApplied:
+				progress.Report(new InstallProgressReport
+				{
+					Message = $"{fileName}: {result.Message}",
+					Percentage = 88
+				});
+				break;
+
+			case MaterialSystemFallbackPatchStatus.Unsupported:
+				progress.Report(new InstallProgressReport
+				{
+					Message = $"Warning: Static patch for {fileName} was not applied: {result.Message}",
+					Percentage = 88
+				});
+				break;
+		}
+	}
 
 	private async Task<string> FetchPatchFileContentAsync(string owner, string repo, string filePath, string branch = "master")
 	{
@@ -739,4 +813,3 @@ public class PatchingService
 		return defaultPath;
 	}
 }
-
