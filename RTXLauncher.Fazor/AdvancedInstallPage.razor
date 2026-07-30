@@ -12,7 +12,7 @@
 <root class="advanced-install-page">
 	<div class="auto-layout column">
 		<!-- Vanilla Garry's Mod Install Section -->
-		<groupbox text="Your Vanilla Garry's Mod Install">
+		<groupbox title="Your Vanilla Garry's Mod Install">
 			<div class="auto-layout column">
 				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
@@ -35,7 +35,7 @@
 		</groupbox>
 		
 		<!-- RTX Install Section -->
-		<groupbox text="This RTX Install">
+		<groupbox title="This RTX Install">
 			<div class="auto-layout column">
 				<div class="info-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 					<label class="label-bold">Install Type:</label>
@@ -62,7 +62,7 @@
 		<!-- Dynamic Package List -->
 		@foreach (var package in packages)
 		{
-			<groupbox text="@package.Title">
+			<groupbox title="@package.Title">
 				<div class="auto-layout column">
 					<div class="package-status">
 						@if (package.HasInstalledVersion)
@@ -77,7 +77,7 @@
 					
 					<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 						<label>Source:</label>
-						<combobox @bind-value="package.SelectedSource" style="width: 200px;">
+						<combobox value="@package.SelectedSource" ValueChanged="@OnPackageSourceChanged" style="width: 200px;">
 							@foreach (var source in package.Sources)
 							{
 								<option value="@source">@source</option>
@@ -89,7 +89,7 @@
 					{
 						<div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
 							<label>Version:</label>
-							<combobox @bind-value="package.SelectedRelease" style="width: 200px;">
+							<combobox value="@package.SelectedRelease" ValueChanged="@OnPackageReleaseChanged" style="width: 200px;">
 								@foreach (var release in package.Releases)
 								{
 									<option value="@release">@release.Name</option>
@@ -197,6 +197,20 @@
 		package.InstalledSource = package.SelectedSource;
 		package.ButtonText = "Reinstall";
 		isBusy = false;
+		StateHasChanged();
+	}
+
+	private void OnPackageSourceChanged(string value)
+	{
+		// Note: This would need to know which package changed
+		// For now just trigger state update
+		StateHasChanged();
+	}
+
+	private void OnPackageReleaseChanged(string value)
+	{
+		// Note: This would need to know which package changed
+		// For now just trigger state update
 		StateHasChanged();
 	}
 	

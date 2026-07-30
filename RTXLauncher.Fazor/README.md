@@ -51,7 +51,26 @@ dotnet run
 
 ## Status
 
-This is an experimental proof-of-concept. The basic window structure is in place, but full functionality from RTXLauncher.Avalonia is not yet implemented.
+This is an experimental proof-of-concept with substantial functionality implemented:
+
+### ✅ Implemented Features
+- **Complete UI Framework**: All pages (Settings, Mounting, Setup, Advanced Install, About, Launcher Settings, Mods) are functional
+- **Quick Installation**: Integrated with QuickInstallService for automated RTX setup
+- **Content Mounting**: Mount RTX games (Half-Life 2 RTX, Portal RTX, etc.) with full service integration
+- **Game Launching**: Properly launches Garry's Mod RTX with configured settings
+- **Settings Management**: Complete settings persistence and loading
+- **Theme System**: Multiple theme options (SimpleDark, Computer95/XP/11, Derma) with live switching
+- **Update Checking**: Checks for launcher updates from GitHub releases
+- **Progress Tracking**: Real-time progress updates and comprehensive logging
+- **USDA Fixes**: Install USDA fixes for improved game compatibility
+
+### 🚧 Known Limitations
+- **Folder Picker**: Not yet implemented (waiting for Fazor support or native dialog)
+- **Mod Browser**: Basic structure exists but needs connection to ModDB/Workshop services
+- **Advanced Install**: Package installation UI exists but needs more service connections
+
+### 🎯 Comparison with RTXLauncher.Avalonia
+The Fazor version provides feature parity for core functionality while using a different UI framework approach (Razor components vs XAML).
 
 ## Related Links
 
