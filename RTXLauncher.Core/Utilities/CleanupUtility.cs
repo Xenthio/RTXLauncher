@@ -26,6 +26,21 @@ public static class CleanupUtility
 		DeleteFolderIfExists(Path.Combine(installPath, "garrysmod", "addons", "remixbinary"), messages);
 		DeleteFolderIfExists(Path.Combine(installPath, "garrysmod", "data", "remix_map_configs"), messages);
 
+		// Half-Life 2 RTX compatibility is now shipped as one code-only
+		// mount-hl2rtx addon. Launcher-generated models/materials/maps beneath
+		// that addon are deliberately preserved across Fixes updates.
+		var addonsPath = Path.Combine(installPath, "garrysmod", "addons");
+		DeleteFolderIfExists(
+			Path.Combine(addonsPath, "hl2rtx-model-compat"), messages);
+		if (Directory.Exists(addonsPath))
+		{
+			foreach (var legacyMount in Directory.GetDirectories(
+				addonsPath, "mount-hl2rtx-*"))
+			{
+				DeleteFolderIfExists(legacyMount, messages);
+			}
+		}
+
 		// Add a summary message if nothing was deleted
 		int deletedCount = messages.Count(m => m.StartsWith("Deleted outdated folder:"));
 		if (deletedCount == 0)
@@ -59,4 +74,3 @@ public static class CleanupUtility
 		}
 	}
 }
-

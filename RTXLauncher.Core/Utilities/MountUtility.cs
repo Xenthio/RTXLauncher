@@ -11,6 +11,11 @@ public static class MountingUtility
 		try
 		{
 			var gmodPath = GarrysModUtility.GetThisInstallFolder();
+			if (gameFolder.Equals("hl2rtx", StringComparison.OrdinalIgnoreCase))
+			{
+				return Services.Hl2RtxMountService.IsMounted(gmodPath);
+			}
+
 			var sourceContentMountPath = Path.Combine(gmodPath, "garrysmod", "addons", $"mount-{gameFolder}");
 			var remixModMountPath = Path.Combine(gmodPath, "rtx-remix", "mods", $"mount-{gameFolder}-{remixModFolder}");
 

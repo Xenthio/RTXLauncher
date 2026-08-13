@@ -41,7 +41,7 @@ public partial class MountableGameViewModel : ViewModelBase
 	// This is the property the CheckBox will bind to
 	public bool IsMounted
 	{
-		get => IsInstalled && Directory.Exists(Path.Combine(GarrysModUtility.GetThisInstallFolder(), "garrysmod", "addons", $"mount-{GameFolder}"));
+		get => IsInstalled && MountingUtility.IsGameMounted(GameFolder, RemixModFolder);
 		set => _ = ToggleMountAsync(value); // Fire-and-forget async method
 	}
 
