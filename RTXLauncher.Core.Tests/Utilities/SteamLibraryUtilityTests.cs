@@ -40,6 +40,29 @@ public sealed class SteamLibraryUtilityTests : IDisposable
 	}
 
 	[Fact]
+	public void PrefersManifestInstallDirectoryOverStaleConventionalFolder()
+	{
+		var steamApps = Path.Combine(_testRoot, "steamapps");
+		var commonPath = Path.Combine(steamApps, "common");
+		var actualGameDirectory = Path.Combine(commonPath, "hl2rtx-real-install");
+		Directory.CreateDirectory(steamApps);
+		Directory.CreateDirectory(Path.Combine(commonPath, "Half-Life 2 RTX"));
+		Directory.CreateDirectory(actualGameDirectory);
+
+		File.WriteAllText(
+			Path.Combine(steamApps, "appmanifest_999999.acf"),
+			"\"AppState\"\n{\n" +
+			"\t\"name\"\t\"Half-Life 2: RTX\"\n" +
+			"\t\"installdir\"\t\"hl2rtx-real-install\"\n" +
+			"}\n");
+
+		var result = SteamLibraryUtility.GetGameInstallFolder(
+			"Half-Life 2 RTX", steamRootOverride: _testRoot);
+
+		Assert.Equal(actualGameDirectory, result);
+	}
+
+	[Fact]
 	public void ParsesLibraryFolderPathsWithVdfEscaping()
 	{
 		var content =

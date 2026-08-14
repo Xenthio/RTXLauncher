@@ -30,18 +30,22 @@ public static class SteamLibraryUtility
 		{
 			var libraryRoot = NormalizeLibraryRoot(path);
 			var steamappsPath = Path.Combine(libraryRoot, "steamapps");
-			var installPath = Path.Combine(steamappsPath, "common", gameFolderName);
-			if (Directory.Exists(installPath))
-			{
-				return installPath;
-			}
 
 			// The directory name is normally the same as the requested Steam folder,
-			// but Steam's app manifest is the authoritative source when it differs.
+			// but Steam's app manifest is the authoritative source when it differs or
+			// when a stale directory with the expected name is still present.
 			var manifestInstallPath = FindGameInstallFromManifests(steamappsPath, gameFolderName);
 			if (manifestInstallPath != null)
 			{
 				return manifestInstallPath;
+			}
+
+			// Fall back to the conventional folder name for older installations that
+			// do not have a readable app manifest.
+			var installPath = Path.Combine(steamappsPath, "common", gameFolderName);
+			if (Directory.Exists(installPath))
+			{
+				return installPath;
 			}
 		}
 		return null;
