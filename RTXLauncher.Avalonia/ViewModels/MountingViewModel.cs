@@ -11,13 +11,18 @@ namespace RTXLauncher.Avalonia.ViewModels;
 public partial class MountingViewModel : PageViewModel
 {
 	public ObservableCollection<MountableGameViewModel> MountableGames { get; } = new();
-    private readonly MountingService _mountingService;
+	private readonly MountingService _mountingService;
     private readonly IMessenger _messenger;
+	private readonly string? _steamRootOverride;
 
-    public MountingViewModel(MountingService mountingService, IMessenger messenger)
+	public MountingViewModel(
+		MountingService mountingService,
+		IMessenger messenger,
+		string? steamRootOverride = null)
 	{
         _mountingService = mountingService;
         _messenger = messenger;
+		_steamRootOverride = steamRootOverride;
 		Header = "Content Mounting";
 
 		// Define your games here. To add a new game, just add a new line.
@@ -26,35 +31,43 @@ public partial class MountingViewModel : PageViewModel
 			installFolder: "Half-Life 2 RTX",
 			gameFolder: "hl2rtx",
 			remixModFolder: "hl2rtx",
-			mountingService, messenger));
+			mountingService, messenger, _steamRootOverride));
 
 		MountableGames.Add(new MountableGameViewModel(
 			name: "Portal with RTX",
 			installFolder: "PortalRTX",
 			gameFolder: "portal_rtx",
 			remixModFolder: "gameReadyAssets",
-			mountingService, messenger));
+			mountingService, messenger, _steamRootOverride));
 
 		MountableGames.Add(new MountableGameViewModel(
 			name: "Portal: Prelude RTX",
 			installFolder: "Portal Prelude RTX",
 			gameFolder: "prelude_rtx",
 			remixModFolder: "gameReadyAssets",
-			mountingService, messenger));
+			mountingService, messenger, _steamRootOverride));
 
 		MountableGames.Add(new MountableGameViewModel(
 			name: "Portal 2 with RTX",
 			installFolder: "Portal 2 With RTX",
 			gameFolder: "portal2",
 			remixModFolder: "portal2rtx",
-			mountingService, messenger));
+			mountingService, messenger, _steamRootOverride));
 
 		MountableGames.Add(new MountableGameViewModel(
 			name: "Dark Messiah RTX",
 			installFolder: "Dark Messiah Might and Magic Single Player RTX",
 			gameFolder: "mm",
 			remixModFolder: "dmrtx",
-			mountingService, messenger));
+			mountingService, messenger, _steamRootOverride));
+	}
+
+	public void RefreshInstallations()
+	{
+		foreach (var game in MountableGames)
+		{
+			game.RefreshInstallationState();
+		}
 	}
 
     [RelayCommand]

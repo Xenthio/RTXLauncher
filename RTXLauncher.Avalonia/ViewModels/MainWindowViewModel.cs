@@ -103,7 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase
 		Pages = new ObservableCollection<PageViewModel>
 		{
 			new SettingsViewModel(_settingsData, _messenger),
-			new MountingViewModel(mountingService, _messenger),
+			new MountingViewModel(mountingService, _messenger, _settingsData.LinuxSteamRootOverride),
 			installedModsViewModel, // Installed Mods page
 			getModsViewModel, // Get Mods - moved next to Installed Mods
 			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService, installedPackagesService, depotDowngradeService),
@@ -167,6 +167,10 @@ public partial class MainWindowViewModel : ViewModelBase
 			else if (value is InstalledModsViewModel installedModsViewModel)
 			{
 				await installedModsViewModel.LoadInstalledModsAsync();
+			}
+			else if (value is MountingViewModel mountingViewModel)
+			{
+				mountingViewModel.RefreshInstallations();
 			}
 		}
 	}

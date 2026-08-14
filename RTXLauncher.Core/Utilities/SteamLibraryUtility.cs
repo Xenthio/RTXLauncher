@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32;
 using System.Runtime.InteropServices; // <-- Required for OS platform detection
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace RTXLauncher.Core.Utilities;
 
@@ -12,7 +14,10 @@ public static class SteamLibraryUtility
 	/// <param name="gameFolderName">The folder name of the game in steamapps/common (e.g., "GarrysMod").</param>
 	/// <param name="manualPath">An optional, user-specified path to check first.</param>
 	/// <returns>The full path to the game's installation folder, or null if not found.</returns>
-	public static string? GetGameInstallFolder(string gameFolderName, string? manualPath = null)
+	public static string? GetGameInstallFolder(
+		string gameFolderName,
+		string? manualPath = null,
+		string? steamRootOverride = null)
 	{
 		// Check the manually specified path first if it's valid.
 		if (!string.IsNullOrWhiteSpace(manualPath) && Directory.Exists(manualPath))
@@ -20,17 +25,23 @@ public static class SteamLibraryUtility
 			return manualPath;
 		}
 
-		var steamLibraryPaths = GetSteamLibraryPaths();
+		var steamLibraryPaths = GetSteamLibraryPaths(steamRootOverride);
 		foreach (var path in steamLibraryPaths)
 		{
-			// On Linux, the main library path is the steam root, so we need to add steamapps to it.
-			// For other libraries from libraryfolders.vdf, the path already includes steamapps.
-			// A simple check handles both cases.
-			var steamappsPath = path.EndsWith("steamapps") ? path : Path.Combine(path, "steamapps");
+			var libraryRoot = NormalizeLibraryRoot(path);
+			var steamappsPath = Path.Combine(libraryRoot, "steamapps");
 			var installPath = Path.Combine(steamappsPath, "common", gameFolderName);
 			if (Directory.Exists(installPath))
 			{
 				return installPath;
+			}
+
+			// The directory name is normally the same as the requested Steam folder,
+			// but Steam's app manifest is the authoritative source when it differs.
+			var manifestInstallPath = FindGameInstallFromManifests(steamappsPath, gameFolderName);
+			if (manifestInstallPath != null)
+			{
+				return manifestInstallPath;
 			}
 		}
 		return null;
@@ -39,15 +50,15 @@ public static class SteamLibraryUtility
 	/// <summary>
 	/// Gets all Steam library paths for the current operating system.
 	/// </summary>
-	public static List<string> GetSteamLibraryPaths()
+	public static List<string> GetSteamLibraryPaths(string? steamRootOverride = null)
 	{
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			return GetWindowsSteamLibraryPaths();
+			return GetWindowsSteamLibraryPaths(steamRootOverride);
 		}
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			return GetLinuxSteamLibraryPaths();
+			return GetLinuxSteamLibraryPaths(steamRootOverride);
 		}
 
 		// Return empty list for unsupported OS (e.g., macOS, in theory that would be ~/library/application support/steam but what mac has an rtx card, lol)
@@ -58,43 +69,28 @@ public static class SteamLibraryUtility
 	//                  LINUX IMPLEMENTATION
 	// ==========================================================
 
-	private static List<string> GetLinuxSteamLibraryPaths()
+	private static List<string> GetLinuxSteamLibraryPaths(string? steamRootOverride = null)
 	{
 		var paths = new List<string>();
-		var steamRoot = GetLinuxSteamRoot();
-
-		if (string.IsNullOrEmpty(steamRoot) || !Directory.Exists(steamRoot))
+		foreach (var steamRoot in GetLinuxSteamRoots(steamRootOverride))
 		{
-			return paths;
-		}
+			AddUniquePath(paths, steamRoot);
 
-		// The main library is inside the Steam root directory.
-		// We add the root path itself, as GetGameInstallFolder will append "steamapps".
-		paths.Add(steamRoot);
+			// Additional libraries are listed in libraryfolders.vdf.
+			var libraryFoldersVdfPath = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
+			if (!File.Exists(libraryFoldersVdfPath))
+			{
+				continue;
+			}
 
-		// Additional libraries are listed in libraryfolders.vdf
-		var libraryFoldersVdfPath = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
-
-		if (File.Exists(libraryFoldersVdfPath))
-		{
 			try
 			{
-				var vdfLines = File.ReadAllLines(libraryFoldersVdfPath);
-				// The parsing logic is the same as on Windows
-				foreach (var line in vdfLines)
+				var content = File.ReadAllText(libraryFoldersVdfPath);
+				foreach (var path in ParseLibraryFolderPaths(content))
 				{
-					var trimmedLine = line.Trim();
-					if (trimmedLine.StartsWith("\"path\""))
+					if (Directory.Exists(path))
 					{
-						var parts = trimmedLine.Split('"', StringSplitOptions.RemoveEmptyEntries);
-						if (parts.Length > 1 && parts[0] == "path")
-						{
-							var path = parts[1];
-							if (Directory.Exists(path) && !paths.Contains(path))
-							{
-								paths.Add(path);
-							}
-						}
+						AddUniquePath(paths, path);
 					}
 				}
 			}
@@ -107,15 +103,15 @@ public static class SteamLibraryUtility
 		return paths;
 	}
 
-	public static string? GetSteamRoot()
+	public static string? GetSteamRoot(string? steamRootOverride = null)
 	{
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			return GetWindowsSteamInstallPathFromRegistry();
+			return GetWindowsSteamInstallPathFromRegistry(steamRootOverride);
 		}
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			return GetLinuxSteamRoot();
+			return GetLinuxSteamRoot(steamRootOverride);
 		}
 		return null;
 	}
@@ -123,40 +119,58 @@ public static class SteamLibraryUtility
 	/// <summary>
 	/// Finds the root Steam directory on Linux by checking common locations.
 	/// </summary>
-	private static string? GetLinuxSteamRoot()
+	private static string? GetLinuxSteamRoot(string? steamRootOverride = null)
 	{
+		return GetLinuxSteamRoots(steamRootOverride).FirstOrDefault();
+	}
+
+	private static IEnumerable<string> GetLinuxSteamRoots(string? steamRootOverride)
+	{
+		var candidates = new List<string>();
+		if (!string.IsNullOrWhiteSpace(steamRootOverride))
+		{
+			candidates.Add(steamRootOverride);
+		}
+
 		var homePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-		if (string.IsNullOrEmpty(homePath)) return null;
-
-		// List of common relative paths for Steam on Linux
-		var potentialPaths = new[]
+		if (!string.IsNullOrEmpty(homePath))
 		{
-							Path.Combine(homePath, ".local", "share", "Steam"),
-			Path.Combine(homePath, ".steam", "steam"),
-			Path.Combine(homePath, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam") // Flatpak path
-        };
+			var xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+			if (!string.IsNullOrWhiteSpace(xdgDataHome))
+			{
+				candidates.Add(Path.Combine(xdgDataHome, "Steam"));
+			}
 
-		// Also check system-wide Steam installation
-		var systemPaths = new[]
+			candidates.Add(Path.Combine(homePath, ".local", "share", "Steam"));
+			candidates.Add(Path.Combine(homePath, ".steam", "steam"));
+			candidates.Add(Path.Combine(homePath, ".steam", "root"));
+			candidates.Add(Path.Combine(homePath, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"));
+		}
+
+		candidates.Add("/usr/lib/steam");
+
+		var roots = new List<string>();
+		foreach (var candidate in candidates)
 		{
-			"/usr/lib/steam"
-		};
+			if (!Directory.Exists(candidate))
+			{
+				continue;
+			}
 
-		// Combine user and system paths
-		var allPaths = potentialPaths.Concat(systemPaths);
+			AddUniquePath(roots, NormalizeLibraryRoot(candidate));
+		}
 
-		// Return the first path that exists
-		return allPaths.FirstOrDefault(Directory.Exists);
+		return roots;
 	}
 
 	// ==========================================================
 	//                  WINDOWS IMPLEMENTATION
 	// ==========================================================
 
-	private static List<string> GetWindowsSteamLibraryPaths()
+	private static List<string> GetWindowsSteamLibraryPaths(string? steamRootOverride = null)
 	{
 		var list = new List<string>();
-		var steamPath = GetWindowsSteamInstallPathFromRegistry();
+		var steamPath = GetWindowsSteamInstallPathFromRegistry(steamRootOverride);
 
 		if (string.IsNullOrEmpty(steamPath) || !Directory.Exists(steamPath))
 		{
@@ -170,18 +184,13 @@ public static class SteamLibraryUtility
 		{
 			try
 			{
-				var vdfLines = File.ReadAllLines(libraryFoldersPath);
-				foreach (var line in vdfLines)
+				var vdfContent = File.ReadAllText(libraryFoldersPath);
+				foreach (var path in ParseLibraryFolderPaths(vdfContent))
 				{
-					// Using a more robust regex to extract the path
-					var match = System.Text.RegularExpressions.Regex.Match(line, @"^\s*""path""\s*""(.+)""\s*$");
-					if (match.Success)
+					var normalizedPath = path.Replace("\\\\", "\\");
+					if (Directory.Exists(normalizedPath))
 					{
-						var path = match.Groups[1].Value.Replace("\\\\", "\\");
-						if (Directory.Exists(path) && !list.Contains(path))
-						{
-							list.Add(path);
-						}
+						AddUniquePath(list, normalizedPath);
 					}
 				}
 			}
@@ -197,8 +206,13 @@ public static class SteamLibraryUtility
 	/// <summary>
 	/// Gets the Steam installation directory from the Windows Registry.
 	/// </summary>
-	private static string? GetWindowsSteamInstallPathFromRegistry()
+	private static string? GetWindowsSteamInstallPathFromRegistry(string? steamRootOverride = null)
 	{
+		if (!string.IsNullOrWhiteSpace(steamRootOverride) && Directory.Exists(steamRootOverride))
+		{
+			return NormalizeLibraryRoot(steamRootOverride);
+		}
+
 		// This method should only be called on Windows.
 		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return null;
 
@@ -219,4 +233,142 @@ public static class SteamLibraryUtility
 
 		return null;
 	}
+
+	private static string NormalizeLibraryRoot(string path)
+	{
+		var fullPath = Path.GetFullPath(path);
+		var directory = new DirectoryInfo(fullPath);
+		return directory.Name.Equals("steamapps", StringComparison.OrdinalIgnoreCase)
+			? directory.Parent?.FullName ?? fullPath
+			: fullPath;
+	}
+
+	private static void AddUniquePath(List<string> paths, string path)
+	{
+		var normalizedPath = NormalizeLibraryRoot(path);
+		var comparison = OperatingSystem.IsWindows()
+			? StringComparison.OrdinalIgnoreCase
+			: StringComparison.Ordinal;
+		if (!paths.Any(existing => string.Equals(existing, normalizedPath, comparison)))
+		{
+			paths.Add(normalizedPath);
+		}
+	}
+
+	private static string? FindGameInstallFromManifests(string steamappsPath, string gameFolderName)
+	{
+		if (!Directory.Exists(steamappsPath))
+		{
+			return null;
+		}
+
+		try
+		{
+			foreach (var manifestPath in Directory.EnumerateFiles(
+				steamappsPath, "appmanifest_*.acf", SearchOption.TopDirectoryOnly))
+			{
+				try
+				{
+					var manifest = File.ReadAllText(manifestPath);
+					var installDirectory = ReadVdfValue(manifest, "installdir");
+					if (string.IsNullOrWhiteSpace(installDirectory))
+					{
+						continue;
+					}
+
+					var displayName = ReadVdfValue(manifest, "name");
+					if (!GameNamesMatch(gameFolderName, installDirectory) &&
+						!GameNamesMatch(gameFolderName, displayName))
+					{
+						continue;
+					}
+
+					var installPath = Path.Combine(steamappsPath, "common", installDirectory);
+					if (Directory.Exists(installPath))
+					{
+						return installPath;
+					}
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine(
+						$"Error reading Steam app manifest '{manifestPath}': {ex.Message}");
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine(
+				$"Error enumerating Steam app manifests in '{steamappsPath}': {ex.Message}");
+		}
+
+		return null;
+	}
+
+	internal static IReadOnlyList<string> ParseLibraryFolderPaths(string content)
+	{
+		var paths = new List<string>();
+		var matches = Regex.Matches(
+			content,
+			@"""path""\s+""(?<value>(?:\\.|[^""\\])*)""",
+			RegexOptions.CultureInvariant);
+
+		foreach (Match match in matches)
+		{
+			var path = UnescapeVdfValue(match.Groups["value"].Value);
+			if (!string.IsNullOrWhiteSpace(path))
+			{
+				paths.Add(path);
+			}
+		}
+
+		return paths;
+	}
+
+	private static string? ReadVdfValue(string content, string key)
+	{
+		var pattern = $@"""{Regex.Escape(key)}""\s+""(?<value>(?:\\.|[^""\\])*)""";
+		var match = Regex.Match(content, pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+		return match.Success
+			? UnescapeVdfValue(match.Groups["value"].Value)
+			: null;
+	}
+
+	private static string UnescapeVdfValue(string value)
+	{
+		var builder = new StringBuilder(value.Length);
+		for (var index = 0; index < value.Length; index++)
+		{
+			if (value[index] != '\\' || index + 1 >= value.Length)
+			{
+				builder.Append(value[index]);
+				continue;
+			}
+
+			var escaped = value[++index];
+			builder.Append(escaped switch
+			{
+				'n' => '\n',
+				'r' => '\r',
+				't' => '\t',
+				_ => escaped
+			});
+		}
+
+		return builder.ToString();
+	}
+
+	private static bool GameNamesMatch(string expected, string? actual)
+	{
+		if (string.IsNullOrWhiteSpace(actual))
+		{
+			return false;
+		}
+
+		return string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase) ||
+			NormalizeGameName(expected) == NormalizeGameName(actual);
+	}
+
+	private static string NormalizeGameName(string value) =>
+		new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 }

@@ -15,6 +15,7 @@ public partial class MountableGameViewModel : ViewModelBase
 {
 	private readonly MountingService _mountingService;
 	private readonly IMessenger _messenger;
+	private readonly string? _steamRootOverride;
 
 	// Configuration Properties
 	public string Name { get; }
@@ -26,7 +27,14 @@ public partial class MountableGameViewModel : ViewModelBase
 	[ObservableProperty] private bool _isInstalled;
 	[ObservableProperty] private bool _isBusy;
 
-	public MountableGameViewModel(string name, string installFolder, string gameFolder, string remixModFolder, MountingService mountingService, IMessenger messenger)
+	public MountableGameViewModel(
+		string name,
+		string installFolder,
+		string gameFolder,
+		string remixModFolder,
+		MountingService mountingService,
+		IMessenger messenger,
+		string? steamRootOverride = null)
 	{
 		Name = name;
 		InstallFolder = installFolder;
@@ -34,8 +42,16 @@ public partial class MountableGameViewModel : ViewModelBase
 		RemixModFolder = remixModFolder;
 		_mountingService = mountingService;
 		_messenger = messenger;
+		_steamRootOverride = steamRootOverride;
 
-		IsInstalled = SteamLibraryUtility.GetGameInstallFolder(InstallFolder) != null;
+		RefreshInstallationState();
+	}
+
+	public void RefreshInstallationState()
+	{
+		IsInstalled = SteamLibraryUtility.GetGameInstallFolder(
+			InstallFolder, steamRootOverride: _steamRootOverride) != null;
+		OnPropertyChanged(nameof(IsMounted));
 	}
 
 	// This is the property the CheckBox will bind to
@@ -62,7 +78,8 @@ public partial class MountableGameViewModel : ViewModelBase
 				if (confirmed)
 				{
 					var progress = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
-					await _mountingService.MountGameAsync(Name, GameFolder, InstallFolder, RemixModFolder, progress);
+					await _mountingService.MountGameAsync(
+						Name, GameFolder, InstallFolder, RemixModFolder, progress, _steamRootOverride);
 				}
 			}
 			else

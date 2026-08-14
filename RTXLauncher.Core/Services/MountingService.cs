@@ -11,11 +11,18 @@ public class MountingService
 	/// <summary>
 	/// Creates all necessary symbolic links to mount a game's content.
 	/// </summary>
-	public async Task MountGameAsync(string gameName, string gameFolder, string installFolder, string remixModFolder, IProgress<InstallProgressReport> progress)
+	public async Task MountGameAsync(
+		string gameName,
+		string gameFolder,
+		string installFolder,
+		string remixModFolder,
+		IProgress<InstallProgressReport> progress,
+		string? steamRootOverride = null)
 	{
 		await Task.Run(() =>
 		{
-			var installPath = SteamLibraryUtility.GetGameInstallFolder(installFolder);
+			var installPath = SteamLibraryUtility.GetGameInstallFolder(
+				installFolder, steamRootOverride: steamRootOverride);
 			if (string.IsNullOrEmpty(installPath))
 			{
 				throw new DirectoryNotFoundException($"Could not find installation for {gameName}. Please ensure it is installed via Steam.");
