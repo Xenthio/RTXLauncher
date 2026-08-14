@@ -49,6 +49,7 @@ jobs:
         dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj 
         --configuration Release
         /p:PublishProfile=Windows.pubxml 
+        /p:InformationalVersion="0.0.0-nightly+${{ env.GITHUB_SHA_SHORT }}"
         /p:PublishDir="${{ github.workspace }}/publish/windows/"
         
     - name: Upload Windows Artifacts
@@ -103,6 +104,7 @@ jobs:
         dotnet publish ./RTXLauncher.Avalonia/RTXLauncher.Avalonia.csproj
         --configuration Release
         /p:PublishProfile=Linux.pubxml
+        /p:InformationalVersion="0.0.0-nightly+${{ env.GITHUB_SHA_SHORT }}"
         /p:PublishDir="${{ github.workspace }}/publish/linux/"
     
     - name: Upload Linux Artifact

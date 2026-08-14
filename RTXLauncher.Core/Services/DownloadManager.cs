@@ -9,7 +9,7 @@ namespace RTXLauncher.Core.Services;
 /// <summary>
 /// Robust download manager with retry logic, resume capability, and checksum verification
 /// </summary>
-public class DownloadManager
+public class DownloadManager : IFileDownloadService
 {
 	private readonly DownloadConfiguration _config;
 

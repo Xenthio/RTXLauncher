@@ -34,26 +34,15 @@ namespace RTXLauncher.WinForms
 
 		public void InitialiseUpdater()
 		{
-			// Get current version from assembly
-			var infoAttr = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-			if (infoAttr != null && !string.IsNullOrWhiteSpace(infoAttr.InformationalVersion))
-			{
-				_currentVersion = $"dev-{infoAttr.InformationalVersion}";
-			}
-			else
-			{
-				AssemblyName assemblyName = Assembly.GetExecutingAssembly().GetName();
-				Version version = assemblyName.Version ?? new Version(0, 0);
-				_currentVersion = $"v{version.Major}.{version.Minor}.{version.Build}";
-			}
+			_currentVersion = RTXLauncher.Core.Utilities.VersionUtility.GetCurrentAssemblyVersion();
 
 			// Set up initial states
 			InstallLauncherUpdateButton.Enabled = false;
 			ReleaseNotesRichTextBox.ReadOnly = true;
 
 			// Set up event handlers
-			CheckForLauncherUpdatesButton.Click += CheckForLauncherUpdatesButton_Click;
-			InstallLauncherUpdateButton.Click += InstallLauncherUpdateButton_Click;
+			CheckForLauncherUpdatesButton.Click += CheckForUpdatesUsingUnifiedServiceButton_Click;
+			InstallLauncherUpdateButton.Click += InstallUpdateUsingUnifiedServiceButton_Click;
 			LauncherUpdateSourceComboBox.SelectedIndexChanged += LauncherUpdateSourceComboBox_SelectedIndexChanged;
 
 			// Create temp folder for updates if it doesn't exist
@@ -886,6 +875,17 @@ pause\n
 			}
 		}
 
+		private async void CheckForUpdatesUsingUnifiedServiceButton_Click(object sender, EventArgs e)
+		{
+			await CheckForUpdatesUsingUnifiedServiceAsync();
+		}
+
+		private async void InstallUpdateUsingUnifiedServiceButton_Click(object sender, EventArgs e)
+		{
+			if (LauncherUpdateSourceComboBox.SelectedItem is UpdateSource selectedSource)
+				await DownloadUpdateUsingUnifiedServiceAsync(selectedSource);
+		}
+
 		/// <summary>
 		/// Alternative download method using the unified UpdateService.
 		/// This shows how the same logic can be used across platforms.
@@ -907,9 +907,7 @@ pause\n
 
 				string downloadFolder = await _updateService.DownloadUpdateAsync(selectedSource, progress);
 
-				ReleaseNotesRichTextBox.Text = $"Update downloaded to: {downloadFolder}\n\n" +
-					"The existing installation logic from the WinForms updater can now take over " +
-					"to complete the installation process.";
+				await _updateService.InstallUpdateAsync(downloadFolder, progress);
 			}
 			catch (Exception ex)
 			{

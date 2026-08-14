@@ -5,6 +5,7 @@ using RTXLauncher.Core.Services;
 using RTXLauncher.Core.Models;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RTXLauncher.Avalonia.ViewModels;
@@ -52,7 +53,7 @@ public partial class AboutViewModel : PageViewModel
 		CurrentVersion = _updateService.GetCurrentVersion();
 		
 		// Load update sources on startup
-		Task.Run(async () => await LoadUpdateSourcesAsync());
+		_ = LoadUpdateSourcesAsync();
 	}
 
 	// --- Commands for Buttons ---
@@ -84,15 +85,7 @@ public partial class AboutViewModel : PageViewModel
 				UpdateSources.Add(source);
 			}
 
-			// Select the latest release by default
-			if (UpdateSources.Count > 1)
-			{
-				SelectedUpdateSource = UpdateSources[1]; // Skip staging, select first release
-			}
-			else if (UpdateSources.Count > 0)
-			{
-				SelectedUpdateSource = UpdateSources[0]; // Select staging if only option
-			}
+			SelectDefaultUpdateSource();
 
 			if (UpdateAvailable && result.LatestUpdate != null)
 			{
@@ -144,11 +137,7 @@ public partial class AboutViewModel : PageViewModel
 			});
 
 			string downloadFolder = await _updateService.DownloadUpdateAsync(SelectedUpdateSource, progress);
-			
-			// Note: The actual installation (replacing executables, etc.) would need platform-specific logic
-			// For now, just show success message
-			ReleaseNotes = $"Update downloaded successfully to: {downloadFolder}\n\n" +
-				"Please restart the application to complete the update.";
+			await _updateService.InstallUpdateAsync(downloadFolder, progress);
 		}
 		catch (Exception ex)
 		{
@@ -166,21 +155,22 @@ public partial class AboutViewModel : PageViewModel
 		{
 			var sources = await _updateService.GetAvailableUpdateSourcesAsync();
 			
-			// Update UI on main thread
-			await Task.Run(() =>
-			{
-				UpdateSources.Clear();
-				foreach (var source in sources)
-				{
-					UpdateSources.Add(source);
-				}
-			});
+			UpdateSources.Clear();
+			foreach (var source in sources)
+				UpdateSources.Add(source);
+			SelectDefaultUpdateSource();
 		}
 		catch (Exception ex)
 		{
 			// Log error but don't crash
 			System.Diagnostics.Debug.WriteLine($"Failed to load update sources: {ex.Message}");
 		}
+	}
+
+	private void SelectDefaultUpdateSource()
+	{
+		SelectedUpdateSource = UpdateSources.FirstOrDefault(source => !source.IsStaging) ??
+			UpdateSources.FirstOrDefault();
 	}
 
 	partial void OnSelectedUpdateSourceChanged(UpdateSource? value)

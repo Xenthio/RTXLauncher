@@ -9,6 +9,24 @@ public static class VersionUtility
 		var infoAttr = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
 		if (infoAttr != null && !string.IsNullOrWhiteSpace(infoAttr.InformationalVersion))
 		{
+			string informationalVersion = infoAttr.InformationalVersion;
+			if (informationalVersion.Contains("nightly", StringComparison.OrdinalIgnoreCase))
+			{
+				string nightlyIdentifier = informationalVersion.Split('+').Skip(1).FirstOrDefault() ?? "latest";
+				if (nightlyIdentifier.Length > 7)
+					nightlyIdentifier = nightlyIdentifier[..7];
+				return $"dev-{nightlyIdentifier}";
+			}
+
+			// CI appends channel/commit metadata (for example
+			// 1.0.0-avalonia+abc1234). The numeric part is still the launcher
+			// version; prefixing the entire value with dev- made every release
+			// look like a development build.
+			string numericVersion = infoAttr.InformationalVersion
+				.Split('-', '+')[0];
+			if (Version.TryParse(numericVersion, out var parsedVersion))
+				return $"v{parsedVersion.Major}.{parsedVersion.Minor}.{parsedVersion.Build}";
+
 			return $"dev-{infoAttr.InformationalVersion}";
 		}
 

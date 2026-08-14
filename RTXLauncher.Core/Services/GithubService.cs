@@ -26,7 +26,7 @@ public class ApiException : Exception
 	public ApiException(string message, Exception innerException) : base(message, innerException) { }
 }
 
-public class GitHubService
+public class GitHubService : IUpdateFeed
 {
 	private readonly HttpClient _httpClient;
 	private readonly string _cacheDirectory;
@@ -172,9 +172,13 @@ public class GitHubService
 				var artifactsJson = await artifactsResponse.Content.ReadAsStringAsync();
 				var artifacts = JsonSerializer.Deserialize(artifactsJson, GitHubJsonContext.Default.GitHubActionsArtifactsResponse);
 
-				// Find RTXLauncher artifact
-				var rtxArtifact = artifacts?.Artifacts?.FirstOrDefault(a => 
-					a.Name.StartsWith("RTXLauncher", StringComparison.OrdinalIgnoreCase));
+				// The current workflow names its platform artifacts windows-build and
+				// linux-build. Older workflows used an RTXLauncher-* name.
+				string platformArtifactName = OperatingSystem.IsWindows() ? "windows-build" : "linux-build";
+				var rtxArtifact = artifacts?.Artifacts?.FirstOrDefault(a =>
+					a.Name.Equals(platformArtifactName, StringComparison.OrdinalIgnoreCase)) ??
+					artifacts?.Artifacts?.FirstOrDefault(a =>
+						a.Name.StartsWith("RTXLauncher", StringComparison.OrdinalIgnoreCase));
 
 				if (rtxArtifact != null)
 				{
@@ -186,14 +190,7 @@ public class GitHubService
 				}
 			}
 
-			// Fallback artifact
-			var fallback = new GitHubArtifactInfo 
-			{ 
-				Name = "RTXLauncher-latest", 
-				ArchiveDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe"
-			};
-
-			return fallback;
+			return new GitHubArtifactInfo { Name = "RTXLauncher-latest", ArchiveDownloadUrl = string.Empty };
 		}
 		catch (Exception ex)
 		{
@@ -208,12 +205,10 @@ public class GitHubService
 				catch { /* ignore */ }
 			}
 
-			// Return fallback
-			return new GitHubArtifactInfo 
-			{ 
-				Name = "RTXLauncher-latest", 
-				ArchiveDownloadUrl = "https://github.com/Xenthio/RTXLauncher/raw/refs/heads/master/RTXLauncher/bin/Release/net8.0-windows/win-x64/publish/RTXLauncher.exe"
-			};
+			// Do not return a hardcoded Windows binary here. An empty URL lets the
+			// updater omit the compatibility source instead of offering a package
+			// for the wrong platform.
+			return new GitHubArtifactInfo { Name = "RTXLauncher-latest", ArchiveDownloadUrl = string.Empty };
 		}
 	}
 
