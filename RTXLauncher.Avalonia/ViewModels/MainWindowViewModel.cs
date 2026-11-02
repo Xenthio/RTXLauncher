@@ -16,9 +16,6 @@ namespace RTXLauncher.Avalonia.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
 	private readonly IMessenger _messenger;
-	private readonly IModService _modBrowserService; // Keep a reference to the service
-	private readonly ModsViewModel _modsPageInstance; // Store the ModsViewModel instance
-	private readonly AddonInstallService _addonInstallService; // Store the ModsViewModel instance
 
 	// --- NEW: Properties for the Top Progress Bar ---
 
@@ -80,22 +77,9 @@ public partial class MainWindowViewModel : ViewModelBase
 		var depotDowngradeService = new DepotDowngradeService();
 		var quickInstallService = new QuickInstallService(installService, gitHubService, packageInstallService, patchingService, installedPackagesService);
 		var installedModsService = new InstalledModsService();
-		_addonInstallService = new AddonInstallService();
-		_modBrowserService = new ModDBModService(_addonInstallService, installedModsService);
 		var modManagementService = new ModManagementService(installedModsService);
 
-		// 1. Create the instance of ModsViewModel
-		var getModsViewModel = new ModsViewModel(_modBrowserService);
-		getModsViewModel.Header = "Get Mods";
-
-		// 2. ** CONNECT THE WIRE **: Subscribe to the child's request event.
-		//    When getModsViewModel invokes OnViewDetailsRequested, our ShowModDetails method will run.
-		getModsViewModel.OnViewDetailsRequested = ShowModDetails;
-
-		// 3. Save the instance so we can navigate back to it.
-		_modsPageInstance = getModsViewModel;
-
-		// 4. Create the Installed Mods page
+		// The Installed Mods page (the ModDB browser, Get Mods, is not offered)
 		var installedModsViewModel = new InstalledModsViewModel(modManagementService);
 
 
@@ -105,7 +89,6 @@ public partial class MainWindowViewModel : ViewModelBase
 			new SettingsViewModel(_settingsData, _messenger),
 			new MountingViewModel(mountingService, _messenger, _settingsData.LinuxSteamRootOverride),
 			installedModsViewModel, // Installed Mods page
-			getModsViewModel, // Get Mods - moved next to Installed Mods
 			new AdvancedInstallViewModel(_messenger, gitHubService, packageInstallService, patchingService, installService, updateService, installedPackagesService, depotDowngradeService),
 			new AboutViewModel(_messenger, gitHubService),
 			new LauncherSettingsViewModel(_settingsData, _settingsService),
@@ -130,41 +113,14 @@ public partial class MainWindowViewModel : ViewModelBase
 		_selectedSidebarItem = Pages.FirstOrDefault();
 		_currentPage = _selectedSidebarItem;
 	}
-	private void ShowModDetails(ModItemViewModel modItem)
-	{
-		Debug.WriteLine($"[MainWindowViewModel] ShowModDetails called for: '{modItem.Title}'.");
-
-		var detailsViewModel = new ModDetailsViewModel(modItem.Model, _modBrowserService, _messenger);
-		detailsViewModel.OnNavigateBackRequested = () =>
-		{
-			// When we navigate back, refresh the item in the main list
-			_modsPageInstance.RefreshModItem(modItem);
-			ShowModsList();
-		};
-		Debug.WriteLine("[MainWindowViewModel] New ModDetailsViewModel created. Now setting SelectedPage...");
-
-		// This is the most critical line.
-		CurrentPage = detailsViewModel;
-
-		Debug.WriteLine($"[MainWindowViewModel] SelectedPage has been set to '{CurrentPage?.GetType().FullName}'.");
-	}
-	private void ShowModsList()
-	{
-		CurrentPage = _modsPageInstance;
-	}
 	async partial void OnSelectedSidebarItemChanged(PageViewModel? value)
 	{
 		if (value != null)
 		{
 			CurrentPage = value; // Change the content to match the sidebar selection
 
-			// Load mods when navigating to Get Mods page
-			if (value is ModsViewModel modsViewModel)
-			{
-				await modsViewModel.LoadModsAsync();
-			}
 			// Load installed mods when navigating to Installed Mods page
-			else if (value is InstalledModsViewModel installedModsViewModel)
+			if (value is InstalledModsViewModel installedModsViewModel)
 			{
 				await installedModsViewModel.LoadInstalledModsAsync();
 			}
@@ -180,7 +136,6 @@ public partial class MainWindowViewModel : ViewModelBase
 		try
 		{
 			_settingsService.SaveSettings(_settingsData);
-			(_modBrowserService as IDisposable)?.Dispose();
 		}
 		catch (IOException ex)
 		{
