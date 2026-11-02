@@ -1,0 +1,24 @@
+name: Workshop PBR startup installation
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  startup-installation:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+      - name: Test renderer preservation and package installation
+        run: dotnet test RTXLauncher.Core.Tests/RTXLauncher.Core.Tests.csproj --configuration Release --filter "FullyQualifiedName~StartupProxyUtilityTests|FullyQualifiedName~PackageInstallServiceTests"

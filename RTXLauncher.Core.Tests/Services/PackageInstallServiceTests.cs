@@ -62,4 +62,42 @@ public class PackageInstallServiceTests : IDisposable
 			installStartedUtc,
 			installFinishedUtc);
 	}
+
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public async Task LocalPackagesInstallStartupLoaderInEitherOrder(bool fixesFirst)
+	{
+		if (!OperatingSystem.IsWindows()) return;
+		var install = Path.Combine(_testDirectory, "install");
+		var binary = Path.Combine(install, "bin", "win64");
+		Directory.CreateDirectory(binary);
+		Directory.CreateDirectory(Path.Combine(install, "garrysmod"));
+		File.WriteAllText(Path.Combine(binary, "gmod.exe"), "fixture");
+		const string renderer = "renderer-fixture";
+		var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(renderer)));
+		var fixesZip = Path.Combine(_testDirectory, "fixes.zip");
+		var remixZip = Path.Combine(_testDirectory, "remix.zip");
+		using (var zip = ZipFile.Open(fixesZip, ZipArchiveMode.Create))
+		{
+			using (var writer = new StreamWriter(zip.CreateEntry("bin/win64/astra-startup/d3d9.dll").Open())) writer.Write("proxy-fixture");
+			using (var writer = new StreamWriter(zip.CreateEntry("bin/win64/astra-startup/proxy_renderer_exports.json").Open()))
+				writer.Write(System.Text.Json.JsonSerializer.Serialize(new { version = 1, renderer_sha256 = hash, renderer_bytes = renderer.Length, original_name = "d3d9_astra_renderer.dll" }));
+			// Default ignore rules must still protect the real renderer while allowing the staged proxy.
+			using (var writer = new StreamWriter(zip.CreateEntry("bin/win64/d3d9.dll").Open())) writer.Write("must-be-ignored");
+		}
+		using (var zip = ZipFile.Open(remixZip, ZipArchiveMode.Create))
+		using (var writer = new StreamWriter(zip.CreateEntry("d3d9.dll").Open())) writer.Write(renderer);
+		var service = new PackageInstallService();
+		var progress = new Progress<InstallProgressReport>();
+		async Task Fixes() => await service.InstallStandardFromLocalZipAsync(fixesZip, install, PackageInstallService.DefaultIgnorePatterns, progress);
+		async Task Remix() => await service.InstallRemixFromLocalZipAsync(remixZip, install, progress);
+		if (fixesFirst) { await Fixes(); await Remix(); }
+		else { await Remix(); await Fixes(); }
+		Assert.Equal("proxy-fixture", File.ReadAllText(Path.Combine(binary, "d3d9.dll")));
+		Assert.Equal(renderer, File.ReadAllText(Path.Combine(binary, "d3d9_astra_renderer.dll")));
+		await Remix(); // Reinstalling the renderer must not discard startup support.
+		Assert.Equal("proxy-fixture", File.ReadAllText(Path.Combine(binary, "d3d9.dll")));
+		Assert.Equal(renderer, File.ReadAllText(Path.Combine(binary, "d3d9_astra_renderer.dll")));
+	}
 }

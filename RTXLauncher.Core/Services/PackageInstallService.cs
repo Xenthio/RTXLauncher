@@ -227,6 +227,7 @@ bin/win64/usd_ms.dll
 		await CopyDirectoryWithProgress(extractTempDir, destPath, true, copyProgress);
 	}
 
+			progress.Report(new InstallProgressReport { Message = StartupProxyUtility.Install(installDir), Percentage = 99 });
 			progress.Report(new InstallProgressReport { Message = "Remix installed successfully!", Percentage = 100 });
 		}
 		finally
@@ -377,6 +378,7 @@ bin/win64/usd_ms.dll
 				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + (int)(report.Percentage * 0.5) });
 			});
 			await ExtractZipWithIgnoreAsync(zipPath, installDir, defaultIgnorePatterns, extractProgress);
+			progress.Report(new InstallProgressReport { Message = StartupProxyUtility.Install(installDir), Percentage = 99 });
 
 			progress.Report(new InstallProgressReport { Message = "Installation complete!", Percentage = 100 });
 		}
@@ -468,6 +470,7 @@ bin/win64/usd_ms.dll
 				await CopyDirectoryWithProgress(extractTempDir, destPath, true, copyProgress);
 			}
 
+			progress.Report(new InstallProgressReport { Message = StartupProxyUtility.Install(installDir), Percentage = 99 });
 			progress.Report(new InstallProgressReport { Message = "Remix installed successfully from local zip!", Percentage = 100 });
 		}
 		finally
@@ -500,6 +503,7 @@ bin/win64/usd_ms.dll
 				progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 20 + (int)(report.Percentage * 0.8) });
 			});
 			await ExtractZipWithIgnoreAsync(zipPath, installDir, defaultIgnorePatterns, extractProgress);
+			progress.Report(new InstallProgressReport { Message = StartupProxyUtility.Install(installDir), Percentage = 99 });
 
 			progress.Report(new InstallProgressReport { Message = "Installation complete from local zip!", Percentage = 100 });
 		}
