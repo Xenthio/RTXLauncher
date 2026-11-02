@@ -18,8 +18,20 @@ public static class RemixUtility
 		return Path.Combine(installPath, "bin");
 	}
 
+	// OpenRemix (bin/win64/openremix) runs through the shader API proxy, which
+	// is what turns it on and off (ProxyUtility); older RTX Remix runtimes are
+	// a d3d9.dll.
+	private static string? GetOpenRemixWin64Folder()
+	{
+		var win64 = ProxyUtility.GetWin64Folder(GarrysModUtility.GetThisInstallFolder());
+		return File.Exists(Path.Combine(win64, "openremix", "remix.dll")) ? win64 : null;
+	}
+
 	public static bool IsInstalled()
 	{
+		if (GetOpenRemixWin64Folder() is { } win64)
+			return ProxyUtility.IsDeployed(win64) || ProxyUtility.IsDisabled(win64);
+
 		var installFolder = GetInstallFolder();
 		if (!Directory.Exists(installFolder)) return false;
 
@@ -29,6 +41,9 @@ public static class RemixUtility
 
 	public static bool IsEnabled()
 	{
+		if (GetOpenRemixWin64Folder() is { } win64)
+			return ProxyUtility.IsDeployed(win64);
+
 		var installFolder = GetInstallFolder();
 		if (!Directory.Exists(installFolder)) return false;
 
@@ -38,6 +53,19 @@ public static class RemixUtility
 	public static void SetEnabled(bool enabled)
 	{
 		if (!IsInstalled()) return;
+
+		if (GetOpenRemixWin64Folder() is { } openRemix)
+		{
+			try
+			{
+				ProxyUtility.SetEnabled(openRemix, enabled);
+			}
+			catch (Exception ex)
+			{
+				throw new IOException($"Failed to change Remix state. Please check file permissions.", ex);
+			}
+			return;
+		}
 
 		var installFolder = GetInstallFolder();
 		var enabledPath = Path.Combine(installFolder, "d3d9.dll");

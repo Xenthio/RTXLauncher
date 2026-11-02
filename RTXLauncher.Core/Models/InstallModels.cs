@@ -39,9 +39,14 @@ public enum ReleaseChannel
 public class LocalZipOverrides
 {
 	/// <summary>
-	/// Local zip path for RTX Remix package. Null means download from GitHub.
+	/// Local zip path for the OpenRemix runtime package. Null means download from GitHub.
 	/// </summary>
 	public string? RemixZipPath { get; set; }
+
+	/// <summary>
+	/// Local zip path for the OpenRemix shader API proxy (shaderapidx9.dll). Null means download from GitHub.
+	/// </summary>
+	public string? ProxyZipPath { get; set; }
 
 	/// <summary>
 	/// Local zip path for binary patches (must contain applypatch.py). Null means download from GitHub.
@@ -56,5 +61,5 @@ public class LocalZipOverrides
 	/// <summary>
 	/// Returns true if any local zip override is set.
 	/// </summary>
-	public bool HasAnyOverride => RemixZipPath != null || PatchesZipPath != null || FixesZipPath != null;
+	public bool HasAnyOverride => RemixZipPath != null || ProxyZipPath != null || PatchesZipPath != null || FixesZipPath != null;
 }

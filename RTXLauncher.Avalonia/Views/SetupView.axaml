@@ -31,8 +31,8 @@
 
 				<StackPanel Margin="20,5,0,5">
 					<TextBlock Text="• Create a clean, separate copy of Garry's Mod."/>
-					<TextBlock Text="• Download and install the latest recommended RTX Remix."/>
-					<TextBlock Text="• Apply essential community fixes and patches."/>
+					<TextBlock Text="• Download and install the latest OpenRemix runtime."/>
+					<TextBlock Text="• Put OpenRemix's shader API proxy into the 64-bit game."/>
 					<TextBlock Text="• Configure optimal default settings."/>
 				</StackPanel>
 
@@ -108,9 +108,9 @@
 					<StackPanel Spacing="8" Margin="0,8,0,0">
 						<TextBlock Text="Use local zip files instead of downloading from GitHub." FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
 
-						<!-- RTX Remix local zip -->
+						<!-- OpenRemix runtime local zip -->
 						<Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" RowDefinitions="Auto">
-							<CheckBox Grid.Column="0" IsChecked="{Binding UseLocalRemixZip}" Content="RTX Remix" VerticalAlignment="Center"/>
+							<CheckBox Grid.Column="0" IsChecked="{Binding UseLocalRemixZip}" Content="OpenRemix" VerticalAlignment="Center"/>
 							<TextBlock Grid.Column="1" 
 							           Text="{Binding LocalRemixZipPath, FallbackValue='No file selected'}" 
 							           TextTrimming="CharacterEllipsis" 
@@ -123,33 +123,18 @@
 							        Width="80" Padding="4,2"/>
 						</Grid>
 
-						<!-- Binary Patches local zip -->
+						<!-- Shader API proxy local zip -->
 						<Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" RowDefinitions="Auto">
-							<CheckBox Grid.Column="0" IsChecked="{Binding UseLocalPatchesZip}" Content="Binary Patches" VerticalAlignment="Center"/>
+							<CheckBox Grid.Column="0" IsChecked="{Binding UseLocalProxyZip}" Content="Shader API proxy" VerticalAlignment="Center"/>
 							<TextBlock Grid.Column="1" 
-							           Text="{Binding LocalPatchesZipPath, FallbackValue='No file selected'}" 
+							           Text="{Binding LocalProxyZipPath, FallbackValue='No file selected'}" 
 							           TextTrimming="CharacterEllipsis" 
 							           VerticalAlignment="Center" 
 							           Opacity="0.7"
 							           FontSize="11"
-							           ToolTip.Tip="{Binding LocalPatchesZipPath}"/>
+							           ToolTip.Tip="{Binding LocalProxyZipPath}"/>
 							<Button Grid.Column="2" Content="Browse..." 
-							        Command="{Binding BrowseLocalPatchesZipCommand}" 
-							        Width="80" Padding="4,2"/>
-						</Grid>
-
-						<!-- Fixes Package local zip -->
-						<Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" RowDefinitions="Auto">
-							<CheckBox Grid.Column="0" IsChecked="{Binding UseLocalFixesZip}" Content="Fixes Package" VerticalAlignment="Center"/>
-							<TextBlock Grid.Column="1" 
-							           Text="{Binding LocalFixesZipPath, FallbackValue='No file selected'}" 
-							           TextTrimming="CharacterEllipsis" 
-							           VerticalAlignment="Center" 
-							           Opacity="0.7"
-							           FontSize="11"
-							           ToolTip.Tip="{Binding LocalFixesZipPath}"/>
-							<Button Grid.Column="2" Content="Browse..." 
-							        Command="{Binding BrowseLocalFixesZipCommand}" 
+							        Command="{Binding BrowseLocalProxyZipCommand}" 
 							        Width="80" Padding="4,2"/>
 						</Grid>
 					</StackPanel>

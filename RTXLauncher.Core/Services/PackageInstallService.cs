@@ -20,6 +20,31 @@ public class PackageInstallService
 		{ "sambow23/dxvk-remix-gmod", ("sambow23", "dxvk-remix-gmod") },
 	};
 
+	// OpenRemix and its shader API proxy, as their CI publishes them: a rolling
+	// "nightly" release per repository, each with one zip.
+	public const string OpenRemixOwner = "sambow23";
+	public const string OpenRemixRepo = "OpenRemix";
+	public const string OpenRemixAsset = "openremix-windows-x64.zip";
+	public const string ProxyOwner = "sambow23";
+	public const string ProxyRepo = "garrys-mod-rtx-remixed-2";
+	public const string ProxyAsset = "shaderapidx9-x64.zip";
+	public const string NightlyTag = "nightly";
+
+	/// <summary>
+	/// The release a channel installs: the rolling nightly, or the newest other
+	/// release (the nightly while a repository has no other). Null: none.
+	/// </summary>
+	public static GitHubRelease? SelectRelease(IEnumerable<GitHubRelease> releases, ReleaseChannel channel)
+	{
+		var list = releases.ToList();
+		var nightly = list.FirstOrDefault(r => string.Equals(r.TagName, NightlyTag, StringComparison.OrdinalIgnoreCase));
+		if (channel == ReleaseChannel.Nightly) return nightly;
+		return list
+			.Where(r => !r.Prerelease && !string.Equals(r.TagName, NightlyTag, StringComparison.OrdinalIgnoreCase))
+			.OrderByDescending(r => r.PublishedAt)
+			.FirstOrDefault() ?? nightly;
+	}
+
 	public static Dictionary<string, (string Owner, string Repo, string InstallType)> PackageSources = new Dictionary<string, (string, string, string)>
 	{
 		{ "Xenthio/garrys-mod-rtx-remixed (Any)", ("Xenthio", "garrys-mod-rtx-remixed", "Any") }
@@ -208,6 +233,112 @@ bin/win64/usd_ms.dll
 		{
 			if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
 		}
+	}
+
+	/// <summary>
+	/// Installs OpenRemix: the package holds the runtime's folder (remix.dll and
+	/// what it loads), which the game's proxy loads from bin/win64/openremix.
+	/// Files are replaced, others kept. An older RTX Remix runtime (d3d9.dll) is
+	/// turned off.
+	/// </summary>
+	public Task InstallOpenRemixPackageAsync(GitHubRelease release, string installDir, IProgress<InstallProgressReport> progress) =>
+		InstallFromReleaseAsync(release, OpenRemixAsset, progress, (extracted, p) => InstallOpenRemixFromFolderAsync(extracted, installDir, p));
+
+	public Task InstallOpenRemixFromLocalZipAsync(string zipPath, string installDir, IProgress<InstallProgressReport> progress) =>
+		InstallFromLocalZipAsync(zipPath, progress, (extracted, p) => InstallOpenRemixFromFolderAsync(extracted, installDir, p));
+
+	/// <summary>
+	/// Installs the OpenRemix shader API proxy: its shaderapidx9.dll replaces the
+	/// game's in bin/win64, which becomes shaderapidx9_orig.dll (ProxyUtility).
+	/// </summary>
+	public Task InstallProxyPackageAsync(GitHubRelease release, string installDir, IProgress<InstallProgressReport> progress) =>
+		InstallFromReleaseAsync(release, ProxyAsset, progress, (extracted, p) => InstallProxyFromFolderAsync(extracted, installDir, p));
+
+	public Task InstallProxyFromLocalZipAsync(string zipPath, string installDir, IProgress<InstallProgressReport> progress) =>
+		InstallFromLocalZipAsync(zipPath, progress, (extracted, p) => InstallProxyFromFolderAsync(extracted, installDir, p));
+
+	private async Task InstallOpenRemixFromFolderAsync(string extracted, string installDir, IProgress<InstallProgressReport> progress)
+	{
+		// The runtime's folder: where remix.dll is (the zip's root, or a folder in it).
+		var remix = Directory.GetFiles(extracted, "remix.dll", SearchOption.AllDirectories)
+			.OrderBy(path => path.Length)
+			.FirstOrDefault()
+			?? throw new Exception("The package holds no remix.dll: it is not an OpenRemix runtime.");
+		var win64 = ProxyUtility.GetWin64Folder(installDir);
+		var destination = Path.Combine(win64, "openremix");
+		Directory.CreateDirectory(destination);
+		await CopyDirectoryWithProgress(Path.GetDirectoryName(remix)!, destination, true, progress);
+		ProxyUtility.DisableLegacyRemix(win64);
+		progress.Report(new InstallProgressReport { Message = "OpenRemix installed successfully!", Percentage = 100 });
+	}
+
+	private Task InstallProxyFromFolderAsync(string extracted, string installDir, IProgress<InstallProgressReport> progress)
+	{
+		var proxy = Directory.GetFiles(extracted, ProxyUtility.ProxyName, SearchOption.AllDirectories)
+			.FirstOrDefault(ProxyUtility.IsProxy)
+			?? throw new Exception($"The package holds no OpenRemix {ProxyUtility.ProxyName}.");
+		progress.Report(new InstallProgressReport { Message = "Putting the shader API proxy in place...", Percentage = 50 });
+		ProxyUtility.Deploy(proxy, ProxyUtility.GetWin64Folder(installDir));
+		progress.Report(new InstallProgressReport { Message = "Shader API proxy installed successfully!", Percentage = 100 });
+		return Task.CompletedTask;
+	}
+
+	// Downloads a release's package (the named asset, else the best zip),
+	// extracts it to a temporary folder and installs from there (progress
+	// 0-45 downloading, then the installer's 0-100 as 50-100).
+	private async Task InstallFromReleaseAsync(GitHubRelease release, string assetName, IProgress<InstallProgressReport> progress,
+		Func<string, IProgress<InstallProgressReport>, Task> install)
+	{
+		var asset = release.Assets.FirstOrDefault(a => string.Equals(a.Name, assetName, StringComparison.OrdinalIgnoreCase))
+			?? FindBestReleaseAsset(release)
+			?? throw new Exception($"Could not find {assetName} in release {release.TagName}.");
+		string tempDir = Path.Combine(Path.GetTempPath(), $"RTXLauncherPackage_{Path.GetRandomFileName()}");
+		Directory.CreateDirectory(tempDir);
+		try
+		{
+			string zipPath = Path.Combine(tempDir, asset.Name);
+			var downloadProgress = new Progress<DownloadProgressReport>(report =>
+			{
+				int percentage = report.TotalBytes > 0 ? (int)((double)report.BytesDownloaded / report.TotalBytes * 40) : 20;
+				progress.Report(new InstallProgressReport { Message = $"Downloading {asset.Name}: {report.BytesDownloaded / 1048576}MB", Percentage = percentage });
+			});
+			// The rolling release replaces its asset: its upload time names the cached download.
+			await DownloadFileAsync(asset.BrowserDownloadUrl, zipPath, downloadProgress, asset.CreatedAt);
+			await ExtractAndInstallAsync(zipPath, tempDir, progress, install);
+		}
+		finally
+		{
+			if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+		}
+	}
+
+	private async Task InstallFromLocalZipAsync(string zipPath, IProgress<InstallProgressReport> progress,
+		Func<string, IProgress<InstallProgressReport>, Task> install)
+	{
+		if (!File.Exists(zipPath))
+			throw new FileNotFoundException($"Zip file not found: {zipPath}");
+		string tempDir = Path.Combine(Path.GetTempPath(), $"RTXLauncherPackage_{Path.GetRandomFileName()}");
+		Directory.CreateDirectory(tempDir);
+		try
+		{
+			await ExtractAndInstallAsync(zipPath, tempDir, progress, install);
+		}
+		finally
+		{
+			if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+		}
+	}
+
+	private static async Task ExtractAndInstallAsync(string zipPath, string tempDir, IProgress<InstallProgressReport> progress,
+		Func<string, IProgress<InstallProgressReport>, Task> install)
+	{
+		string extracted = Path.Combine(tempDir, "extracted");
+		Directory.CreateDirectory(extracted);
+		progress.Report(new InstallProgressReport { Message = "Extracting package...", Percentage = 45 });
+		await Task.Run(() => ZipFile.ExtractToDirectory(zipPath, extracted));
+		var installProgress = new Progress<InstallProgressReport>(report =>
+			progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + report.Percentage / 2 }));
+		await install(extracted, installProgress);
 	}
 
 	/// <summary>

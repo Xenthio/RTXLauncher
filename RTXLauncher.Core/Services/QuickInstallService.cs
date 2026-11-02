@@ -7,16 +7,9 @@ namespace RTXLauncher.Core.Services;
 
 public class QuickInstallService
 {
-	private const string FixesDisplayName = "garrys-mod-rtx-remixed";
-	private const string FixesOwner = "Xenthio";
-	private const string FixesRepo = "garrys-mod-rtx-remixed";
-	private const string PatchOwnerX64 = "sambow23";
-	private const string PatchRepoX64 = "SourceRTXTweaks";
-	private const string PatchBranchX64 = "main";
-	private const string PatchOwnerX86 = "BlueAmulet";
-	private const string PatchRepoX86 = "SourceRTXTweaks";
-	private const string PatchBranchX86 = "master";
-	private const string PatchFile = "applypatch.py";
+	// Quick install puts OpenRemix and its shader API proxy into the 64-bit game
+	// (PackageInstallService.OpenRemix*, Proxy*); the binary patches and the
+	// fixes package of RTX Remix installs are not part of it.
 
 	// Dependencies on all our other services
 	private readonly GarrysModInstallService _installService;
@@ -104,14 +97,21 @@ public class QuickInstallService
 			}
 		}
 
-		bool isX64 = installType == "gmod_x86-64";
+		// OpenRemix runs in the 64-bit game, through its shader API proxy: the
+		// main branch ships the 64-bit binaries beside its 32-bit ones, as the
+		// x86-64 branch does.
+		if (!GarrysModUtility.Has64BitBinaries(installDir))
+		{
+			throw new InvalidOperationException(
+				"This Garry's Mod installation has no 64-bit binaries (gmod_win64.exe and bin/win64), which OpenRemix needs. " +
+				"Update Garry's Mod through Steam and run the setup again.");
+		}
 
-		// Step 3: Install RTX Remix (from local zip or GitHub)
+		// Step 3: Install the OpenRemix runtime (from local zip or GitHub)
 		if (localZipOverrides?.RemixZipPath != null)
 		{
-			progress.Report(new InstallProgressReport { Message = "Installing RTX Remix from local zip...", Percentage = 30 });
-			await _packageInstallService.InstallRemixFromLocalZipAsync(localZipOverrides.RemixZipPath, installDir, CreateSubProgress(35, 25));
-
+			progress.Report(new InstallProgressReport { Message = "Installing OpenRemix from local zip...", Percentage = 30 });
+			await _packageInstallService.InstallOpenRemixFromLocalZipAsync(localZipOverrides.RemixZipPath, installDir, CreateSubProgress(35, 40));
 			await _installedPackagesService.SetRemixVersionAsync(
 				"Local zip",
 				Path.GetFileName(localZipOverrides.RemixZipPath),
@@ -119,131 +119,46 @@ public class QuickInstallService
 		}
 		else
 		{
-			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} RTX Remix...", Percentage = 30 });
-			var (remixOwner, remixRepo) = ("sambow23", "dxvk-remix-gmod"); // From constant
-			var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
-			var latestRemix = releaseChannel == ReleaseChannel.Nightly
-				? remixReleases.FirstOrDefault(r => r.TagName == "nightly")
-					?? throw new Exception("Could not find a nightly RTX Remix release.")
-				: remixReleases
-					.Where(r => !r.Prerelease || r.TagName != "nightly")
-					.OrderByDescending(r => r.PublishedAt)
-					.FirstOrDefault()
-					?? throw new Exception("Could not find any stable RTX Remix releases.");
-
-			await _packageInstallService.InstallRemixPackageAsync(latestRemix, installDir, CreateSubProgress(35, 25));
-
-			// Save Remix version info
+			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} OpenRemix...", Percentage = 30 });
+			var release = await FetchReleaseAsync(PackageInstallService.OpenRemixOwner, PackageInstallService.OpenRemixRepo, releaseChannel);
+			await _packageInstallService.InstallOpenRemixPackageAsync(release, installDir, CreateSubProgress(35, 40));
 			await _installedPackagesService.SetRemixVersionAsync(
-				$"{remixOwner}/{remixRepo}",
-				latestRemix.TagName,
-				latestRemix.Name ?? latestRemix.TagName);
+				$"{PackageInstallService.OpenRemixOwner}/{PackageInstallService.OpenRemixRepo}",
+				release.TagName,
+				release.Name ?? release.TagName);
 		}
 
-		// Step 4: Apply patches (from local zip or GitHub)
-		progress.Report(new InstallProgressReport { Message = $"Applying {FixesDisplayName} patches...", Percentage = 60 });
-
-		if (localZipOverrides?.PatchesZipPath != null)
+		// Step 4: Put the shader API proxy in place (from local zip or GitHub)
+		if (localZipOverrides?.ProxyZipPath != null)
 		{
-			progress.Report(new InstallProgressReport { Message = "Applying binary patches from local zip...", Percentage = 60 });
-			await _patchingService.ApplyPatchesFromLocalZipAsync(localZipOverrides.PatchesZipPath, installDir, CreateSubProgress(65, 15));
-
-			await _installedPackagesService.SetPatchesVersionAsync(
+			progress.Report(new InstallProgressReport { Message = "Installing the shader API proxy from local zip...", Percentage = 75 });
+			await _packageInstallService.InstallProxyFromLocalZipAsync(localZipOverrides.ProxyZipPath, installDir, CreateSubProgress(80, 20));
+			await _installedPackagesService.SetProxyVersionAsync(
 				"Local zip",
-				Path.GetFileName(localZipOverrides.PatchesZipPath));
+				Path.GetFileName(localZipOverrides.ProxyZipPath),
+				Path.GetFileName(localZipOverrides.ProxyZipPath));
 		}
 		else
 		{
-			string patchOwner, patchRepo, patchFile, patchBranch;
-			
-			if (isX64)
-			{
-				patchOwner = PatchOwnerX64;
-				patchRepo = PatchRepoX64;
-				patchFile = PatchFile;
-				patchBranch = PatchBranchX64;
-			}
-			else
-			{
-				patchOwner = PatchOwnerX86;
-				patchRepo = PatchRepoX86;
-				patchFile = PatchFile;
-				patchBranch = PatchBranchX86;
-			}
-
-			// Use branch-specific patching if needed
-			if (!string.IsNullOrEmpty(patchBranch) && patchBranch != "master")
-			{
-				await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15), patchBranch);
-			}
-			else
-			{
-				await _patchingService.ApplyPatchesAsync(patchOwner, patchRepo, patchFile, installDir, CreateSubProgress(65, 15));
-			}
-
-			// Save Patches version info
-			await _installedPackagesService.SetPatchesVersionAsync(
-				$"{patchOwner}/{patchRepo}",
-				patchBranch);
+			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} shader API proxy...", Percentage = 75 });
+			var release = await FetchReleaseAsync(PackageInstallService.ProxyOwner, PackageInstallService.ProxyRepo, releaseChannel);
+			await _packageInstallService.InstallProxyPackageAsync(release, installDir, CreateSubProgress(80, 20));
+			await _installedPackagesService.SetProxyVersionAsync(
+				$"{PackageInstallService.ProxyOwner}/{PackageInstallService.ProxyRepo}",
+				release.TagName,
+				release.Name ?? release.TagName);
 		}
-
-		// Step 5: Install fixes package (from local zip or GitHub)
-		if (localZipOverrides?.FixesZipPath != null)
-		{
-			progress.Report(new InstallProgressReport { Message = "Installing fixes package from local zip...", Percentage = 80 });
-			await _packageInstallService.InstallStandardFromLocalZipAsync(localZipOverrides.FixesZipPath, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
-
-			await _installedPackagesService.SetFixesVersionAsync(
-				"Local zip",
-				Path.GetFileName(localZipOverrides.FixesZipPath),
-				Path.GetFileName(localZipOverrides.FixesZipPath));
-		}
-		else
-		{
-			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} {FixesDisplayName} fixes package...", Percentage = 80 });
-			var fixesReleases = await _githubService.FetchReleasesAsync(FixesOwner, FixesRepo);
-			var latestFixes = releaseChannel == ReleaseChannel.Nightly
-				? fixesReleases.FirstOrDefault(r => r.TagName == "nightly")
-					?? throw new Exception($"Could not find a nightly release for {FixesRepo}.")
-				: fixesReleases
-					.Where(r => !r.Prerelease || r.TagName != "nightly")
-					.OrderByDescending(r => r.PublishedAt)
-					.FirstOrDefault()
-					?? throw new Exception($"Could not find any stable releases for {FixesRepo}.");
-
-			await _packageInstallService.InstallStandardPackageAsync(latestFixes, installDir, PackageInstallService.DefaultIgnorePatterns, CreateSubProgress(85, 15));
-
-			// Save Fixes version info
-			await _installedPackagesService.SetFixesVersionAsync(
-				$"{FixesOwner}/{FixesRepo}",
-				latestFixes.TagName,
-				GetFixesReleaseDisplayName(latestFixes));
-		}
-
-		// The pre-install cleanup is handled automatically within InstallStandardPackageAsync
-		// (removes outdated folders before extraction)
-
-		// TODO: Process .launcherdependencies (can be added here later)
 
 		progress.Report(new InstallProgressReport { Message = "Quick Install finished successfully!", Percentage = 100 });
 	}
 
-	private static string GetFixesReleaseDisplayName(GitHubRelease release)
+	private async Task<GitHubRelease> FetchReleaseAsync(string owner, string repo, ReleaseChannel channel)
 	{
-		if (release.Prerelease || string.Equals(release.TagName, "nightly", StringComparison.OrdinalIgnoreCase))
-		{
-			string[] patterns = { "-gmod.zip", "-release.zip", ".zip" };
-			foreach (var pattern in patterns)
-			{
-				var asset = release.Assets.FirstOrDefault(a => a.Name.EndsWith(pattern, StringComparison.OrdinalIgnoreCase) && !a.Name.Contains("-symbols"));
-				if (asset != null)
-				{
-					return Path.GetFileNameWithoutExtension(asset.Name);
-				}
-			}
-		}
-
-		return release.Name ?? release.TagName;
+		var releases = await _githubService.FetchReleasesAsync(owner, repo);
+		return PackageInstallService.SelectRelease(releases, channel)
+			?? throw new Exception(channel == ReleaseChannel.Nightly
+				? $"Could not find a nightly release of {owner}/{repo}."
+				: $"Could not find any releases of {owner}/{repo}.");
 	}
 
 	private static void EnsureSupportedInstallPath(string installDir)

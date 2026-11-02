@@ -1,4 +1,6 @@
 ﻿// Services/UpdateService.cs
+using RTXLauncher.Core.Utilities;
+
 namespace RTXLauncher.Core.Services;
 
 // The FileUpdateInfo class can be moved to a Models file
@@ -109,15 +111,23 @@ public class GarrysModUpdateService
 				if (excludedFiles.Contains(normalizedPath))
 					continue;
 
-				// For root directory, only include gmod.exe
+				// For root directory, only include the game executables
 				if (string.IsNullOrEmpty(relativePath) &&
 					!string.Equals(sourceFile.Name, "gmod.exe", StringComparison.OrdinalIgnoreCase) &&
+					!string.Equals(sourceFile.Name, "gmod_win64.exe", StringComparison.OrdinalIgnoreCase) &&
 					!string.Equals(sourceFile.Name, "hl2.exe", StringComparison.OrdinalIgnoreCase))
 				{
 					continue;
 				}
 
 				var destFilePath = Path.Combine(destDir, fileRelativePath);
+				// With OpenRemix's proxy in place, the game's own shader API is
+				// shaderapidx9_orig.dll: an update to it goes there, under the proxy.
+				if (string.Equals(normalizedPath, "bin/win64/" + ProxyUtility.ProxyName, StringComparison.OrdinalIgnoreCase) &&
+					ProxyUtility.IsDeployed(Path.GetDirectoryName(destFilePath)!))
+				{
+					destFilePath = Path.Combine(Path.GetDirectoryName(destFilePath)!, ProxyUtility.OriginalName);
+				}
 				var fileInfo = new FileInfo(destFilePath);
 
 				bool isNew = !fileInfo.Exists;

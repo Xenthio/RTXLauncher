@@ -55,6 +55,11 @@ public class GarrysModInstallService
 
 				// Step 3: Copy game executable
 				Report("Copying game executable...", currentStep);
+				// The main branch's 64-bit executable sits beside its 32-bit one.
+				if (File.Exists(Path.Combine(vanillaPath, "gmod_win64.exe")))
+				{
+					File.Copy(Path.Combine(vanillaPath, "gmod_win64.exe"), Path.Combine(newInstallPath, "gmod_win64.exe"), true);
+				}
 				if (File.Exists(Path.Combine(vanillaPath, "gmod.exe")))
 				{
 					File.Copy(Path.Combine(vanillaPath, "gmod.exe"), Path.Combine(newInstallPath, "gmod.exe"), true);

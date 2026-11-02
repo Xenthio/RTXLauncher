@@ -109,6 +109,11 @@ public static class GarrysModUtility
 			return "unknown";
 		}
 
+		// The 64-bit binaries, on whichever branch: the main branch now ships
+		// them beside its 32-bit ones (gmod_win64.exe), as the x86-64 branch
+		// does (bin/win64/gmod.exe).
+		if (Has64BitBinaries(path)) return "gmod_x86-64";
+
 		// Try to detect from Steam ACF manifest first
 		var acfType = GetInstallTypeFromSteamAcf(path);
 		if (acfType != null)
@@ -122,6 +127,21 @@ public static class GarrysModUtility
 		if (File.Exists(Path.Combine(path, "gmod.exe"))) return "gmod_main";
 		if (File.Exists(Path.Combine(path, "hl2.exe"))) return "gmod_main-legacy";
 		return "gmod_unknown";
+	}
+
+	/// <summary>
+	/// Whether an installation has Garry's Mod's 64-bit binaries: a 64-bit game
+	/// executable (gmod_win64.exe on the main branch, bin/win64/gmod.exe on the
+	/// x86-64 branch) and the 64-bit shader API that OpenRemix's proxy wraps.
+	/// </summary>
+	public static bool Has64BitBinaries(string? path)
+	{
+		if (string.IsNullOrEmpty(path)) return false;
+		var win64 = Path.Combine(path, "bin", "win64");
+		if (!File.Exists(Path.Combine(win64, "shaderapidx9.dll")) &&
+			!File.Exists(Path.Combine(win64, "shaderapidx9_orig.dll")))
+			return false;
+		return File.Exists(Path.Combine(path, "gmod_win64.exe")) || File.Exists(Path.Combine(win64, "gmod.exe"));
 	}
 
 	/// <summary>
@@ -179,6 +199,7 @@ public static class GarrysModUtility
 		{
 			Path.Combine(execPath, "patcherlauncher.exe"),
 			Path.Combine(execPath, "bin", "win64", "gmod.exe"),
+			Path.Combine(execPath, "gmod_win64.exe"),
 			Path.Combine(execPath, "bin", "gmod.exe"),
 			Path.Combine(execPath, "gmod.exe"),
 			Path.Combine(execPath, "hl2.exe")

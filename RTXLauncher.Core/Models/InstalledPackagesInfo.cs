@@ -11,6 +11,11 @@ public class InstalledPackagesInfo
 	public InstalledPackageVersion? Remix { get; set; }
 
 	/// <summary>
+	/// Information about the installed OpenRemix shader API proxy (shaderapidx9.dll)
+	/// </summary>
+	public InstalledPackageVersion? Proxy { get; set; }
+
+	/// <summary>
 	/// Information about the installed Fixes package version
 	/// </summary>
 	public InstalledPackageVersion? Fixes { get; set; }

@@ -79,16 +79,10 @@ public partial class SetupViewModel : PageViewModel
 	private string? _localRemixZipPath;
 
 	[ObservableProperty]
-	private bool _useLocalPatchesZip;
+	private bool _useLocalProxyZip;
 
 	[ObservableProperty]
-	private string? _localPatchesZipPath;
-
-	[ObservableProperty]
-	private bool _useLocalFixesZip;
-
-	[ObservableProperty]
-	private string? _localFixesZipPath;
+	private string? _localProxyZipPath;
 
 	public string DefaultInstallPath => GarrysModUtility.GetDefaultInstallFolder();
 
@@ -184,7 +178,7 @@ public partial class SetupViewModel : PageViewModel
 	private async Task BrowseLocalRemixZipAsync()
 	{
 		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
-		var result = await DialogUtility.ShowFilePickerAsync("Select RTX Remix zip package", zipFilter);
+		var result = await DialogUtility.ShowFilePickerAsync("Select OpenRemix runtime zip (openremix-windows-x64.zip)", zipFilter);
 		if (!string.IsNullOrEmpty(result))
 		{
 			LocalRemixZipPath = result;
@@ -193,26 +187,14 @@ public partial class SetupViewModel : PageViewModel
 	}
 
 	[RelayCommand]
-	private async Task BrowseLocalPatchesZipAsync()
+	private async Task BrowseLocalProxyZipAsync()
 	{
 		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
-		var result = await DialogUtility.ShowFilePickerAsync("Select binary patches zip (must contain applypatch.py)", zipFilter);
+		var result = await DialogUtility.ShowFilePickerAsync("Select shader API proxy zip (shaderapidx9-x64.zip)", zipFilter);
 		if (!string.IsNullOrEmpty(result))
 		{
-			LocalPatchesZipPath = result;
-			UseLocalPatchesZip = true;
-		}
-	}
-
-	[RelayCommand]
-	private async Task BrowseLocalFixesZipAsync()
-	{
-		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
-		var result = await DialogUtility.ShowFilePickerAsync("Select fixes package zip", zipFilter);
-		if (!string.IsNullOrEmpty(result))
-		{
-			LocalFixesZipPath = result;
-			UseLocalFixesZip = true;
+			LocalProxyZipPath = result;
+			UseLocalProxyZip = true;
 		}
 	}
 
@@ -321,38 +303,24 @@ public partial class SetupViewModel : PageViewModel
 		var _progressHandle = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
 		IProgress<InstallProgressReport> progressHandle = _progressHandle;
 
-		// Check the vanilla installation type to see if user has 32-bit or 64-bit
+		// OpenRemix runs in the 64-bit game, which the main branch now ships
+		// beside the 32-bit one (as the x86-64 branch does). A vanilla install
+		// without it is out of date.
 		var vanillaPath = GarrysModUtility.GetVanillaInstallFolder(ManualVanillaPath);
-		var vanillaInstallType = GarrysModUtility.GetInstallType(vanillaPath);
-
-		// Prompt 32-bit users to upgrade to 64-bit for better performance and features
-		if (vanillaInstallType == "gmod_i386" || vanillaInstallType == "gmod_main")
+		if (!string.IsNullOrEmpty(vanillaPath) && !GarrysModUtility.Has64BitBinaries(vanillaPath))
 		{
-			var upgrade = await DialogUtility.ShowConfirmationAsync(
-				"Switch to x64?",
-				"You are currently using the 32-bit version of Garry's Mod.\n\n" +
-				"The x64 version offers better performance and support for Remix API Features.\n" +
-				"\n" +
-				"To switch, you need to:\n" +
-				"1. Open Steam\n" +
-				"2. Right-click Garry's Mod → Properties → Betas\n" +
-				"3. Select the 'x86-64' branch.\n" +
-				"4. Restart the launcher after the update completes\n\n" +
-				"Would you like to cancel this installation and switch to x64 now?");
-
-			if (upgrade)
+			await DialogUtility.ShowErrorAsync(
+				"64-bit Garry's Mod needed",
+				"This Garry's Mod installation has no 64-bit binaries (gmod_win64.exe and bin/win64), which OpenRemix needs.\n\n" +
+				"Update Garry's Mod through Steam (the main branch includes them), then run the setup again.");
+			progressHandle.Report(new InstallProgressReport
 			{
-				// User wants to switch to 64-bit - cancel installation and show instructions
-				progressHandle.Report(new InstallProgressReport
-				{
-					Message = "Installation cancelled. Please switch to 64-bit in Steam and restart the launcher.",
-					Percentage = 0
-				});
-				IsWelcomeVisible = true;
-				IsBusy = false;
-				return;
-			}
-			// User declined - continue with 32-bit installation
+				Message = "Installation cancelled: Garry's Mod has no 64-bit binaries.",
+				Percentage = 0
+			});
+			IsWelcomeVisible = true;
+			IsBusy = false;
+			return;
 		}
 
 		try
@@ -367,13 +335,12 @@ public partial class SetupViewModel : PageViewModel
 			// No automatic downgrade prompt - users can manually downgrade via Advanced Install if needed
 			// Build local zip overrides if any checkboxes are enabled
 			LocalZipOverrides? localZipOverrides = null;
-			if (UseLocalRemixZip || UseLocalPatchesZip || UseLocalFixesZip)
+			if (UseLocalRemixZip || UseLocalProxyZip)
 			{
 				localZipOverrides = new LocalZipOverrides
 				{
 					RemixZipPath = UseLocalRemixZip ? LocalRemixZipPath : null,
-					PatchesZipPath = UseLocalPatchesZip ? LocalPatchesZipPath : null,
-					FixesZipPath = UseLocalFixesZip ? LocalFixesZipPath : null
+					ProxyZipPath = UseLocalProxyZip ? LocalProxyZipPath : null
 				};
 			}
 

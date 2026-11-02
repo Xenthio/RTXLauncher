@@ -68,10 +68,25 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			_ = RefreshAllPackagesAsync();
 		});
 
-		// To add a new package, you just add it to this list!
-		Packages.Add(new RemixPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService));
-		Packages.Add(new PatcherPackageViewModel(_patchingService, _messenger, _installedPackagesService, _depotDowngradeService, _githubService, _packageInstallService));
-		Packages.Add(new FixesPackageViewModel(_githubService, _packageInstallService, _messenger, _installedPackagesService, _patchingService, () => ManualVanillaPath, _depotDowngradeService));
+		// To add a new package, you just add it to this list! OpenRemix and its
+		// shader API proxy replace RTX Remix, its binary patches and the fixes
+		// package (PatcherPackageViewModel, FixesPackageViewModel).
+		Packages.Add(new ReleasePackageViewModel(_githubService, _messenger, _installedPackagesService, new ReleasePackage(
+			"OpenRemix",
+			PackageInstallService.OpenRemixOwner, PackageInstallService.OpenRemixRepo,
+			"Select OpenRemix runtime zip (openremix-windows-x64.zip)",
+			_packageInstallService.InstallOpenRemixPackageAsync,
+			_packageInstallService.InstallOpenRemixFromLocalZipAsync,
+			() => _installedPackagesService.GetRemixVersionAsync(),
+			(source, version, name) => _installedPackagesService.SetRemixVersionAsync(source, version, name))));
+		Packages.Add(new ReleasePackageViewModel(_githubService, _messenger, _installedPackagesService, new ReleasePackage(
+			"OpenRemix shader API proxy",
+			PackageInstallService.ProxyOwner, PackageInstallService.ProxyRepo,
+			"Select shader API proxy zip (shaderapidx9-x64.zip)",
+			_packageInstallService.InstallProxyPackageAsync,
+			_packageInstallService.InstallProxyFromLocalZipAsync,
+			() => _installedPackagesService.GetProxyVersionAsync(),
+			(source, version, name) => _installedPackagesService.SetProxyVersionAsync(source, version, name))));
 
 		// Initialize all packages
 		_ = InitializePackages();
@@ -272,8 +287,12 @@ public partial class AdvancedInstallViewModel : PageViewModel
 
 			await _garrysModUpdateService.PerformUpdateAsync(updates, progressHandler, rtxInstallPath);
 
+			// OpenRemix's proxy needs no patches: the update put the game's new
+			// shader API under it (shaderapidx9_orig.dll).
+			bool openRemixProxy = await _installedPackagesService.GetProxyVersionAsync() != null;
+
 			// If bin files were updated, re-apply patches
-			if (binFilesUpdated)
+			if (binFilesUpdated && !openRemixProxy)
 			{
 				_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
 				{ 
@@ -330,7 +349,7 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			}
 
 			var successMessage = $"Successfully updated {updates.Count} item(s) from vanilla installation.";
-			if (binFilesUpdated)
+			if (binFilesUpdated && !openRemixProxy)
 			{
 				successMessage += "\n\nBinary files were updated and patches were re-applied.";
 			}
@@ -567,11 +586,18 @@ public partial class AdvancedInstallViewModel : PageViewModel
 					string remixRepo = parts[1];
 
 					var remixReleases = await _githubService.FetchReleasesAsync(remixOwner, remixRepo);
-					var latestRemix = remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
+					bool openRemix = remixOwner == PackageInstallService.OpenRemixOwner && remixRepo == PackageInstallService.OpenRemixRepo;
+					var latestRemix = openRemix
+						? PackageInstallService.SelectRelease(remixReleases,
+							remixInfo.Version == PackageInstallService.NightlyTag ? ReleaseChannel.Nightly : ReleaseChannel.Stable)
+						: remixReleases.OrderByDescending(r => r.PublishedAt).FirstOrDefault();
 
 					if (latestRemix != null)
 					{
-						await _packageInstallService.InstallRemixPackageAsync(latestRemix, rtxInstallPath, progress);
+						if (openRemix)
+							await _packageInstallService.InstallOpenRemixPackageAsync(latestRemix, rtxInstallPath, progress);
+						else
+							await _packageInstallService.InstallRemixPackageAsync(latestRemix, rtxInstallPath, progress);
 
 						// Update version info
 						await _installedPackagesService.SetRemixVersionAsync(
@@ -579,6 +605,23 @@ public partial class AdvancedInstallViewModel : PageViewModel
 							latestRemix.TagName,
 							latestRemix.Name ?? latestRemix.TagName);
 					}
+				}
+			}
+
+			// The depot replaced bin, and with it OpenRemix's shader API proxy.
+			var proxyInfo = await _installedPackagesService.GetProxyVersionAsync();
+			if (proxyInfo != null)
+			{
+				var proxyReleases = await _githubService.FetchReleasesAsync(PackageInstallService.ProxyOwner, PackageInstallService.ProxyRepo);
+				var proxyRelease = PackageInstallService.SelectRelease(proxyReleases,
+					proxyInfo.Version == PackageInstallService.NightlyTag ? ReleaseChannel.Nightly : ReleaseChannel.Stable);
+				if (proxyRelease != null)
+				{
+					await _packageInstallService.InstallProxyPackageAsync(proxyRelease, rtxInstallPath, progress);
+					await _installedPackagesService.SetProxyVersionAsync(
+						$"{PackageInstallService.ProxyOwner}/{PackageInstallService.ProxyRepo}",
+						proxyRelease.TagName,
+						proxyRelease.Name ?? proxyRelease.TagName);
 				}
 			}
 
@@ -617,84 +660,84 @@ public partial class AdvancedInstallViewModel : PageViewModel
 //      EXAMPLE IMPLEMENTATIONS OF SPECIFIC PACKAGE VIEWMODELS
 // ===================================================================
 
-public partial class RemixPackageViewModel : InstallablePackageViewModel
+/// <summary>
+/// What a release-package card installs: a repository's releases (its rolling
+/// "nightly" or the others), each with an installer, and where its installed
+/// version is recorded.
+/// </summary>
+public record ReleasePackage(
+	string Title,
+	string Owner,
+	string Repo,
+	string LocalZipPrompt,
+	Func<GitHubRelease, string, IProgress<InstallProgressReport>, Task> Install,
+	Func<string, string, IProgress<InstallProgressReport>, Task> InstallFromLocalZip,
+	Func<Task<InstalledPackageVersion?>> GetInstalledVersion,
+	Func<string, string, string, Task> SetInstalledVersion);
+
+public partial class ReleasePackageViewModel : InstallablePackageViewModel
 {
-	private readonly PackageInstallService _installService;
 	private readonly IMessenger _messenger;
+	private readonly ReleasePackage _package;
+	private readonly Dictionary<string, ReleaseChannel> _sources;
 
-	// --- 1. Add your sources dictionary as a private field ---
-	private readonly Dictionary<string, (string Owner, string Repo, bool IsNightly)> _remixSources = new()
-	{
-		{ "sambow23/dxvk-remix-gmod (Stable)", ("sambow23", "dxvk-remix-gmod", false) },
-		{ "sambow23/dxvk-remix-gmod (Nightly)", ("sambow23", "dxvk-remix-gmod", true) },
-	};
-
-	public RemixPackageViewModel(GitHubService githubService, PackageInstallService installService, IMessenger messenger, InstalledPackagesService installedPackagesService)
+	public ReleasePackageViewModel(GitHubService githubService, IMessenger messenger, InstalledPackagesService installedPackagesService, ReleasePackage package)
 		: base(githubService, installedPackagesService)
 	{
-		Title = "NVIDIA RTX Remix";
-		_installService = installService;
+		Title = package.Title;
 		_messenger = messenger;
+		_package = package;
+		_sources = new()
+		{
+			{ $"{package.Owner}/{package.Repo} (Nightly)", ReleaseChannel.Nightly },
+			{ $"{package.Owner}/{package.Repo} (Stable)", ReleaseChannel.Stable },
+		};
 	}
+
+	private string RepositoryName => $"{_package.Owner}/{_package.Repo}";
 
 	protected override async Task LoadInstalledVersion()
 	{
-		if (InstalledPackagesService == null) return;
-		var version = await InstalledPackagesService.GetRemixVersionAsync();
-		SetInstalledVersionDisplay(version);
+		SetInstalledVersionDisplay(await _package.GetInstalledVersion());
 	}
 
 	/// <summary>
-	/// Override to display release name instead of tag for Remix
+	/// Shows the release name (the nightly's names its commit), not the tag.
 	/// </summary>
 	protected override void SetInstalledVersionDisplay(InstalledPackageVersion? version)
 	{
-		if (version != null)
-		{
-			InstalledVersion = version.ReleaseName; // Use release name instead of version tag
-			InstalledSource = version.Source;
-			HasInstalledVersion = true;
-		}
-		else
-		{
-			InstalledVersion = null;
-			InstalledSource = null;
-			HasInstalledVersion = false;
-		}
+		InstalledVersion = version?.ReleaseName;
+		InstalledSource = version?.Source;
+		HasInstalledVersion = version != null;
 	}
 
-	// --- 2. Implement LoadSources to read from the dictionary ---
 	protected override Task LoadSources()
 	{
 		Sources.Clear();
-		foreach (var sourceName in _remixSources.Keys)
+		foreach (var sourceName in _sources.Keys)
 		{
 			Sources.Add(sourceName);
 		}
 		return Task.CompletedTask;
 	}
 
-	// --- 3. Implement LoadReleases to use the selected source ---
 	protected override async Task LoadReleases()
 	{
-		if (GitHubService == null || string.IsNullOrEmpty(SelectedSource) || !_remixSources.TryGetValue(SelectedSource, out var sourceInfo))
+		Releases.Clear();
+		if (GitHubService == null || string.IsNullOrEmpty(SelectedSource) || !_sources.TryGetValue(SelectedSource, out var channel))
 		{
-			Releases.Clear();
 			return;
 		}
 
 		IsBusy = true;
-		Releases.Clear();
 		try
 		{
-			var releases = await GitHubService.FetchReleasesAsync(sourceInfo.Owner, sourceInfo.Repo);
-			
-			// Filter releases based on whether we want nightly or stable
-			var filteredReleases = sourceInfo.IsNightly
-				? releases.Where(r => r.Prerelease && r.TagName == "nightly")
-				: releases.Where(r => !r.Prerelease || r.TagName != "nightly");
-			
-			foreach (var release in filteredReleases.OrderByDescending(r => r.PublishedAt))
+			var releases = await GitHubService.FetchReleasesAsync(_package.Owner, _package.Repo);
+			bool IsNightly(GitHubRelease r) => string.Equals(r.TagName, PackageInstallService.NightlyTag, StringComparison.OrdinalIgnoreCase);
+			var filtered = channel == ReleaseChannel.Nightly
+				? releases.Where(IsNightly)
+				: releases.Where(r => !IsNightly(r));
+			foreach (var release in filtered.OrderByDescending(r => r.PublishedAt))
 			{
 				Releases.Add(release);
 			}
@@ -702,7 +745,7 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 		}
 		catch (Exception ex)
 		{
-			System.Diagnostics.Debug.WriteLine($"[Remix] Failed to load releases: {ex.Message}");
+			System.Diagnostics.Debug.WriteLine($"[{_package.Title}] Failed to load releases: {ex.Message}");
 		}
 		finally
 		{
@@ -713,129 +756,42 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 	protected override async Task Install()
 	{
 		if (SelectedRelease == null) return;
-
-		var installDir = GarrysModUtility.GetThisInstallFolder();
-		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
-		{
-			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
-			{ 
-				Message = "ERROR: Could not find a valid RTX GMod installation directory.", 
-				Percentage = 100 
-			}));
-			return;
-		}
-
-		// Check for existing rtx.conf and prompt for backup
-		if (RemixUtility.RtxConfigExists(installDir))
-		{
-			var shouldBackup = await Utilities.DialogUtility.ShowConfirmationAsync(
-				"RTX Config Found",
-				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
-				"The backup will be saved as rtx.conf.backup_[timestamp]");
-
-			if (shouldBackup)
-			{
-				var backupPath = RemixUtility.BackupRtxConfig(installDir);
-				if (backupPath != null)
-				{
-					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
-					{ 
-						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
-						Percentage = 5 
-					}));
-				}
-			}
-		}
-
-		IsBusy = true;
-		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
-		IProgress<InstallProgressReport> progress = progressHandler;
-
-		try
-		{
-			// Call the service with the appropriate configuration
-			await _installService.InstallRemixPackageAsync(SelectedRelease, installDir, progress);
-
-			// Save installed version
-			if (InstalledPackagesService != null && SelectedSource != null)
-			{
-				await InstalledPackagesService.SetRemixVersionAsync(
-					SelectedSource,
-					SelectedRelease.TagName,
-					SelectedRelease.Name ?? SelectedRelease.TagName);
-				await RefreshInstalledVersionAsync();
-				
-				// Notify other views that packages were updated
-				_messenger.Send(new PackagesUpdatedMessage());
-			}
-		}
-		catch (Exception ex)
-		{
-			progress.Report(new InstallProgressReport { Message = $"ERROR: {ex.Message}", Percentage = 100 });
-		}
-		finally
-		{
-			IsBusy = false;
-		}
+		var release = SelectedRelease;
+		await RunInstallAsync((installDir, progress) => _package.Install(release, installDir, progress),
+			RepositoryName, release.TagName, release.Name ?? release.TagName);
 	}
 
 	protected override async Task InstallFromLocalZip()
 	{
 		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
-		var zipPath = await Utilities.DialogUtility.ShowFilePickerAsync("Select RTX Remix zip package", zipFilter);
+		var zipPath = await Utilities.DialogUtility.ShowFilePickerAsync(_package.LocalZipPrompt, zipFilter);
 		if (string.IsNullOrEmpty(zipPath)) return;
+		await RunInstallAsync((installDir, progress) => _package.InstallFromLocalZip(zipPath, installDir, progress),
+			"Local zip", Path.GetFileName(zipPath), Path.GetFileName(zipPath));
+	}
 
+	private async Task RunInstallAsync(Func<string, IProgress<InstallProgressReport>, Task> install, string source, string version, string releaseName)
+	{
 		var installDir = GarrysModUtility.GetThisInstallFolder();
+		IProgress<InstallProgressReport> progress = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
 		if (string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir))
 		{
-			_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
-			{ 
-				Message = "ERROR: Could not find a valid RTX GMod installation directory.", 
-				Percentage = 100 
-			}));
+			progress.Report(new InstallProgressReport { Message = "ERROR: Could not find a valid RTX GMod installation directory.", Percentage = 100 });
+			return;
+		}
+		if (!GarrysModUtility.Has64BitBinaries(installDir))
+		{
+			progress.Report(new InstallProgressReport { Message = "ERROR: This installation has no 64-bit binaries (gmod_win64.exe and bin/win64), which OpenRemix needs.", Percentage = 100 });
 			return;
 		}
 
-		// Check for existing rtx.conf and prompt for backup
-		if (RemixUtility.RtxConfigExists(installDir))
-		{
-			var shouldBackup = await Utilities.DialogUtility.ShowConfirmationAsync(
-				"RTX Config Found",
-				"An existing rtx.conf file was detected. Would you like to back it up before installing?\n\n" +
-				"The backup will be saved as rtx.conf.backup_[timestamp]");
-
-			if (shouldBackup)
-			{
-				var backupPath = RemixUtility.BackupRtxConfig(installDir);
-				if (backupPath != null)
-				{
-					_messenger.Send(new ProgressReportMessage(new InstallProgressReport 
-					{ 
-						Message = $"Backed up rtx.conf to {Path.GetFileName(backupPath)}", 
-						Percentage = 5 
-					}));
-				}
-			}
-		}
-
 		IsBusy = true;
-		var progressHandler = new Progress<InstallProgressReport>(report => _messenger.Send(new ProgressReportMessage(report)));
-		IProgress<InstallProgressReport> progress = progressHandler;
-
 		try
 		{
-			await _installService.InstallRemixFromLocalZipAsync(zipPath, installDir, progress);
-
-			// Save installed version as local zip
-			if (InstalledPackagesService != null)
-			{
-				await InstalledPackagesService.SetRemixVersionAsync(
-					"Local zip",
-					Path.GetFileName(zipPath),
-					Path.GetFileName(zipPath));
-				await RefreshInstalledVersionAsync();
-				_messenger.Send(new PackagesUpdatedMessage());
-			}
+			await install(installDir, progress);
+			await _package.SetInstalledVersion(source, version, releaseName);
+			await RefreshInstalledVersionAsync();
+			_messenger.Send(new PackagesUpdatedMessage());
 		}
 		catch (Exception ex)
 		{
@@ -847,8 +803,6 @@ public partial class RemixPackageViewModel : InstallablePackageViewModel
 		}
 	}
 }
-
-// In a file like ViewModels/Packages/PatcherPackageViewModel.cs
 
 public partial class PatcherPackageViewModel : InstallablePackageViewModel
 {
