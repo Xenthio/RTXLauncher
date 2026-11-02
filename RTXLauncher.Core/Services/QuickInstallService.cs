@@ -132,7 +132,7 @@ public class QuickInstallService
 		if (localZipOverrides?.ProxyZipPath != null)
 		{
 			progress.Report(new InstallProgressReport { Message = "Installing the shader API proxy from local zip...", Percentage = 75 });
-			await _packageInstallService.InstallProxyFromLocalZipAsync(localZipOverrides.ProxyZipPath, installDir, CreateSubProgress(80, 20));
+			await _packageInstallService.InstallProxyFromLocalZipAsync(localZipOverrides.ProxyZipPath, installDir, CreateSubProgress(80, 10));
 			await _installedPackagesService.SetProxyVersionAsync(
 				"Local zip",
 				Path.GetFileName(localZipOverrides.ProxyZipPath),
@@ -142,9 +142,22 @@ public class QuickInstallService
 		{
 			progress.Report(new InstallProgressReport { Message = $"Fetching {channelLabel} shader API proxy...", Percentage = 75 });
 			var release = await FetchReleaseAsync(PackageInstallService.ProxyOwner, PackageInstallService.ProxyRepo, releaseChannel);
-			await _packageInstallService.InstallProxyPackageAsync(release, installDir, CreateSubProgress(80, 20));
+			await _packageInstallService.InstallProxyPackageAsync(release, installDir, CreateSubProgress(80, 10));
 			await _installedPackagesService.SetProxyVersionAsync(
 				$"{PackageInstallService.ProxyOwner}/{PackageInstallService.ProxyRepo}",
+				release.TagName,
+				release.Name ?? release.TagName);
+		}
+
+		// Step 5: DXVK's d3d9.dll in the game's root folder, which the proxy runs
+		// the game's Direct3D 9 on. Not on Linux: Proton brings its own DXVK.
+		if (OperatingSystem.IsWindows())
+		{
+			progress.Report(new InstallProgressReport { Message = "Fetching the latest DXVK...", Percentage = 90 });
+			var release = await FetchReleaseAsync(PackageInstallService.DxvkOwner, PackageInstallService.DxvkRepo, ReleaseChannel.Stable);
+			await _packageInstallService.InstallDxvkPackageAsync(release, installDir, CreateSubProgress(90, 10));
+			await _installedPackagesService.SetDxvkVersionAsync(
+				$"{PackageInstallService.DxvkOwner}/{PackageInstallService.DxvkRepo}",
 				release.TagName,
 				release.Name ?? release.TagName);
 		}
@@ -198,7 +211,8 @@ public class QuickInstallService
 			"installed_packages.json",
 			"patcherlauncher.exe",
 			"rtx.conf",
-			"steam_appid.txt"
+			"steam_appid.txt",
+			"d3d9.dll"
 		};
 
 		foreach (var fileName in filesToDelete)

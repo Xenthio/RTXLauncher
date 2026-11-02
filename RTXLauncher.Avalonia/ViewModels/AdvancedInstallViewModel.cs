@@ -87,6 +87,16 @@ public partial class AdvancedInstallViewModel : PageViewModel
 			_packageInstallService.InstallProxyFromLocalZipAsync,
 			() => _installedPackagesService.GetProxyVersionAsync(),
 			(source, version, name) => _installedPackagesService.SetProxyVersionAsync(source, version, name))));
+		Packages.Add(new ReleasePackageViewModel(_githubService, _messenger, _installedPackagesService, new ReleasePackage(
+			"DXVK",
+			PackageInstallService.DxvkOwner, PackageInstallService.DxvkRepo,
+			"Select DXVK release archive (dxvk-*.tar.gz)",
+			_packageInstallService.InstallDxvkPackageAsync,
+			_packageInstallService.InstallDxvkFromLocalArchiveAsync,
+			() => _installedPackagesService.GetDxvkVersionAsync(),
+			(source, version, name) => _installedPackagesService.SetDxvkVersionAsync(source, version, name),
+			HasNightly: false,
+			LocalArchivePatterns: new[] { "*.tar.gz", "*.zip" })));
 
 		// Initialize all packages
 		_ = InitializePackages();
@@ -673,7 +683,9 @@ public record ReleasePackage(
 	Func<GitHubRelease, string, IProgress<InstallProgressReport>, Task> Install,
 	Func<string, string, IProgress<InstallProgressReport>, Task> InstallFromLocalZip,
 	Func<Task<InstalledPackageVersion?>> GetInstalledVersion,
-	Func<string, string, string, Task> SetInstalledVersion);
+	Func<string, string, string, Task> SetInstalledVersion,
+	bool HasNightly = true,
+	string[]? LocalArchivePatterns = null);
 
 public partial class ReleasePackageViewModel : InstallablePackageViewModel
 {
@@ -687,11 +699,12 @@ public partial class ReleasePackageViewModel : InstallablePackageViewModel
 		Title = package.Title;
 		_messenger = messenger;
 		_package = package;
-		_sources = new()
+		_sources = new();
+		if (package.HasNightly)
 		{
-			{ $"{package.Owner}/{package.Repo} (Nightly)", ReleaseChannel.Nightly },
-			{ $"{package.Owner}/{package.Repo} (Stable)", ReleaseChannel.Stable },
-		};
+			_sources.Add($"{package.Owner}/{package.Repo} (Nightly)", ReleaseChannel.Nightly);
+		}
+		_sources.Add($"{package.Owner}/{package.Repo} (Stable)", ReleaseChannel.Stable);
 	}
 
 	private string RepositoryName => $"{_package.Owner}/{_package.Repo}";
@@ -763,7 +776,7 @@ public partial class ReleasePackageViewModel : InstallablePackageViewModel
 
 	protected override async Task InstallFromLocalZip()
 	{
-		var zipFilter = new FilePickerFileType("Zip files") { Patterns = new[] { "*.zip" } };
+		var zipFilter = new FilePickerFileType("Archives") { Patterns = _package.LocalArchivePatterns ?? new[] { "*.zip" } };
 		var zipPath = await Utilities.DialogUtility.ShowFilePickerAsync(_package.LocalZipPrompt, zipFilter);
 		if (string.IsNullOrEmpty(zipPath)) return;
 		await RunInstallAsync((installDir, progress) => _package.InstallFromLocalZip(zipPath, installDir, progress),

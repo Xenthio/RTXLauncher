@@ -103,6 +103,31 @@ public class InstalledPackagesService
 	}
 
 	/// <summary>
+	/// Records that DXVK was installed
+	/// </summary>
+	public async Task SetDxvkVersionAsync(string source, string version, string releaseName)
+	{
+		var packages = await GetInstalledPackagesAsync();
+		packages.Dxvk = new InstalledPackageVersion
+		{
+			Source = source,
+			Version = version,
+			ReleaseName = releaseName,
+			InstalledAt = DateTime.Now
+		};
+		await SaveAsync();
+	}
+
+	/// <summary>
+	/// Gets the installed DXVK version info, or null if not installed
+	/// </summary>
+	public async Task<InstalledPackageVersion?> GetDxvkVersionAsync()
+	{
+		var packages = await GetInstalledPackagesAsync();
+		return packages.Dxvk;
+	}
+
+	/// <summary>
 	/// Records that a Fixes package was installed
 	/// </summary>
 	public async Task SetFixesVersionAsync(string source, string version, string releaseName)

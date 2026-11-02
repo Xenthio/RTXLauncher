@@ -2,6 +2,7 @@
 
 using RTXLauncher.Core.Models;
 using RTXLauncher.Core.Utilities;
+using System.Formats.Tar;
 using System.IO.Compression;
 
 namespace RTXLauncher.Core.Services;
@@ -29,6 +30,9 @@ public class PackageInstallService
 	public const string ProxyRepo = "garrys-mod-rtx-remixed-2";
 	public const string ProxyAsset = "shaderapidx9-x64.zip";
 	public const string NightlyTag = "nightly";
+	// DXVK's releases: dxvk-<version>.tar.gz, its d3d9.dll in x64/ (DxvkUtility).
+	public const string DxvkOwner = "doitsujin";
+	public const string DxvkRepo = "dxvk";
 
 	/// <summary>
 	/// The release a channel installs: the rolling nightly, or the newest other
@@ -272,6 +276,34 @@ bin/win64/usd_ms.dll
 		progress.Report(new InstallProgressReport { Message = "OpenRemix installed successfully!", Percentage = 100 });
 	}
 
+	/// <summary>
+	/// Installs DXVK's 64-bit d3d9.dll into the game's root folder, which the
+	/// shader API proxy runs the game's Direct3D 9 on (DxvkUtility). Takes a
+	/// release's dxvk-*.tar.gz, or a local .tar.gz or .zip.
+	/// </summary>
+	public Task InstallDxvkPackageAsync(GitHubRelease release, string installDir, IProgress<InstallProgressReport> progress)
+	{
+		var asset = release.Assets.FirstOrDefault(a =>
+				a.Name.StartsWith("dxvk-", StringComparison.OrdinalIgnoreCase) &&
+				!a.Name.Contains("native", StringComparison.OrdinalIgnoreCase) &&
+				a.Name.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+			?? throw new Exception($"Could not find a DXVK archive in release {release.TagName}.");
+		return InstallFromReleaseAsync(release, asset.Name, progress, (extracted, p) => InstallDxvkFromFolderAsync(extracted, installDir, p));
+	}
+
+	public Task InstallDxvkFromLocalArchiveAsync(string archivePath, string installDir, IProgress<InstallProgressReport> progress) =>
+		InstallFromLocalZipAsync(archivePath, progress, (extracted, p) => InstallDxvkFromFolderAsync(extracted, installDir, p));
+
+	private Task InstallDxvkFromFolderAsync(string extracted, string installDir, IProgress<InstallProgressReport> progress)
+	{
+		var d3d9 = DxvkUtility.FindX64D3d9(extracted)
+			?? throw new Exception($"The package holds no 64-bit {DxvkUtility.D3d9Name}: it is not a DXVK release.");
+		progress.Report(new InstallProgressReport { Message = "Putting DXVK's d3d9.dll in place...", Percentage = 50 });
+		DxvkUtility.Deploy(d3d9, installDir);
+		progress.Report(new InstallProgressReport { Message = "DXVK installed successfully!", Percentage = 100 });
+		return Task.CompletedTask;
+	}
+
 	private Task InstallProxyFromFolderAsync(string extracted, string installDir, IProgress<InstallProgressReport> progress)
 	{
 		var proxy = Directory.GetFiles(extracted, ProxyUtility.ProxyName, SearchOption.AllDirectories)
@@ -335,7 +367,7 @@ bin/win64/usd_ms.dll
 		string extracted = Path.Combine(tempDir, "extracted");
 		Directory.CreateDirectory(extracted);
 		progress.Report(new InstallProgressReport { Message = "Extracting package...", Percentage = 45 });
-		await Task.Run(() => ZipFile.ExtractToDirectory(zipPath, extracted));
+		await Task.Run(() => ExtractArchive(zipPath, extracted));
 		var installProgress = new Progress<InstallProgressReport>(report =>
 			progress.Report(new InstallProgressReport { Message = report.Message, Percentage = 50 + report.Percentage / 2 }));
 		await install(extracted, installProgress);
@@ -510,6 +542,22 @@ bin/win64/usd_ms.dll
 	}
 
 	// --- Private Helper Methods ---
+
+	// A .zip, or a .tar.gz (DXVK's releases).
+	private static void ExtractArchive(string archivePath, string destination)
+	{
+		if (archivePath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase) ||
+			archivePath.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase))
+		{
+			using var file = File.OpenRead(archivePath);
+			using var gzip = new GZipStream(file, CompressionMode.Decompress);
+			TarFile.ExtractToDirectory(gzip, destination, overwriteFiles: true);
+		}
+		else
+		{
+			ZipFile.ExtractToDirectory(archivePath, destination);
+		}
+	}
 
 	private async Task DownloadFileAsync(string url, string destinationPath, IProgress<DownloadProgressReport> progress, DateTime? assetTimestamp = null)
 	{

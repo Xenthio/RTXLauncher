@@ -16,6 +16,11 @@ public class InstalledPackagesInfo
 	public InstalledPackageVersion? Proxy { get; set; }
 
 	/// <summary>
+	/// Information about the installed DXVK (d3d9.dll in the game's root folder)
+	/// </summary>
+	public InstalledPackageVersion? Dxvk { get; set; }
+
+	/// <summary>
 	/// Information about the installed Fixes package version
 	/// </summary>
 	public InstalledPackageVersion? Fixes { get; set; }
